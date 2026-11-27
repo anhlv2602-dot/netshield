@@ -277,14 +277,14 @@
     },
     {
       "ip": "192.168.1.83",
-      "name": "",
-      "groupId": "",
+      "name": "Camera Dahua / Imou",
+      "groupId": "camera",
       "mac": "54:46:17:DF:0E:01"
     },
     {
       "ip": "192.168.1.1",
-      "name": "",
-      "groupId": "",
+      "name": "Router VNPT Technology",
+      "groupId": "iot",
       "mac": "24:0B:2A:DC:FA:50"
     }
   ],
