@@ -231,15 +231,99 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
         }
       }
 
-      // 7. Client Rules & Schedules
+      // 7a. Device Groups management (Camera, Máy tính, Di động, IoT...)
+      if (method === 'POST' && pathname === '/api/groups') {
+        const body = await readJsonBody(req);
+        const name = (body.name || '').trim();
+        if (!name) return sendJson(res, 400, { error: 'Cần nhập tên nhóm thiết bị' });
+
+        if (!Array.isArray(store.config.deviceGroups)) store.config.deviceGroups = [];
+        const id = (body.id || '').trim() || `group-${Date.now()}`;
+        const group = {
+          id,
+          name,
+          icon: (body.icon || '📁').trim().slice(0, 4),
+          description: (body.description || '').trim(),
+        };
+
+        const idx = store.config.deviceGroups.findIndex((g) => g.id === id);
+        if (idx >= 0) store.config.deviceGroups[idx] = group;
+        else store.config.deviceGroups.push(group);
+
+        await store.save();
+        return sendJson(res, 200, { deviceGroups: store.config.deviceGroups });
+      }
+
+      if (method === 'DELETE' && pathname.startsWith('/api/groups/')) {
+        const id = decodeURIComponent(pathname.slice('/api/groups/'.length));
+        store.config.deviceGroups = (store.config.deviceGroups || []).filter((g) => g.id !== id);
+        for (const dev of store.config.devices || []) {
+          if (dev.groupId === id) dev.groupId = '';
+        }
+        store.config.clientRules = (store.config.clientRules || []).filter(
+          (r) => !(r.targetType === 'group' && r.groupId === id)
+        );
+        await store.save();
+        dnsCache.clear();
+        return sendJson(res, 200, {
+          deviceGroups: store.config.deviceGroups,
+          devices: store.config.devices,
+          clientRules: store.config.clientRules,
+        });
+      }
+
+      // 7b. Devices (gán IP thiết bị vào nhóm + đặt tên gợi nhớ)
+      if (method === 'POST' && pathname === '/api/devices') {
+        const body = await readJsonBody(req);
+        const ip = (body.ip || '').trim();
+        if (!ip) return sendJson(res, 400, { error: 'Cần nhập địa chỉ IP thiết bị' });
+
+        const groupId = (body.groupId || '').trim();
+        if (groupId && !(store.config.deviceGroups || []).some((g) => g.id === groupId)) {
+          return sendJson(res, 400, { error: 'Nhóm thiết bị không tồn tại' });
+        }
+
+        if (!Array.isArray(store.config.devices)) store.config.devices = [];
+        const name = (body.name || '').trim();
+        const idx = store.config.devices.findIndex((d) => d.ip === ip);
+        const entry = { ip, name, groupId };
+        if (idx >= 0) store.config.devices[idx] = entry;
+        else store.config.devices.push(entry);
+
+        await store.save();
+        dnsCache.clear();
+        return sendJson(res, 200, { devices: store.config.devices });
+      }
+
+      if (method === 'DELETE' && pathname.startsWith('/api/devices/')) {
+        const ip = decodeURIComponent(pathname.slice('/api/devices/'.length));
+        store.config.devices = (store.config.devices || []).filter((d) => d.ip !== ip);
+        await store.save();
+        dnsCache.clear();
+        return sendJson(res, 200, { devices: store.config.devices });
+      }
+
+      // 7c. Client Rules & Schedules (hỗ trợ cả IP lẻ và Nhóm thiết bị)
       if (method === 'POST' && pathname === '/api/clients') {
         const body = await readJsonBody(req);
-        const clientIp = (body.clientIp || '').trim();
-        if (!clientIp) return sendJson(res, 400, { error: 'Cần nhập địa chỉ IP thiết bị (hoặc * cho toàn mạng)' });
+        const targetType = body.targetType === 'group' ? 'group' : 'ip';
+        const groupId = targetType === 'group' ? (body.groupId || '').trim() : '';
+        const clientIp = targetType === 'ip' ? (body.clientIp || '').trim() : '';
 
+        if (targetType === 'group') {
+          if (!groupId || !(store.config.deviceGroups || []).some((g) => g.id === groupId)) {
+            return sendJson(res, 400, { error: 'Vui lòng chọn nhóm thiết bị hợp lệ' });
+          }
+        } else if (!clientIp) {
+          return sendJson(res, 400, { error: 'Cần nhập địa chỉ IP thiết bị (hoặc * cho toàn mạng)' });
+        }
+
+        const grp = targetType === 'group' ? store.config.deviceGroups.find((g) => g.id === groupId) : null;
         const rule = {
           id: body.id || `rule-${Date.now()}`,
-          name: (body.name || clientIp).trim(),
+          name: (body.name || (grp ? `Quy tắc ${grp.name}` : clientIp)).trim(),
+          targetType,
+          groupId,
           clientIp,
           enabled: body.enabled !== false,
           bypassProtection: Boolean(body.bypassProtection),

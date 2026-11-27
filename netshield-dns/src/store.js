@@ -249,6 +249,33 @@ export const DEFAULT_CONFIG = {
     'acb.com.vn',
   ],
   blacklist: [],
+  deviceGroups: [
+    {
+      id: 'camera',
+      name: 'Camera an ninh',
+      icon: '📷',
+      description: 'Camera IP, đầu ghi NVR/DVR',
+    },
+    {
+      id: 'computer',
+      name: 'Máy tính / Laptop',
+      icon: '💻',
+      description: 'PC văn phòng, Mac, Laptop',
+    },
+    {
+      id: 'mobile',
+      name: 'Thiết bị di động',
+      icon: '📱',
+      description: 'Điện thoại, máy tính bảng',
+    },
+    {
+      id: 'iot',
+      name: 'Thiết bị IoT',
+      icon: '🔌',
+      description: 'Smart TV, ổ cắm, cảm biến, máy in mạng',
+    },
+  ],
+  devices: [],
   clientRules: [],
 };
 
@@ -321,6 +348,8 @@ class Store extends EventEmitter {
         whitelist: Array.isArray(parsed.whitelist) ? parsed.whitelist : DEFAULT_CONFIG.whitelist,
         blacklist: Array.isArray(parsed.blacklist) ? parsed.blacklist : [],
         blocklists: Array.isArray(parsed.blocklists) ? parsed.blocklists : DEFAULT_CONFIG.blocklists,
+        deviceGroups: Array.isArray(parsed.deviceGroups) ? parsed.deviceGroups : structuredClone(DEFAULT_CONFIG.deviceGroups),
+        devices: Array.isArray(parsed.devices) ? parsed.devices : [],
         clientRules: Array.isArray(parsed.clientRules) ? parsed.clientRules : [],
       };
     } catch {
@@ -416,6 +445,16 @@ class Store extends EventEmitter {
         category: s.category,
       }));
 
+    const groupMap = new Map();
+    for (const g of this.config.deviceGroups || []) {
+      groupMap.set(g.id, g);
+    }
+
+    const deviceMap = new Map();
+    for (const d of this.config.devices || []) {
+      if (d.ip) deviceMap.set(d.ip, d);
+    }
+
     const clientNames = new Map();
     for (const rule of this.config.clientRules) {
       if (rule.clientIp && rule.name) {
@@ -425,15 +464,51 @@ class Store extends EventEmitter {
 
     const topClients = [...this.stats.byClient.entries()]
       .sort((a, b) => b[1].total - a[1].total)
-      .slice(0, 15)
-      .map(([ip, s]) => ({
-        ip,
-        name: clientNames.get(ip) || '',
-        total: s.total,
-        blocked: s.blocked,
-        savedBytes: s.savedBytes,
-        lastSeen: s.lastSeen,
-      }));
+      .slice(0, 20)
+      .map(([ip, s]) => {
+        const dev = deviceMap.get(ip);
+        const grp = dev?.groupId ? groupMap.get(dev.groupId) : null;
+        return {
+          ip,
+          name: dev?.name || clientNames.get(ip) || '',
+          groupId: grp?.id || '',
+          groupName: grp?.name || '',
+          groupIcon: grp?.icon || '',
+          total: s.total,
+          blocked: s.blocked,
+          savedBytes: s.savedBytes,
+          lastSeen: s.lastSeen,
+        };
+      });
+
+    // Thống kê tổng hợp theo từng nhóm thiết bị
+    const groupStatsMap = new Map();
+    for (const g of this.config.deviceGroups || []) {
+      groupStatsMap.set(g.id, {
+        id: g.id,
+        name: g.name,
+        icon: g.icon || '📁',
+        description: g.description || '',
+        deviceCount: 0,
+        activeCount: 0,
+        total: 0,
+        blocked: 0,
+        savedBytes: 0,
+      });
+    }
+    for (const d of this.config.devices || []) {
+      const gs = d.groupId ? groupStatsMap.get(d.groupId) : null;
+      if (!gs) continue;
+      gs.deviceCount += 1;
+      const cs = this.stats.byClient.get(d.ip);
+      if (cs) {
+        gs.activeCount += 1;
+        gs.total += cs.total;
+        gs.blocked += cs.blocked;
+        gs.savedBytes += cs.savedBytes;
+      }
+    }
+    const groupStats = [...groupStatsMap.values()];
 
     return {
       startedAt: this.stats.startedAt,
@@ -462,6 +537,7 @@ class Store extends EventEmitter {
       },
       topBlockedDomains,
       topClients,
+      groupStats,
       hourly: this.stats.hourly.map(({ total, blocked, savedBytes }) => ({ total, blocked, savedBytes })),
     };
   }

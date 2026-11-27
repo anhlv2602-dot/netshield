@@ -335,6 +335,61 @@
       font-size: 0.77rem;
     }
 
+    /* Device Groups */
+    .group-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 0.85rem;
+      margin-bottom: 1rem;
+    }
+    .group-card {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .group-card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .group-title {
+      font-weight: 700;
+      font-size: 0.96rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .group-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.12rem 0.45rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .device-row {
+      display: grid;
+      grid-template-columns: minmax(125px, 150px) minmax(140px, 1fr) minmax(175px, 210px) auto;
+      gap: 0.5rem;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    @media (max-width: 720px) {
+      .device-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
     button.btn {
       padding: 0.5rem 0.9rem;
       border-radius: 8px;
@@ -559,7 +614,7 @@
     <button role="tab" aria-selected="true" data-tab="overview">Tổng quan</button>
     <button role="tab" aria-selected="false" data-tab="logs">Nhật ký trực tiếp</button>
     <button role="tab" aria-selected="false" data-tab="lists">Bộ lọc & Danh sách</button>
-    <button role="tab" aria-selected="false" data-tab="clients">Thiết bị & Khung giờ</button>
+    <button role="tab" aria-selected="false" data-tab="clients">Nhóm &amp; Thiết bị</button>
     <button role="tab" aria-selected="false" data-tab="setup">Cài đặt & Kết nối LAN</button>
   </nav>
 
@@ -705,42 +760,90 @@
       </div>
     </section>
 
-    <!-- TAB 4: THIẾT BỊ & KHUNG GIỜ -->
+    <!-- TAB 4: NHÓM & THIẾT BỊ -->
     <section id="tab-clients" class="panel">
       <div class="card" style="margin-bottom: 1rem;">
-        <h2>Thêm / Sửa quy tắc theo thiết bị & khung giờ</h2>
+        <h2>Nhóm thiết bị trong mạng LAN</h2>
+        <div id="deviceGroupsGrid" class="group-grid"></div>
+        <hr style="border: none; border-top: 1px solid var(--border); margin: 0.9rem 0;" />
+        <div class="stat-label" style="margin-bottom: 0.45rem;">Thêm nhóm thiết bị mới:</div>
+        <div class="row">
+          <select id="newGroupIcon" aria-label="Biểu tượng nhóm" style="width: auto; min-width: 78px;">
+            <option value="📷">📷</option>
+            <option value="💻">💻</option>
+            <option value="📱">📱</option>
+            <option value="🔌">🔌</option>
+            <option value="📺">📺</option>
+            <option value="🎮">🎮</option>
+            <option value="🖨️">🖨️</option>
+            <option value="👶">👶</option>
+            <option value="🏢">🏢</option>
+            <option value="📁">📁</option>
+          </select>
+          <input id="newGroupName" type="text" aria-label="Tên nhóm thiết bị" placeholder="Tên nhóm (vd: Phòng họp, Máy trẻ em, TV phòng khách)" />
+          <input id="newGroupDesc" type="text" aria-label="Mô tả nhóm" placeholder="Mô tả ngắn (không bắt buộc)" />
+          <button id="addGroupBtn" type="button" class="btn primary">Thêm nhóm</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 1rem;">
+        <h2>Gán thiết bị LAN vào nhóm</h2>
+        <p class="stat-label" style="margin-top: 0;">Đặt tên gợi nhớ và phân nhóm cho từng địa chỉ IP trong mạng để áp dụng quy tắc chặn đồng loạt theo nhóm.</p>
+        <div class="row" style="margin-bottom: 0.85rem;">
+          <input id="manualDeviceIp" type="text" aria-label="Địa chỉ IP thiết bị mới" placeholder="Nhập IP thiết bị (vd: 192.168.1.50)" style="max-width: 200px;" />
+          <input id="manualDeviceName" type="text" aria-label="Tên thiết bị mới" placeholder="Tên gợi nhớ (vd: Camera cổng chính)" />
+          <select id="manualDeviceGroup" aria-label="Chọn nhóm cho thiết bị mới" style="width: auto; min-width: 190px;"></select>
+          <button id="addManualDeviceBtn" type="button" class="btn primary">Gán vào nhóm</button>
+        </div>
+        <div id="deviceAssignList" class="stat-label">Chưa phát hiện thiết bị nào trong mạng LAN.</div>
+      </div>
+
+      <div class="card" style="margin-bottom: 1rem;">
+        <h2>Thêm / Sửa quy tắc chặn theo nhóm thiết bị hoặc IP &amp; khung giờ</h2>
         <div class="grid-2" style="margin-bottom: 0.75rem;">
           <div>
-            <label class="stat-label">Tên gợi nhớ (vd: Máy kế toán, Toàn văn phòng)</label>
-            <input id="ruleName" type="text" placeholder="Ví dụ: Giờ hành chính văn phòng" />
+            <label for="ruleTargetType" class="stat-label">Áp dụng quy tắc cho:</label>
+            <select id="ruleTargetType">
+              <option value="group">Nhóm thiết bị (Camera, Máy tính, Di động, IoT...)</option>
+              <option value="ip">Địa chỉ IP cụ thể / Toàn mạng (*)</option>
+            </select>
           </div>
-          <div>
-            <label class="stat-label">IP thiết bị (nhập <code>*</code> để áp dụng cho toàn mạng LAN)</label>
+          <div id="ruleGroupWrap">
+            <label for="ruleGroupId" class="stat-label">Chọn nhóm thiết bị</label>
+            <select id="ruleGroupId"></select>
+          </div>
+          <div id="ruleIpWrap" style="display: none;">
+            <label for="ruleIp" class="stat-label">IP thiết bị (nhập <code>*</code> để áp dụng cho toàn mạng LAN)</label>
             <input id="ruleIp" type="text" placeholder="192.168.1.55 hoặc *" />
           </div>
+        </div>
+
+        <div style="margin-bottom: 0.75rem;">
+          <label for="ruleName" class="stat-label">Tên quy tắc (không bắt buộc)</label>
+          <input id="ruleName" type="text" placeholder="Ví dụ: Khóa Internet nhóm Camera, Chặn TikTok giờ làm việc" />
         </div>
 
         <div class="stat-label">Chọn nhanh nhóm dịch vụ muốn chặn:</div>
         <div id="serviceCheckboxes" class="checkbox-grid"></div>
 
         <div style="margin: 0.75rem 0;">
-          <label class="stat-label">Hoặc nhập thêm tên miền riêng (cách nhau bởi dấu phẩy):</label>
+          <label for="ruleDomains" class="stat-label">Hoặc nhập thêm tên miền riêng (cách nhau bởi dấu phẩy):</label>
           <input id="ruleDomains" type="text" placeholder="vd: vnexpress.net, twitch.tv" />
         </div>
 
         <div class="checkbox-grid">
-          <label><input type="checkbox" id="ruleBypass" /> Miễn trừ lọc quảng cáo cho thiết bị này (Bypass)</label>
+          <label><input type="checkbox" id="ruleBypass" /> Miễn trừ lọc quảng cáo cho đối tượng này (Bypass)</label>
           <label><input type="checkbox" id="ruleBlockAll" /> Khóa toàn bộ Internet trong khung giờ</label>
           <label><input type="checkbox" id="ruleScheduleEnabled" checked /> Áp dụng theo khung giờ</label>
         </div>
 
         <div id="scheduleBox" class="row" style="margin: 0.75rem 0;">
           <div>
-            <label class="stat-label">Từ giờ</label>
+            <label for="ruleStart" class="stat-label">Từ giờ</label>
             <input id="ruleStart" type="time" value="08:00" />
           </div>
           <div>
-            <label class="stat-label">Đến giờ</label>
+            <label for="ruleEnd" class="stat-label">Đến giờ</label>
             <input id="ruleEnd" type="time" value="17:30" />
           </div>
           <div class="checkbox-grid" id="daysCheckboxes">
@@ -754,7 +857,7 @@
           </div>
         </div>
 
-        <button id="saveRuleBtn" class="btn primary">Lưu quy tắc</button>
+        <button id="saveRuleBtn" type="button" class="btn primary">Lưu quy tắc</button>
       </div>
 
       <div class="card">
@@ -1203,7 +1306,8 @@
                   ? c.savedBytes
                   : c.blocked * (bwData.avgSavedBytesPerBlocked || 120 * 1024);
               const savedText = c.blocked > 0 ? ` • <span style="color:var(--success)">~${formatBytes(saved)}</span>` : '';
-              return `<div class="row" style="justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid var(--border);"><span><strong>${esc(c.ip)}</strong> ${c.name ? `(${esc(c.name)})` : ''}</span><span>${c.total.toLocaleString('vi-VN')} truy vấn / <span style="color:var(--danger)">${c.blocked.toLocaleString('vi-VN')} chặn</span>${savedText}</span></div>`;
+              const grpBadge = c.groupName ? ` <span class="group-badge">${esc(c.groupIcon || '📁')} ${esc(c.groupName)}</span>` : '';
+              return `<div class="row" style="justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid var(--border);"><span><strong>${esc(c.ip)}</strong> ${c.name ? `(${esc(c.name)})` : ''}${grpBadge}</span><span>${c.total.toLocaleString('vi-VN')} truy vấn / <span style="color:var(--danger)">${c.blocked.toLocaleString('vi-VN')} chặn</span>${savedText}</span></div>`;
             })
             .join('')
         : 'Chưa có thiết bị nào truy vấn.';
@@ -1259,25 +1363,145 @@
         svcContainer.dataset.ready = '1';
       }
 
+      // Device Groups & Device Assignments
+      const groups = Array.isArray(s.config.deviceGroups)
+        ? s.config.deviceGroups
+        : [
+            { id: 'camera', name: 'Camera an ninh', icon: '📷', description: 'Camera IP, đầu ghi NVR/DVR' },
+            { id: 'computer', name: 'Máy tính / Laptop', icon: '💻', description: 'PC văn phòng, Mac, Laptop' },
+            { id: 'mobile', name: 'Thiết bị di động', icon: '📱', description: 'Điện thoại, máy tính bảng' },
+            { id: 'iot', name: 'Thiết bị IoT', icon: '🔌', description: 'Smart TV, ổ cắm, cảm biến, máy in mạng' },
+          ];
+      const devices = Array.isArray(s.config.devices) ? s.config.devices : [];
+      const groupById = new Map(groups.map((g) => [g.id, g]));
+      const groupStatsById = new Map((s.summary.groupStats || []).map((gs) => [gs.id, gs]));
+
+      document.getElementById('deviceGroupsGrid').innerHTML = groups.length
+        ? groups
+            .map((g) => {
+              const members = devices.filter((d) => d.groupId === g.id);
+              const gs = groupStatsById.get(g.id);
+              const statsLine =
+                gs && gs.total > 0
+                  ? `${gs.total.toLocaleString('vi-VN')} truy vấn • <span style="color:var(--danger)">${gs.blocked.toLocaleString('vi-VN')} chặn</span> • <span style="color:var(--success)">~${formatBytes(gs.savedBytes)}</span>`
+                  : 'Chưa có lưu lượng DNS';
+              const memberChips = members.length
+                ? `<div class="chip-list" style="margin-top:0.35rem;max-height:110px;">${members
+                    .map(
+                      (m) =>
+                        `<span class="chip">${esc(m.name ? `${m.name} (${m.ip})` : m.ip)} <button type="button" onclick="removeDevice('${esc(m.ip)}')" title="Gỡ khỏi nhóm">×</button></span>`
+                    )
+                    .join('')}</div>`
+                : '<div class="stat-label" style="margin-top:0.2rem;">Chưa có thiết bị nào trong nhóm</div>';
+              return `
+                <div class="group-card">
+                  <div class="group-card-head">
+                    <div>
+                      <div class="group-title"><span>${esc(g.icon || '📁')}</span><span>${esc(g.name)}</span></div>
+                      ${g.description ? `<div class="stat-sub">${esc(g.description)}</div>` : ''}
+                    </div>
+                    <button type="button" class="btn danger sm" onclick="deleteDeviceGroup('${esc(g.id)}')" title="Xóa nhóm">Xóa</button>
+                  </div>
+                  <div class="stat-label"><strong>${members.length}</strong> thiết bị • ${statsLine}</div>
+                  ${memberChips}
+                </div>
+              `;
+            })
+            .join('')
+        : '<div class="stat-label">Chưa có nhóm thiết bị nào.</div>';
+
+      // Cập nhật dropdown chọn nhóm (giữ nguyên giá trị đang chọn khi auto-refresh)
+      const groupOptionsHtml =
+        '<option value="">— Chưa phân nhóm —</option>' +
+        groups.map((g) => `<option value="${esc(g.id)}">${esc(g.icon || '📁')} ${esc(g.name)}</option>`).join('');
+      const manualSel = document.getElementById('manualDeviceGroup');
+      if (document.activeElement !== manualSel) {
+        const prev = manualSel.value;
+        manualSel.innerHTML = groupOptionsHtml;
+        if (prev && groupById.has(prev)) manualSel.value = prev;
+      }
+
+      const ruleGroupSel = document.getElementById('ruleGroupId');
+      if (document.activeElement !== ruleGroupSel) {
+        const prev = ruleGroupSel.value;
+        ruleGroupSel.innerHTML = groups.length
+          ? groups.map((g) => `<option value="${esc(g.id)}">${esc(g.icon || '📁')} ${esc(g.name)}</option>`).join('')
+          : '<option value="">(Chưa có nhóm thiết bị)</option>';
+        if (prev && groupById.has(prev)) ruleGroupSel.value = prev;
+      }
+
+      // Danh sách gán thiết bị LAN (gộp IP đã lưu + IP đang hoạt động trong mạng)
+      const assignContainer = document.getElementById('deviceAssignList');
+      if (!assignContainer.contains(document.activeElement)) {
+        const merged = new Map();
+        for (const d of devices) {
+          merged.set(d.ip, { ip: d.ip, name: d.name || '', groupId: d.groupId || '', saved: true, total: 0, blocked: 0 });
+        }
+        for (const c of tc) {
+          const existing = merged.get(c.ip);
+          if (existing) {
+            existing.total = c.total;
+            existing.blocked = c.blocked;
+          } else {
+            merged.set(c.ip, { ip: c.ip, name: c.name || '', groupId: c.groupId || '', saved: false, total: c.total, blocked: c.blocked });
+          }
+        }
+        const deviceItems = [...merged.values()].sort((a, b) => (b.total || 0) - (a.total || 0));
+        assignContainer.innerHTML = deviceItems.length
+          ? deviceItems
+              .map((d, idx) => {
+                const opts =
+                  '<option value="">— Chưa phân nhóm —</option>' +
+                  groups
+                    .map(
+                      (g) =>
+                        `<option value="${esc(g.id)}" ${d.groupId === g.id ? 'selected' : ''}>${esc(g.icon || '📁')} ${esc(g.name)}</option>`
+                    )
+                    .join('');
+                return `
+                  <div class="device-row">
+                    <div>
+                      <strong><code>${esc(d.ip)}</code></strong>
+                      <div class="stat-sub">${d.total ? `${d.total.toLocaleString('vi-VN')} truy vấn / ${d.blocked.toLocaleString('vi-VN')} chặn` : 'Đã lưu thủ công'}</div>
+                    </div>
+                    <input type="text" id="devName-${idx}" aria-label="Tên thiết bị ${esc(d.ip)}" value="${esc(d.name)}" placeholder="Đặt tên (vd: Cam sân trước, iPhone...)" />
+                    <select id="devGroup-${idx}" aria-label="Nhóm cho ${esc(d.ip)}">${opts}</select>
+                    <div class="row" style="gap:0.35rem;flex-wrap:nowrap;">
+                      <button type="button" class="btn primary sm" onclick="saveDeviceRow('${esc(d.ip)}', ${idx})">Lưu</button>
+                      ${d.saved ? `<button type="button" class="btn danger sm" onclick="removeDevice('${esc(d.ip)}')" title="Xóa khỏi danh sách đã lưu">Gỡ</button>` : ''}
+                    </div>
+                  </div>
+                `;
+              })
+              .join('')
+          : 'Chưa phát hiện thiết bị nào trong mạng LAN. Bạn có thể nhập IP thủ công ở ô phía trên.';
+      }
+
       // Client Rules
       const rules = s.config.clientRules || [];
       document.getElementById('clientRulesList').innerHTML = rules.length
         ? rules
-            .map(
-              (r) => `
+            .map((r) => {
+              let targetHtml = `<code>${esc(r.clientIp || '*')}</code>`;
+              if (r.targetType === 'group' && r.groupId) {
+                const grp = groupById.get(r.groupId);
+                targetHtml = `<span class="group-badge">${esc(grp?.icon || '📁')} Nhóm: ${esc(grp?.name || r.groupId)}</span>`;
+              }
+              return `
             <div class="row" style="justify-content:space-between;padding:0.6rem 0;border-bottom:1px solid var(--border);">
               <div>
-                <strong>${esc(r.name)}</strong> — <code>${esc(r.clientIp)}</code>
+                <strong>${esc(r.name)}</strong> — ${targetHtml}
                 <div class="stat-label">
-                  ${r.bypassProtection ? 'Miễn trừ lọc quảng cáo' : ''}
+                  ${r.bypassProtection ? 'Miễn trừ lọc quảng cáo • ' : ''}
                   ${r.blockAllInternet ? 'Khóa toàn bộ Internet • ' : ''}
                   ${r.blockedServices?.length ? 'Dịch vụ: ' + r.blockedServices.join(', ') + ' • ' : ''}
+                  ${r.blockedDomains?.length ? 'Tên miền riêng: ' + r.blockedDomains.join(', ') + ' • ' : ''}
                   ${r.schedule?.enabled ? `Khung giờ: ${esc(r.schedule.start)}–${esc(r.schedule.end)}` : 'Áp dụng 24/7'}
                 </div>
               </div>
               <button class="btn danger sm" onclick="deleteClientRule('${esc(r.id)}')">Xóa</button>
-            </div>`
-            )
+            </div>`;
+            })
             .join('')
         : 'Chưa có quy tắc thiết bị nào.';
 
@@ -1422,6 +1646,43 @@
       showToast('Đã xóa quy tắc thiết bị');
     };
 
+    window.deleteDeviceGroup = async (id) => {
+      try {
+        await api(`/api/groups/${encodeURIComponent(id)}`, 'DELETE');
+        await loadAll();
+        showToast('Đã xóa nhóm thiết bị');
+      } catch (err) {
+        showToast(err.message);
+      }
+    };
+
+    window.saveDeviceRow = async (ip, idx) => {
+      const nameEl = document.getElementById(`devName-${idx}`);
+      const groupEl = document.getElementById(`devGroup-${idx}`);
+      try {
+        await api('/api/devices', 'POST', {
+          ip,
+          name: nameEl ? nameEl.value : '',
+          groupId: groupEl ? groupEl.value : '',
+        });
+        if (document.activeElement) document.activeElement.blur();
+        await loadAll();
+        showToast(`Đã cập nhật thiết bị ${ip}`);
+      } catch (err) {
+        showToast(err.message);
+      }
+    };
+
+    window.removeDevice = async (ip) => {
+      try {
+        await api(`/api/devices/${encodeURIComponent(ip)}`, 'DELETE');
+        await loadAll();
+        showToast(`Đã gỡ thiết bị ${ip}`);
+      } catch (err) {
+        showToast(err.message);
+      }
+    };
+
     // Event bindings
     document.getElementById('toggleProtectionBtn').addEventListener('click', async () => {
       const next = !state.status?.config?.protectionEnabled;
@@ -1486,7 +1747,53 @@
       showToast('Đã thêm vào Blacklist');
     });
 
+    document.getElementById('addGroupBtn').addEventListener('click', async () => {
+      const name = document.getElementById('newGroupName').value.trim();
+      const icon = document.getElementById('newGroupIcon').value;
+      const description = document.getElementById('newGroupDesc').value.trim();
+      if (!name) {
+        showToast('Vui lòng nhập tên nhóm thiết bị');
+        return;
+      }
+      try {
+        await api('/api/groups', 'POST', { name, icon, description });
+        document.getElementById('newGroupName').value = '';
+        document.getElementById('newGroupDesc').value = '';
+        await loadAll();
+        showToast(`Đã thêm nhóm "${name}"`);
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+
+    document.getElementById('addManualDeviceBtn').addEventListener('click', async () => {
+      const ip = document.getElementById('manualDeviceIp').value.trim();
+      const name = document.getElementById('manualDeviceName').value.trim();
+      const groupId = document.getElementById('manualDeviceGroup').value;
+      if (!ip) {
+        showToast('Vui lòng nhập địa chỉ IP thiết bị');
+        return;
+      }
+      try {
+        await api('/api/devices', 'POST', { ip, name, groupId });
+        document.getElementById('manualDeviceIp').value = '';
+        document.getElementById('manualDeviceName').value = '';
+        await loadAll();
+        showToast(`Đã gán ${ip} vào nhóm`);
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+
+    const ruleTargetTypeEl = document.getElementById('ruleTargetType');
+    ruleTargetTypeEl.addEventListener('change', () => {
+      const isGroup = ruleTargetTypeEl.value === 'group';
+      document.getElementById('ruleGroupWrap').style.display = isGroup ? '' : 'none';
+      document.getElementById('ruleIpWrap').style.display = isGroup ? 'none' : '';
+    });
+
     document.getElementById('saveRuleBtn').addEventListener('click', async () => {
+      const targetType = ruleTargetTypeEl.value;
       const blockedServices = [...document.querySelectorAll('#serviceCheckboxes input:checked')].map((i) => i.value);
       const days = [...document.querySelectorAll('#daysCheckboxes input:checked')].map((i) => Number(i.value));
       const blockedDomains = document
@@ -1498,7 +1805,9 @@
       try {
         await api('/api/clients', 'POST', {
           name: document.getElementById('ruleName').value,
-          clientIp: document.getElementById('ruleIp').value,
+          targetType,
+          groupId: targetType === 'group' ? document.getElementById('ruleGroupId').value : '',
+          clientIp: targetType === 'ip' ? document.getElementById('ruleIp').value : '',
           bypassProtection: document.getElementById('ruleBypass').checked,
           blockAllInternet: document.getElementById('ruleBlockAll').checked,
           blockedServices,
@@ -1514,7 +1823,7 @@
         document.getElementById('ruleIp').value = '';
         document.getElementById('ruleDomains').value = '';
         await loadAll();
-        showToast('Đã lưu quy tắc thiết bị');
+        showToast('Đã lưu quy tắc');
       } catch (err) {
         showToast(err.message);
       }

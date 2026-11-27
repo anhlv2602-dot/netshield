@@ -223,23 +223,35 @@ class BlocklistEngine {
       }
     }
 
-    // 2. Quy tắc theo thiết bị (Client IP) & Khung giờ
+    // 2. Quy tắc theo thiết bị (Client IP) hoặc Nhóm thiết bị & Khung giờ
+    const clientDevice = (store.config.devices || []).find((d) => d.ip === clientIp);
     for (const rule of store.config.clientRules || []) {
       if (!rule.enabled) continue;
-      const ipMatches = rule.clientIp === '*' || rule.clientIp === clientIp;
-      if (!ipMatches) continue;
+      let targetMatches = false;
+      let targetLabel = rule.name || rule.clientIp || clientIp;
+
+      if (rule.targetType === 'group' && rule.groupId) {
+        targetMatches = Boolean(clientDevice && clientDevice.groupId === rule.groupId);
+        if (targetMatches) {
+          const grp = (store.config.deviceGroups || []).find((g) => g.id === rule.groupId);
+          targetLabel = rule.name || (grp ? `Nhóm ${grp.name}` : rule.groupId);
+        }
+      } else {
+        targetMatches = rule.clientIp === '*' || rule.clientIp === clientIp;
+      }
+      if (!targetMatches) continue;
 
       if (rule.bypassProtection) {
-        return { blocked: false, reason: `bypass:${rule.name || clientIp}` };
+        return { blocked: false, reason: `bypass:${targetLabel}` };
       }
 
       if (!isTimeInSchedule(rule.schedule, now)) {
         continue;
       }
 
-      // Chặn toàn bộ Internet theo khung giờ cho thiết bị này
+      // Chặn toàn bộ Internet theo khung giờ cho thiết bị / nhóm này
       if (rule.blockAllInternet) {
-        return { blocked: true, reason: `Khóa mạng: ${rule.name || rule.clientIp}` };
+        return { blocked: true, reason: `Khóa mạng: ${targetLabel}` };
       }
 
       // Chặn theo nhóm dịch vụ nhanh (TikTok, Facebook, YouTube...)
@@ -248,16 +260,16 @@ class BlocklistEngine {
         if (!preset) continue;
         for (const s of suffixes) {
           if (preset.domains.includes(s)) {
-            return { blocked: true, reason: `Dịch vụ (${preset.label}): ${rule.name || rule.clientIp}` };
+            return { blocked: true, reason: `Dịch vụ (${preset.label}): ${targetLabel}` };
           }
         }
       }
 
-      // Chặn theo danh sách domain riêng của thiết bị
+      // Chặn theo danh sách domain riêng của thiết bị / nhóm
       for (const customD of rule.blockedDomains || []) {
         const norm = normalizeDomain(customD);
         if (norm && suffixes.includes(norm)) {
-          return { blocked: true, reason: `Chặn riêng: ${rule.name || rule.clientIp}` };
+          return { blocked: true, reason: `Chặn riêng: ${targetLabel}` };
         }
       }
     }
