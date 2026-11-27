@@ -253,35 +253,42 @@
   ],
   "devices": [
     {
+      "id": "mac:D0:11:E5:D2:F6:37",
       "ip": "192.168.1.210",
       "name": "Máy chủ NetShield (Mac-mini-cua-Le)",
       "groupId": "computer",
       "mac": "D0:11:E5:D2:F6:37"
     },
     {
+      "id": "mac:FC:03:9F:EB:67:90",
       "ip": "192.168.1.190",
       "name": "",
       "groupId": "",
       "mac": "FC:03:9F:EB:67:90"
     },
     {
+      "id": "mac:16:75:DF:04:3C:18",
       "ip": "192.168.1.86",
       "name": "",
-      "groupId": "mobile"
+      "groupId": "mobile",
+      "mac": "16:75:DF:04:3C:18"
     },
     {
+      "id": "mac:1C:F6:4C:4A:18:08",
       "ip": "192.168.1.209",
       "name": "",
       "groupId": "",
       "mac": "1C:F6:4C:4A:18:08"
     },
     {
+      "id": "mac:54:46:17:DF:0E:01",
       "ip": "192.168.1.83",
       "name": "Camera Dahua / Imou",
       "groupId": "camera",
       "mac": "54:46:17:DF:0E:01"
     },
     {
+      "id": "mac:24:0B:2A:DC:FA:50",
       "ip": "192.168.1.1",
       "name": "Router VNPT Technology",
       "groupId": "iot",
