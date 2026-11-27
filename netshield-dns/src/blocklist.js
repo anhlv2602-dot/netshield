@@ -140,56 +140,38 @@ class BlocklistEngine {
     return this.blocklistMap.size;
   }
 
-  async refreshOne(list) {
-    await fs.mkdir(CACHE_DIR, { recursive: true });
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 20000);
-      const res = await fetch(list.url, {
-        signal: controller.signal,
-        headers: { 'User-Agent': 'NetShield-DNS/1.0' },
-      });
-      clearTimeout(timer);
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-      const text = await res.text();
-      const parsed = parseBlocklistText(text);
-      if (parsed.size === 0) {
-        throw new Error('Không tìm thấy tên miền hợp lệ trong file (sai định dạng hoặc link rỗng)');
-      }
-      const cacheFile = path.join(CACHE_DIR, `${list.id}.txt`);
-      await fs.writeFile(cacheFile, [...parsed].join('\n'), 'utf8');
-
-      list.count = parsed.size;
-      list.lastUpdated = new Date().toISOString();
-      list.lastError = null;
-      return { id: list.id, ok: true, count: parsed.size };
-    } catch (err) {
-      list.lastError = err.name === 'AbortError' ? 'Quá thời gian chờ (Timeout)' : err.message;
-      return { id: list.id, ok: false, error: list.lastError };
-    }
-  }
-
-  async refreshById(id) {
-    const list = store.config.blocklists.find((b) => b.id === id);
-    if (!list) return { ok: false, error: 'Không tìm thấy nguồn' };
-    const res = await this.refreshOne(list);
-    await store.save();
-    const totalDomains = await this.loadFromCache();
-    return { ...res, totalDomains };
-  }
-
   async refreshAll() {
     if (this.isUpdating) return { updated: false, message: 'Đang cập nhật danh sách...' };
     this.isUpdating = true;
     const results = [];
 
     try {
+      await fs.mkdir(CACHE_DIR, { recursive: true });
       for (const list of store.config.blocklists) {
         if (!list.enabled) continue;
-        results.push(await this.refreshOne(list));
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 20000);
+          const res = await fetch(list.url, {
+            signal: controller.signal,
+            headers: { 'User-Agent': 'NetShield-DNS/1.0' },
+          });
+          clearTimeout(timer);
+
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+          const text = await res.text();
+          const parsed = parseBlocklistText(text);
+          const cacheFile = path.join(CACHE_DIR, `${list.id}.txt`);
+          await fs.writeFile(cacheFile, [...parsed].join('\n'), 'utf8');
+
+          list.count = parsed.size;
+          list.lastUpdated = new Date().toISOString();
+          results.push({ id: list.id, ok: true, count: parsed.size });
+        } catch (err) {
+          results.push({ id: list.id, ok: false, error: err.message });
+        }
       }
 
       await store.save();

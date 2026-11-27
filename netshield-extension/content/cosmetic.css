@@ -1,0 +1,40 @@
+/* NetShield Web — Ẩn khung quảng cáo nhanh không giật hình */
+html.ns-active ins.adsbygoogle,
+html.ns-active [id^="admzone"],
+html.ns-active [id^="admicro"],
+html.ns-active .adm-ad,
+html.ns-active .admicro-ad,
+html.ns-active .eclick-ad,
+html.ns-active [class*="admzone"],
+html.ns-active .ads-wrapper,
+html.ns-active .ad-container,
+html.ns-active .banner-ads,
+html.ns-active #admicro_wrapper,
+html.ns-active ytd-ad-slot-renderer,
+html.ns-active ytd-promoted-sparkles-web-renderer,
+html.ns-active ytd-promoted-video-renderer,
+html.ns-active ytd-display-ad-renderer,
+html.ns-active ytd-banner-promo-renderer,
+html.ns-active ytd-in-feed-ad-layout-renderer,
+html.ns-active ytd-player-legacy-desktop-watch-ads-renderer,
+html.ns-active #player-ads,
+html.ns-active .ytp-ad-overlay-container,
+html.ns-active .ytp-ad-message-container,
+html.ns-active [data-testid="ad-slot-container"],
+html.ns-active [data-testid="leaderboard-ad"],
+html.ns-active [data-testid="billboard-ad"],
+html.ns-active [data-testid="hpto-parent-container"],
+html.ns-active [id*="adtima"],
+html.ns-active .zm-ads,
+html.ns-active .vip-banner-sidebar {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.ns-hidden {
+  display: none !important;
+}

@@ -50,6 +50,7 @@ data class CachedDns(
 
 object VpnState {
     val isRunning = AtomicBoolean(false)
+    val isHomeLanStandby = AtomicBoolean(false)
     val totalQueries = AtomicInteger(0)
     val blockedQueries = AtomicInteger(0)
 
@@ -58,8 +59,8 @@ object VpnState {
     private val timeFmt = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
     private val listeners = CopyOnWriteArrayList<() -> Unit>()
 
-    private const val CACHE_TTL_MS = 60_000L
-    private const val CACHE_MAX_SIZE = 1000
+    private const val CACHE_TTL_MS = 300_000L // 5 phút -> giảm 5 lần số lần đánh thức sóng 4G/Wi-Fi
+    private const val CACHE_MAX_SIZE = 2000
     private val dnsCache = ConcurrentHashMap<String, CachedDns>()
 
     fun addListener(cb: () -> Unit) {
@@ -71,6 +72,7 @@ object VpnState {
     }
 
     fun notifyChanged() {
+        if (listeners.isEmpty()) return
         for (l in listeners) {
             try {
                 l()
@@ -130,6 +132,7 @@ class DnsVpnService : VpnService() {
     companion object {
         const val ACTION_START = "com.netshield.adblock.START"
         const val ACTION_STOP = "com.netshield.adblock.STOP"
+        const val ACTION_REEVALUATE = "com.netshield.adblock.REEVALUATE"
         private const val CHANNEL_ID = "netshield_vpn_channel"
         private const val NOTIF_ID = 1001
         private const val VIRTUAL_DNS_V4 = "10.10.0.2"
@@ -158,6 +161,7 @@ class DnsVpnService : VpnService() {
     private var readerThread: Thread? = null
     private var executor: ThreadPoolExecutor? = null
     private val writeLock = Any()
+    private val tunLock = Any()
 
     @Volatile
     private var activeUnderlyingNetwork: Network? = null
@@ -168,12 +172,22 @@ class DnsVpnService : VpnService() {
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) {
-            stopVpn()
-            return START_NOT_STICKY
+        when (intent?.action) {
+            ACTION_STOP -> {
+                stopVpn()
+                return START_NOT_STICKY
+            }
+            ACTION_REEVALUATE -> {
+                if (VpnState.isRunning.get()) {
+                    evaluateHomeLanState()
+                }
+                return START_STICKY
+            }
+            else -> {
+                startVpn()
+                return START_STICKY
+            }
         }
-        startVpn()
-        return START_STICKY
     }
 
     override fun onRevoke() {
@@ -183,7 +197,10 @@ class DnsVpnService : VpnService() {
 
     private fun startVpn() {
         BlocklistManager.init(this)
-        if (VpnState.isRunning.get() && vpnInterface != null) return
+        if (VpnState.isRunning.get()) {
+            evaluateHomeLanState()
+            return
+        }
 
         createNotificationChannel()
         val fgsType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -193,9 +210,58 @@ class DnsVpnService : VpnService() {
         }
         ServiceCompat.startForeground(this, NOTIF_ID, buildNotification(), fgsType)
 
-        // Quét mạng vật lý & DNS hệ thống (4G/Wi-Fi) TRƯỚC khi dựng TUN
+        VpnState.isRunning.set(true)
         refreshUnderlyingNetwork()
         registerNetworkMonitor()
+        evaluateHomeLanState()
+    }
+
+    private fun isOnHomeLan(): Boolean {
+        if (!BlocklistManager.isAutoPauseHomeLan()) return false
+        val homeIp = BlocklistManager.getHomeDnsIp()
+        if (homeIp.isEmpty()) return false
+
+        val cm = getSystemService(ConnectivityManager::class.java) ?: return false
+        for (net in cm.allNetworks) {
+            val caps = cm.getNetworkCapabilities(net) ?: continue
+            if (!caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) continue
+            if (!caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)) continue
+            if (!caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) continue
+
+            val lp = cm.getLinkProperties(net) ?: continue
+            val hasHomeDns = lp.dnsServers.any { it.hostAddress == homeIp }
+            if (hasHomeDns) return true
+        }
+        return false
+    }
+
+    private fun evaluateHomeLanState() {
+        synchronized(tunLock) {
+            if (!VpnState.isRunning.get()) return
+            if (isOnHomeLan()) {
+                val changed = !VpnState.isHomeLanStandby.getAndSet(true)
+                closeTunOnly()
+                if (changed || vpnInterface == null) {
+                    updateNotification()
+                    VpnState.notifyChanged()
+                }
+            } else {
+                VpnState.isHomeLanStandby.set(false)
+                if (vpnInterface == null) {
+                    val ok = openTun()
+                    if (!ok) {
+                        stopVpn()
+                        return
+                    }
+                }
+                updateNotification()
+                VpnState.notifyChanged()
+            }
+        }
+    }
+
+    private fun openTun(): Boolean {
+        refreshUnderlyingNetwork()
 
         val builder = Builder()
             .setSession("NetShield DNS")
@@ -216,12 +282,10 @@ class DnsVpnService : VpnService() {
             builder.setMetered(false)
         }
 
-        // Luôn loại trừ chính app NetShield để không tự lặp (cả UDP và DoH fallback)
         try {
             builder.addDisallowedApplication(packageName)
         } catch (_: Exception) {}
 
-        // Loại trừ các ứng dụng người dùng chọn Bypass
         for (pkg in BlocklistManager.getBypassApps()) {
             try {
                 builder.addDisallowedApplication(pkg)
@@ -232,12 +296,7 @@ class DnsVpnService : VpnService() {
             builder.establish()
         } catch (_: Exception) {
             null
-        } ?: run {
-            unregisterNetworkMonitor()
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
-            return
-        }
+        } ?: return false
 
         val underlying = activeUnderlyingNetwork
         try {
@@ -246,17 +305,15 @@ class DnsVpnService : VpnService() {
 
         vpnInterface = pfd
         val pool = ThreadPoolExecutor(
-            8,
-            64,
-            30L,
+            2,
+            32,
+            15L,
             TimeUnit.SECONDS,
             LinkedBlockingQueue(256),
             ThreadPoolExecutor.DiscardOldestPolicy()
-        )
+        ).apply { allowCoreThreadTimeOut(true) }
         executor = pool
         VpnState.clearDnsCache()
-        VpnState.isRunning.set(true)
-        VpnState.notifyChanged()
 
         val input = FileInputStream(pfd.fileDescriptor)
         val output = FileOutputStream(pfd.fileDescriptor)
@@ -265,13 +322,13 @@ class DnsVpnService : VpnService() {
             val buf = ByteArray(32767)
             var consecutiveErrors = 0
             try {
-                while (VpnState.isRunning.get() && !Thread.currentThread().isInterrupted) {
+                while (VpnState.isRunning.get() && !VpnState.isHomeLanStandby.get() && !Thread.currentThread().isInterrupted) {
                     val len = try {
                         val n = input.read(buf)
                         consecutiveErrors = 0
                         n
                     } catch (_: Exception) {
-                        if (!VpnState.isRunning.get() || Thread.currentThread().isInterrupted) break
+                        if (!VpnState.isRunning.get() || VpnState.isHomeLanStandby.get() || Thread.currentThread().isInterrupted) break
                         consecutiveErrors++
                         if (consecutiveErrors >= 5) break
                         try {
@@ -291,17 +348,31 @@ class DnsVpnService : VpnService() {
                             } catch (_: Exception) {}
                         }
                     } catch (_: RejectedExecutionException) {
-                        // Service đang dừng
                         break
                     }
                 }
             } finally {
-                // Nếu luồng đọc TUN dừng ngoài ý muốn, đóng VPN sạch để không làm kẹt mạng máy
-                if (VpnState.isRunning.get()) {
+                // Chỉ dừng dịch vụ nếu TUN chết ngoài ý muốn (không phải do tự nghỉ mạng nội bộ)
+                if (VpnState.isRunning.get() && !VpnState.isHomeLanStandby.get() && vpnInterface === pfd) {
                     stopVpn()
                 }
             }
         }, "NetShield-TUN-Reader").apply { start() }
+        return true
+    }
+
+    private fun closeTunOnly() {
+        readerThread?.interrupt()
+        readerThread = null
+        try {
+            vpnInterface?.close()
+        } catch (_: Exception) {}
+        vpnInterface = null
+        try {
+            executor?.shutdownNow()
+        } catch (_: Exception) {}
+        executor = null
+        VpnState.clearDnsCache()
     }
 
     private fun handlePacket(packet: ByteArray, length: Int, output: FileOutputStream) {
@@ -312,7 +383,7 @@ class DnsVpnService : VpnService() {
         var finalReason = reason
 
         if (blocked) {
-            dnsResp = DnsPacketHelper.buildNxDomainResponse(parsed.dnsPayload)
+            dnsResp = DnsPacketHelper.buildBlockedResponse(parsed.dnsPayload, parsed.qType)
         } else {
             val cacheKey = "${parsed.domain}:${parsed.qType}"
             val cached = if (parsed.dnsPayload.size >= 2) {
@@ -480,9 +551,10 @@ class DnsVpnService : VpnService() {
                 activeUnderlyingNetwork = network
                 try {
                     updateDnsFromLinkProperties(cm.getLinkProperties(network))
-                    setUnderlyingNetworks(arrayOf(network))
+                    if (vpnInterface != null) setUnderlyingNetworks(arrayOf(network))
                 } catch (_: Exception) {}
                 VpnState.clearDnsCache()
+                evaluateHomeLanState()
             }
 
             override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
@@ -490,6 +562,7 @@ class DnsVpnService : VpnService() {
                     activeUnderlyingNetwork = network
                     updateDnsFromLinkProperties(linkProperties)
                 }
+                evaluateHomeLanState()
             }
 
             override fun onLost(network: Network) {
@@ -497,10 +570,13 @@ class DnsVpnService : VpnService() {
                     refreshUnderlyingNetwork()
                     val next = activeUnderlyingNetwork
                     try {
-                        setUnderlyingNetworks(if (next != null) arrayOf(next) else null)
+                        if (vpnInterface != null) {
+                            setUnderlyingNetworks(if (next != null) arrayOf(next) else null)
+                        }
                     } catch (_: Exception) {}
                     VpnState.clearDnsCache()
                 }
+                evaluateHomeLanState()
             }
         }
         networkCallback = cb
@@ -519,18 +595,11 @@ class DnsVpnService : VpnService() {
 
     private fun stopVpn() {
         val wasRunning = VpnState.isRunning.getAndSet(false)
+        VpnState.isHomeLanStandby.set(false)
         unregisterNetworkMonitor()
-        readerThread?.interrupt()
-        readerThread = null
-        try {
-            vpnInterface?.close()
-        } catch (_: Exception) {}
-        vpnInterface = null
-        try {
-            executor?.shutdownNow()
-        } catch (_: Exception) {}
-        executor = null
-        VpnState.clearDnsCache()
+        synchronized(tunLock) {
+            closeTunOnly()
+        }
         if (wasRunning) {
             VpnState.notifyChanged()
         }
@@ -558,6 +627,12 @@ class DnsVpnService : VpnService() {
         }
     }
 
+    private fun updateNotification() {
+        try {
+            getSystemService(NotificationManager::class.java)?.notify(NOTIF_ID, buildNotification())
+        } catch (_: Exception) {}
+    }
+
     private fun buildNotification(): Notification {
         val openIntent = PendingIntent.getActivity(
             this,
@@ -565,10 +640,17 @@ class DnsVpnService : VpnService() {
             Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE
         )
+        val standby = VpnState.isHomeLanStandby.get()
+        val title = if (standby) "NetShield • Mạng nội bộ" else "NetShield đang bảo vệ"
+        val text = if (standby) {
+            "Đang dùng DNS nội bộ (${BlocklistManager.getHomeDnsIp()}) • Chế độ tiết kiệm pin"
+        } else {
+            "Đang lọc DNS cục bộ (4G / Wi-Fi ngoài)"
+        }
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_shield_notif)
-            .setContentTitle("NetShield đang bảo vệ")
-            .setContentText("Lọc quảng cáo DNS cục bộ (IPv4 & IPv6 • Wi-Fi/4G)")
+            .setContentTitle(title)
+            .setContentText(text)
             .setOngoing(true)
             .setContentIntent(openIntent)
             .build()

@@ -170,6 +170,7 @@ class MainActivity : AppCompatActivity() {
         btnManageLists.setOnClickListener { showManageListsDialog() }
         btnBypassApps.setOnClickListener { showBypassAppsDialog() }
         btnBatteryOpt.setOnClickListener { requestBatteryOptimizationExemption() }
+        statusPill.setOnClickListener { showHomeLanDialog() }
 
         VpnState.addListener(stateListener)
         refreshUi()
@@ -228,12 +229,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshUi() {
         val running = VpnState.isRunning.get()
+        val standby = VpnState.isHomeLanStandby.get()
         if (running) {
-            statusPill.setBackgroundResource(R.drawable.bg_status_active)
-            val activeFg = ContextCompat.getColor(this, R.color.ns_status_active_fg)
-            tvStatus.text = "Đang bảo vệ"
-            tvStatus.setTextColor(activeFg)
-            viewStatusDot.backgroundTintList = ColorStateList.valueOf(activeFg)
+            if (standby) {
+                statusPill.setBackgroundResource(R.drawable.bg_status_inactive)
+                val inactiveFg = ContextCompat.getColor(this, R.color.ns_status_inactive_fg)
+                tvStatus.text = "Mạng nội bộ (tự nghỉ)"
+                tvStatus.setTextColor(inactiveFg)
+                viewStatusDot.backgroundTintList = ColorStateList.valueOf(inactiveFg)
+            } else {
+                statusPill.setBackgroundResource(R.drawable.bg_status_active)
+                val activeFg = ContextCompat.getColor(this, R.color.ns_status_active_fg)
+                tvStatus.text = "Đang bảo vệ"
+                tvStatus.setTextColor(activeFg)
+                viewStatusDot.backgroundTintList = ColorStateList.valueOf(activeFg)
+            }
 
             btnToggleVpn.text = "Tạm dừng bảo vệ"
             btnToggleVpn.backgroundTintList =
@@ -303,6 +313,43 @@ class MainActivity : AppCompatActivity() {
 
     private fun showBypassAppsDialog() {
         NetShieldSheets.showBypassApps(this, scope, packageName)
+    }
+
+    private fun showHomeLanDialog() {
+        val input = android.widget.EditText(this).apply {
+            hint = "IP máy chủ DNS nội bộ (VD: 192.168.1.210)"
+            setText(BlocklistManager.getHomeDnsIp())
+        }
+        val currentlyEnabled = BlocklistManager.isAutoPauseHomeLan()
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Tự nhận dạng mạng nội bộ")
+            .setMessage(
+                "Khi điện thoại kết nối Wi-Fi có DNS nội bộ dưới đây, NetShield sẽ tự tạm nghỉ VPN để tiết kiệm pin và tự bật lại ngay khi ra ngoài dùng 4G hoặc Wi-Fi khác."
+            )
+            .setView(input)
+            .setPositiveButton("Bật & Lưu") { _, _ ->
+                BlocklistManager.setHomeLanConfig(this, true, input.text.toString())
+                triggerReevaluateIfRunning()
+                Toast.makeText(this, "Đã bật tự nghỉ cho DNS ${BlocklistManager.getHomeDnsIp()}", Toast.LENGTH_SHORT).show()
+            }
+            .setNeutralButton(if (currentlyEnabled) "Tắt tính năng" else "Đóng") { _, _ ->
+                if (currentlyEnabled) {
+                    BlocklistManager.setHomeLanConfig(this, false, input.text.toString())
+                    triggerReevaluateIfRunning()
+                    Toast.makeText(this, "Đã tắt chế độ tự nghỉ mạng nội bộ", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Hủy", null)
+            .show()
+    }
+
+    private fun triggerReevaluateIfRunning() {
+        if (VpnState.isRunning.get()) {
+            val intent = Intent(this, DnsVpnService::class.java).apply {
+                action = DnsVpnService.ACTION_REEVALUATE
+            }
+            startService(intent)
+        }
     }
 }
 

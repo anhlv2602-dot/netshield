@@ -105,17 +105,75 @@ object DnsPacketHelper {
     }
 
     /**
-     * Tạo gói phản hồi DNS NXDOMAIN (RCODE = 3) tức thì để trình duyệt hủy request quảng cáo ngay
+     * Tạo gói phản hồi chặn chuẩn tiết kiệm pin (TTL = 300s để Android cache, tránh app retry liên tục):
+     * - A (IPv4): trả 0.0.0.0 (TTL 300s)
+     * - AAAA (IPv6): trả :: (TTL 300s)
+     * - Loại khác (HTTPS/SVCB/TXT...): trả NOERROR + SOA (TTL 300s) theo RFC 2308
      */
-    fun buildNxDomainResponse(query: ByteArray): ByteArray = buildErrorResponse(query, 3)
+    fun buildBlockedResponse(query: ByteArray, qType: Int): ByteArray {
+        if (query.size < 12) return query
+        val questionEnd = findQuestionEnd(query)
+        val rd = query[2].toInt() and 0x01
+
+        if (qType == 1 || qType == 28) {
+            val rdataLen = if (qType == 1) 4 else 16
+            val answerLen = 12 + rdataLen
+            val resp = ByteArray(questionEnd + answerLen)
+            System.arraycopy(query, 0, resp, 0, questionEnd)
+
+            // Header: QR=1, RD giữ nguyên, RA=1, RCODE=0 (NOERROR), QD=1, AN=1
+            resp[2] = (0x80 or rd).toByte()
+            resp[3] = 0x80.toByte()
+            resp[4] = 0x00; resp[5] = 0x01
+            resp[6] = 0x00; resp[7] = 0x01
+            resp[8] = 0x00; resp[9] = 0x00
+            resp[10] = 0x00; resp[11] = 0x00
+
+            var p = questionEnd
+            resp[p++] = 0xC0.toByte(); resp[p++] = 0x0C.toByte() // Pointer tới QNAME ở offset 12
+            resp[p++] = ((qType ushr 8) and 0xFF).toByte(); resp[p++] = (qType and 0xFF).toByte()
+            resp[p++] = 0x00; resp[p++] = 0x01 // Class IN
+            // TTL = 300 giây (0x0000012C)
+            resp[p++] = 0x00; resp[p++] = 0x00; resp[p++] = 0x01; resp[p++] = 0x2C.toByte()
+            // RDLENGTH = 4 hoặc 16 (RDATA mặc định toàn 0 = 0.0.0.0 hoặc ::)
+            resp[p++] = 0x00; resp[p] = rdataLen.toByte()
+            return resp
+        }
+
+        // Các qType khác (HTTPS=65, SVCB=64...): NOERROR + SOA authority (33 bytes, TTL 300s)
+        val soaLen = 33
+        val resp = ByteArray(questionEnd + soaLen)
+        System.arraycopy(query, 0, resp, 0, questionEnd)
+
+        resp[2] = (0x80 or rd).toByte()
+        resp[3] = 0x80.toByte()
+        resp[4] = 0x00; resp[5] = 0x01
+        resp[6] = 0x00; resp[7] = 0x00
+        resp[8] = 0x00; resp[9] = 0x01 // NSCOUNT = 1 (SOA)
+        resp[10] = 0x00; resp[11] = 0x00
+
+        var p = questionEnd
+        resp[p++] = 0x00 // Root name "."
+        resp[p++] = 0x00; resp[p++] = 0x06 // TYPE = SOA
+        resp[p++] = 0x00; resp[p++] = 0x01 // CLASS = IN
+        resp[p++] = 0x00; resp[p++] = 0x00; resp[p++] = 0x01; resp[p++] = 0x2C.toByte() // TTL = 300
+        resp[p++] = 0x00; resp[p++] = 0x16 // RDLENGTH = 22
+        resp[p++] = 0x00 // MNAME = "."
+        resp[p++] = 0x00 // RNAME = "."
+        resp[p++] = 0x00; resp[p++] = 0x00; resp[p++] = 0x00; resp[p++] = 0x01 // SERIAL = 1
+        // REFRESH, RETRY, EXPIRE, MINIMUM = 300
+        repeat(4) {
+            resp[p++] = 0x00; resp[p++] = 0x00; resp[p++] = 0x01; resp[p++] = 0x2C.toByte()
+        }
+        return resp
+    }
 
     /**
      * Tạo gói phản hồi DNS SERVFAIL (RCODE = 2) khi mất mạng/upstream lỗi để app không bị treo chờ
      */
     fun buildServFailResponse(query: ByteArray): ByteArray = buildErrorResponse(query, 2)
 
-    private fun buildErrorResponse(query: ByteArray, rcode: Int): ByteArray {
-        if (query.size < 12) return query
+    private fun findQuestionEnd(query: ByteArray): Int {
         var idx = 12
         while (idx < query.size) {
             val len = query[idx].toInt() and 0xFF
@@ -127,7 +185,12 @@ object DnsPacketHelper {
             }
             idx += len
         }
-        val questionEnd = minOf(idx + 4, query.size)
+        return minOf(idx + 4, query.size)
+    }
+
+    private fun buildErrorResponse(query: ByteArray, rcode: Int): ByteArray {
+        if (query.size < 12) return query
+        val questionEnd = findQuestionEnd(query)
         val resp = query.copyOfRange(0, questionEnd)
 
         // Flags: QR=1, RD giữ nguyên từ query, RA=1, RCODE=rcode

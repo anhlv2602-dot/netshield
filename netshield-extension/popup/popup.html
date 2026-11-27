@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NetShield Web</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="brand">
+        <img src="../icons/icon48.png" alt="NetShield" class="logo" />
+        <div>
+          <div class="title">NetShield Web</div>
+          <div class="subtitle" id="currentHost">Đang kiểm tra...</div>
+        </div>
+      </div>
+      <span id="statusPill" class="pill active">
+        <span class="dot"></span>
+        <span id="statusText">Đang bật</span>
+      </span>
+    </header>
+
+    <section class="card stats-card">
+      <div class="stat">
+        <div class="stat-val" id="pageCount">0</div>
+        <div class="stat-lbl">Đã ẩn trang này</div>
+      </div>
+      <div class="divider"></div>
+      <div class="stat">
+        <div class="stat-val" id="totalCount">0</div>
+        <div class="stat-lbl">Tổng đã ẩn</div>
+      </div>
+    </section>
+
+    <button id="btnToggleGlobal" class="btn btn-primary">Tạm dừng bảo vệ</button>
+    <button id="btnToggleSite" class="btn btn-secondary">Tạm dừng trên trang này</button>
+
+    <section class="card toggles-card">
+      <label class="toggle-row">
+        <span>Ẩn mục "Được tài trợ" Facebook</span>
+        <input type="checkbox" id="chkFacebook" checked />
+      </label>
+      <label class="toggle-row">
+        <span>Ẩn & bỏ qua quảng cáo YouTube</span>
+        <input type="checkbox" id="chkYoutube" checked />
+      </label>
+      <label class="toggle-row">
+        <span>Ẩn quảng cáo Zing MP3 & Spotify Web</span>
+        <input type="checkbox" id="chkMusic" checked />
+      </label>
+      <label class="toggle-row">
+        <span>Dọn khung quảng cáo báo Việt Nam</span>
+        <input type="checkbox" id="chkVnNews" checked />
+      </label>
+    </section>
+
+    <footer class="footer">
+      Tự động bỏ qua trang Thuế (GDT), HĐĐT, Chữ ký số & Ngân hàng.
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

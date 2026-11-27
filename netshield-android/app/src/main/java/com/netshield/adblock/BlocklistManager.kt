@@ -20,6 +20,9 @@ object BlocklistManager {
     private const val KEY_BLACKLIST = "blacklist"
     private const val KEY_BYPASS_APPS = "bypass_apps"
     private const val KEY_ENABLED_SOURCES = "enabled_sources"
+    private const val KEY_AUTO_PAUSE_HOME = "auto_pause_home"
+    private const val KEY_HOME_DNS_IP = "home_dns_ip"
+    private const val DEFAULT_HOME_DNS_IP = "192.168.1.210"
     private const val BLOCKLIST_FILE = "blocklist.txt"
 
     val ALL_SOURCES: List<FilterSource> = listOf(
@@ -145,6 +148,12 @@ object BlocklistManager {
     private var enabledSources: Set<String> = DEFAULT_ENABLED_SOURCE_IDS
 
     @Volatile
+    private var autoPauseHomeLan: Boolean = true
+
+    @Volatile
+    private var homeDnsIp: String = DEFAULT_HOME_DNS_IP
+
+    @Volatile
     private var initialized = false
 
     fun init(context: Context) {
@@ -154,6 +163,9 @@ object BlocklistManager {
         blacklist = prefs.getStringSet(KEY_BLACKLIST, null)?.toSet() ?: emptySet()
         bypassApps = prefs.getStringSet(KEY_BYPASS_APPS, null)?.toSet() ?: emptySet()
         enabledSources = prefs.getStringSet(KEY_ENABLED_SOURCES, null)?.toSet() ?: DEFAULT_ENABLED_SOURCE_IDS
+        autoPauseHomeLan = prefs.getBoolean(KEY_AUTO_PAUSE_HOME, true)
+        homeDnsIp = prefs.getString(KEY_HOME_DNS_IP, DEFAULT_HOME_DNS_IP)?.trim().orEmpty()
+            .ifEmpty { DEFAULT_HOME_DNS_IP }
 
         val file = File(context.filesDir, BLOCKLIST_FILE)
         if (file.exists()) {
@@ -176,6 +188,18 @@ object BlocklistManager {
     fun getBlacklist(): Set<String> = blacklist
     fun getBypassApps(): Set<String> = bypassApps
     fun getEnabledSources(): Set<String> = enabledSources
+    fun isAutoPauseHomeLan(): Boolean = autoPauseHomeLan
+    fun getHomeDnsIp(): String = homeDnsIp
+
+    fun setHomeLanConfig(context: Context, enabled: Boolean, ip: String) {
+        autoPauseHomeLan = enabled
+        homeDnsIp = ip.trim().ifEmpty { DEFAULT_HOME_DNS_IP }
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_AUTO_PAUSE_HOME, autoPauseHomeLan)
+            .putString(KEY_HOME_DNS_IP, homeDnsIp)
+            .apply()
+    }
 
     fun setEnabledSources(context: Context, ids: Set<String>) {
         enabledSources = ids
