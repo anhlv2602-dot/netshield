@@ -5,6 +5,7 @@ import os from 'node:os';
 import { ROOT_DIR, SERVICE_PRESETS, normalizeDomain, store } from './store.js';
 import { blocklistEngine } from './blocklist.js';
 import { dnsCache } from './dns-server.js';
+import { deviceDiscovery } from './discovery.js';
 
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 
@@ -97,6 +98,8 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
           summary: store.getSummary(),
           config: store.config,
           servicePresets: SERVICE_PRESETS,
+          discoveredDevices: deviceDiscovery.getAllDiscovered(),
+          lastDiscoveryScanAt: deviceDiscovery.lastScanAt,
         });
       }
 
@@ -272,7 +275,60 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
         });
       }
 
-      // 7b. Devices (gán IP thiết bị vào nhóm + đặt tên gợi nhớ)
+      // 7b. Devices (gán IP thiết bị vào nhóm + đặt tên gợi nhớ + quét nhận diện LAN)
+      if (method === 'POST' && pathname === '/api/devices/scan') {
+        const discoveredDevices = await deviceDiscovery.scanAll({ force: true });
+        return sendJson(res, 200, {
+          discoveredDevices,
+          lastDiscoveryScanAt: deviceDiscovery.lastScanAt,
+          devices: store.config.devices,
+        });
+      }
+
+      if (method === 'POST' && pathname === '/api/devices/apply-suggestions') {
+        const body = await readJsonBody(req);
+        const items = Array.isArray(body.items) ? body.items : [];
+        if (!Array.isArray(store.config.devices)) store.config.devices = [];
+        const validGroups = new Set((store.config.deviceGroups || []).map((g) => g.id));
+        let applied = 0;
+
+        for (const item of items) {
+          const ip = (item?.ip || '').trim();
+          const name = (item?.name || '').trim();
+          const groupId = validGroups.has((item?.groupId || '').trim()) ? item.groupId.trim() : '';
+          if (!ip || (!name && !groupId)) continue;
+
+          const discovered = deviceDiscovery.getDeviceInfo(ip);
+          const safeMac =
+            discovered?.mac && !discovered.isPrivateMac && !discovered.isSharedMac ? discovered.mac : '';
+
+          const idx = store.config.devices.findIndex((d) => d.ip === ip);
+          if (idx >= 0) {
+            const cur = store.config.devices[idx];
+            store.config.devices[idx] = {
+              ip,
+              name: cur.name || name,
+              groupId: cur.groupId || groupId,
+              ...(cur.mac || safeMac ? { mac: cur.mac || safeMac } : {}),
+            };
+          } else {
+            store.config.devices.push({
+              ip,
+              name,
+              groupId,
+              ...(safeMac ? { mac: safeMac } : {}),
+            });
+          }
+          applied += 1;
+        }
+
+        if (applied > 0) {
+          await store.save();
+          dnsCache.clear();
+        }
+        return sendJson(res, 200, { applied, devices: store.config.devices });
+      }
+
       if (method === 'POST' && pathname === '/api/devices') {
         const body = await readJsonBody(req);
         const ip = (body.ip || '').trim();
@@ -286,7 +342,11 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
         if (!Array.isArray(store.config.devices)) store.config.devices = [];
         const name = (body.name || '').trim();
         const idx = store.config.devices.findIndex((d) => d.ip === ip);
-        const entry = { ip, name, groupId };
+        const existingMac = idx >= 0 ? store.config.devices[idx].mac || '' : '';
+        const discovered = deviceDiscovery.getDeviceInfo(ip);
+        const safeMac =
+          discovered?.mac && !discovered.isPrivateMac && !discovered.isSharedMac ? discovered.mac : existingMac;
+        const entry = { ip, name, groupId, ...(safeMac ? { mac: safeMac } : {}) };
         if (idx >= 0) store.config.devices[idx] = entry;
         else store.config.devices.push(entry);
 

@@ -251,6 +251,24 @@
       "description": "Smart TV, ổ cắm, cảm biến, máy in mạng"
     }
   ],
-  "devices": [],
+  "devices": [
+    {
+      "ip": "192.168.1.210",
+      "name": "Máy chủ NetShield (Mac-mini-cua-Le)",
+      "groupId": "computer",
+      "mac": "D0:11:E5:D2:F6:37"
+    },
+    {
+      "ip": "192.168.1.190",
+      "name": "",
+      "groupId": "",
+      "mac": "FC:03:9F:EB:67:90"
+    },
+    {
+      "ip": "192.168.1.86",
+      "name": "",
+      "groupId": "mobile"
+    }
+  ],
   "clientRules": []
 }

@@ -1,7 +1,8 @@
 import { store } from './store.js';
 import { blocklistEngine } from './blocklist.js';
-import { startDnsServer } from './dns-server.js';
+import { startDnsServer, dnsCache } from './dns-server.js';
 import { startWebServer } from './web-server.js';
+import { deviceDiscovery } from './discovery.js';
 
 const DNS_PORT = Number(process.env.DNS_PORT || 5335);
 const WEB_PORT = Number(process.env.WEB_PORT || 8080);
@@ -34,6 +35,9 @@ async function main() {
   const webSrv = await startWebServer({ host: WEB_HOST, port: WEB_PORT, dnsPort: DNS_PORT });
   console.log(`🖥️  Giao diện quản trị (chỉ máy Mac Mini): http://${webSrv.host}:${webSrv.port}`);
 
+  // Khởi chạy bộ nhận diện thiết bị LAN ở nền (không làm chậm luồng DNS chính)
+  deviceDiscovery.start(store, { onMigration: () => dnsCache.clear() });
+
   // Nếu chưa có cache blocklist thì tự tải ngay ở nền
   if (cachedCount === 0) {
     console.log('⬇️  Chưa có danh sách chặn, đang tự động tải ABPVN & OISD...');
@@ -52,6 +56,7 @@ async function main() {
   const shutdown = async () => {
     console.log('\n🛑 Đang dừng NetShield DNS...');
     clearInterval(refreshTimer);
+    deviceDiscovery.stop();
     await Promise.allSettled([dnsSrv.close(), webSrv.close()]);
     process.exit(0);
   };
