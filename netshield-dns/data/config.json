@@ -218,6 +218,39 @@
     "techcombank.com.vn",
     "mbbank.com.vn"
   ],
-  "blacklist": [],
+  "blacklist": [
+    "msh-iframe.cafef.vn",
+    "cdn-traffic.sohatv.vn",
+    "kenh14s.cnnd.vn",
+    "eth.cnnd.vn",
+    "trunkpkg.com"
+  ],
+  "deviceGroups": [
+    {
+      "id": "camera",
+      "name": "Camera an ninh",
+      "icon": "📷",
+      "description": "Camera IP, đầu ghi NVR/DVR"
+    },
+    {
+      "id": "computer",
+      "name": "Máy tính / Laptop",
+      "icon": "💻",
+      "description": "PC văn phòng, Mac, Laptop"
+    },
+    {
+      "id": "mobile",
+      "name": "Thiết bị di động",
+      "icon": "📱",
+      "description": "Điện thoại, máy tính bảng"
+    },
+    {
+      "id": "iot",
+      "name": "Thiết bị IoT",
+      "icon": "🔌",
+      "description": "Smart TV, ổ cắm, cảm biến, máy in mạng"
+    }
+  ],
+  "devices": [],
   "clientRules": []
 }
