@@ -262,6 +262,33 @@ export function normalizeDomain(input) {
     .replace(/^\.+|\.+$/g, '');
 }
 
+export const BANDWIDTH_CATEGORIES = {
+  video_ad: { label: 'Quảng cáo Video / Rich Media', bytesPerQuery: 750 * 1024 },
+  service_rule: { label: 'Dịch vụ chặn theo quy tắc', bytesPerQuery: 500 * 1024 },
+  display_ad: { label: 'Quảng cáo Banner / Display', bytesPerQuery: 180 * 1024 },
+  tracker: { label: 'Tracker / Telemetry / Log', bytesPerQuery: 25 * 1024 },
+};
+
+const TRACKER_DOMAIN_RE =
+  /(^|[.-])(collector|logs?|logging|telemetry|metrics|analytics|googletagmanager|tagmanager|pixel|beacon|track|tracking|events|customerevents|ichnaea|crashlytics|sentry|clarity|hotjar|mixpanel|amplitude|appsflyer|adjust|branch|trellian|scorecardresearch|quantserve|adtrafficquality|newrelic|datadog|stats?|ping|report|diag|diagnostic)([.-]|$)/i;
+
+const VIDEO_AD_DOMAIN_RE =
+  /(imasdk|vungle|unityads|applovin|adcolony|pangle|mintegral|googlevideo|tiktokcdn|taboola|outbrain|mgid|videoad|video-ad|admedia|vast|vpaid|ytimg|mopub|fyber|ironsrc|supersonicads)/i;
+
+export function estimateSavedBandwidth(domain, reason = '') {
+  if (typeof reason === 'string' && (reason.startsWith('Dịch vụ (') || reason.startsWith('Khóa mạng:'))) {
+    return { category: 'service_rule', bytes: BANDWIDTH_CATEGORIES.service_rule.bytesPerQuery };
+  }
+  const d = String(domain || '').toLowerCase();
+  if (TRACKER_DOMAIN_RE.test(d)) {
+    return { category: 'tracker', bytes: BANDWIDTH_CATEGORIES.tracker.bytesPerQuery };
+  }
+  if (VIDEO_AD_DOMAIN_RE.test(d)) {
+    return { category: 'video_ad', bytes: BANDWIDTH_CATEGORIES.video_ad.bytesPerQuery };
+  }
+  return { category: 'display_ad', bytes: BANDWIDTH_CATEGORIES.display_ad.bytesPerQuery };
+}
+
 class Store extends EventEmitter {
   constructor() {
     super();
@@ -273,9 +300,13 @@ class Store extends EventEmitter {
       totalQueries: 0,
       blockedQueries: 0,
       cachedQueries: 0,
+      savedBytesTotal: 0,
+      savedByCategory: Object.fromEntries(
+        Object.keys(BANDWIDTH_CATEGORIES).map((k) => [k, { count: 0, bytes: 0 }])
+      ),
       byDomainBlocked: new Map(),
       byClient: new Map(),
-      hourly: new Array(24).fill(0).map(() => ({ total: 0, blocked: 0 })),
+      hourly: new Array(24).fill(0).map(() => ({ total: 0, blocked: 0, savedBytes: 0, dateKey: null })),
     };
   }
 
@@ -308,10 +339,13 @@ class Store extends EventEmitter {
   recordQuery(entry) {
     const now = new Date();
     const hour = now.getHours();
+    const dateKey = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+    const saved = entry.blocked ? estimateSavedBandwidth(entry.domain, entry.reason) : null;
     const record = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       timestamp: now.toISOString(),
       ...entry,
+      ...(saved ? { savedBytes: saved.bytes, category: saved.category } : {}),
     };
 
     this.logs.unshift(record);
@@ -319,23 +353,52 @@ class Store extends EventEmitter {
       this.logs.length = this.maxLogs;
     }
 
+    const hourBucket = this.stats.hourly[hour];
+    if (hourBucket.dateKey !== dateKey) {
+      hourBucket.total = 0;
+      hourBucket.blocked = 0;
+      hourBucket.savedBytes = 0;
+      hourBucket.dateKey = dateKey;
+    }
+
     this.stats.totalQueries += 1;
-    this.stats.hourly[hour].total += 1;
+    hourBucket.total += 1;
     if (entry.cached) {
       this.stats.cachedQueries += 1;
     }
-    if (entry.blocked) {
+    if (entry.blocked && saved) {
       this.stats.blockedQueries += 1;
-      this.stats.hourly[hour].blocked += 1;
-      this.stats.byDomainBlocked.set(
-        entry.domain,
-        (this.stats.byDomainBlocked.get(entry.domain) || 0) + 1
-      );
+      this.stats.savedBytesTotal += saved.bytes;
+      hourBucket.blocked += 1;
+      hourBucket.savedBytes += saved.bytes;
+
+      const catStat = this.stats.savedByCategory[saved.category];
+      if (catStat) {
+        catStat.count += 1;
+        catStat.bytes += saved.bytes;
+      }
+
+      const domStat = this.stats.byDomainBlocked.get(entry.domain) || {
+        count: 0,
+        savedBytes: 0,
+        category: saved.category,
+      };
+      domStat.count += 1;
+      domStat.savedBytes += saved.bytes;
+      this.stats.byDomainBlocked.set(entry.domain, domStat);
     }
 
-    const clientStat = this.stats.byClient.get(entry.clientIp) || { total: 0, blocked: 0, lastSeen: record.timestamp };
+    const clientStat = this.stats.byClient.get(entry.clientIp) || {
+      total: 0,
+      blocked: 0,
+      savedBytes: 0,
+      lastSeen: record.timestamp,
+    };
     clientStat.total += 1;
-    if (entry.blocked) clientStat.blocked += 1;
+    if (entry.blocked && saved) {
+      clientStat.blocked += 1;
+      clientStat.savedBytes += saved.bytes;
+    }
     clientStat.lastSeen = record.timestamp;
     this.stats.byClient.set(entry.clientIp, clientStat);
 
@@ -344,9 +407,14 @@ class Store extends EventEmitter {
 
   getSummary() {
     const topBlockedDomains = [...this.stats.byDomainBlocked.entries()]
-      .sort((a, b) => b[1] - a[1])
+      .sort((a, b) => b[1].count - a[1].count)
       .slice(0, 12)
-      .map(([domain, count]) => ({ domain, count }));
+      .map(([domain, s]) => ({
+        domain,
+        count: s.count,
+        savedBytes: s.savedBytes,
+        category: s.category,
+      }));
 
     const clientNames = new Map();
     for (const rule of this.config.clientRules) {
@@ -363,6 +431,7 @@ class Store extends EventEmitter {
         name: clientNames.get(ip) || '',
         total: s.total,
         blocked: s.blocked,
+        savedBytes: s.savedBytes,
         lastSeen: s.lastSeen,
       }));
 
@@ -375,9 +444,25 @@ class Store extends EventEmitter {
         this.stats.totalQueries > 0
           ? Number(((this.stats.blockedQueries / this.stats.totalQueries) * 100).toFixed(1))
           : 0,
+      bandwidth: {
+        totalSavedBytes: this.stats.savedBytesTotal,
+        avgSavedBytesPerBlocked:
+          this.stats.blockedQueries > 0
+            ? Math.round(this.stats.savedBytesTotal / this.stats.blockedQueries)
+            : 0,
+        byCategory: Object.entries(BANDWIDTH_CATEGORIES).map(([key, meta]) => ({
+          key,
+          label: meta.label,
+          bytesPerQuery: meta.bytesPerQuery,
+          count: this.stats.savedByCategory[key].count,
+          bytes: this.stats.savedByCategory[key].bytes,
+        })),
+        methodology:
+          'Ước tính từ số truy vấn DNS bị chặn theo nhóm nội dung (Video/Rich Media ~750 KB, Quy tắc dịch vụ ~500 KB, Banner/Display ~180 KB, Tracker/Telemetry ~25 KB).',
+      },
       topBlockedDomains,
       topClients,
-      hourly: this.stats.hourly,
+      hourly: this.stats.hourly.map(({ total, blocked, savedBytes }) => ({ total, blocked, savedBytes })),
     };
   }
 }

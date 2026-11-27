@@ -161,7 +161,7 @@
 
     .grid-4 {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
       gap: 1rem;
       margin-bottom: 1.25rem;
     }
@@ -186,6 +186,11 @@
       color: var(--muted);
       font-size: 0.85rem;
     }
+    .stat-sub {
+      color: var(--muted);
+      font-size: 0.76rem;
+      margin-top: 0.25rem;
+    }
     .stat-value {
       font-size: 1.85rem;
       font-weight: 700;
@@ -194,6 +199,141 @@
     .stat-value.danger { color: var(--danger); }
     .stat-value.success { color: var(--success); }
     .stat-value.accent { color: var(--accent); }
+    .stat-value.warn { color: var(--warn); }
+
+    /* Bandwidth Chart */
+    .chart-card {
+      margin-bottom: 1.25rem;
+    }
+    .chart-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+    }
+    .chart-header h2 {
+      margin: 0;
+    }
+    .segmented {
+      display: inline-flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 0.2rem;
+      gap: 0.2rem;
+    }
+    .segmented button {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      padding: 0.32rem 0.65rem;
+      border-radius: 7px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .segmented button[aria-pressed="true"] {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    }
+    .chart-stage {
+      position: relative;
+      width: 100%;
+    }
+    .chart-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 280px;
+      overflow: visible;
+    }
+    .chart-grid-line {
+      stroke: var(--border);
+      stroke-dasharray: 3 3;
+      stroke-width: 1;
+    }
+    .chart-axis-text {
+      fill: var(--muted);
+      font-size: 11px;
+      font-family: inherit;
+    }
+    .chart-bar {
+      transition: opacity 0.15s ease;
+    }
+    .chart-hit {
+      cursor: pointer;
+      outline: none;
+    }
+    .chart-hit:hover + .chart-bar,
+    .chart-hit:focus-visible + .chart-bar {
+      filter: brightness(1.15);
+    }
+    .chart-hit:focus-visible {
+      stroke: var(--accent);
+      stroke-width: 1.5;
+    }
+    .chart-tooltip {
+      position: absolute;
+      top: 0.25rem;
+      right: 0.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.45rem 0.7rem;
+      font-size: 0.8rem;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      z-index: 5;
+      max-width: 260px;
+    }
+    .chart-tooltip.visible {
+      opacity: 1;
+    }
+    .cat-bar {
+      display: flex;
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--surface-alt);
+      margin: 0.9rem 0 0.65rem;
+      gap: 2px;
+    }
+    .cat-seg {
+      height: 100%;
+      min-width: 3px;
+      transition: width 0.25s ease;
+    }
+    .cat-legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 0.5rem 1rem;
+      font-size: 0.82rem;
+    }
+    .cat-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.35rem 0.55rem;
+      border-radius: 8px;
+      background: var(--surface-alt);
+    }
+    .cat-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .chart-note {
+      margin: 0.75rem 0 0;
+      color: var(--muted);
+      font-size: 0.77rem;
+    }
 
     button.btn {
       padding: 0.5rem 0.9rem;
@@ -440,9 +580,36 @@
           <div id="statRate" class="stat-value success">0%</div>
         </div>
         <div class="card">
+          <div class="stat-label">Băng thông tiết kiệm (ước tính)</div>
+          <div id="statSavedBandwidth" class="stat-value success">0 KB</div>
+          <div id="statSavedSub" class="stat-sub">Chưa có lượt chặn</div>
+        </div>
+        <div class="card">
           <div class="stat-label">Tên miền trong bộ lọc</div>
           <div id="statRules" class="stat-value">0</div>
         </div>
+      </div>
+
+      <div class="card chart-card">
+        <div class="chart-header">
+          <div>
+            <h2>Biểu đồ băng thông tiết kiệm nhờ chặn quảng cáo (24 giờ)</h2>
+            <div id="chartSubtitle" class="stat-label">Đang tải dữ liệu...</div>
+          </div>
+          <div class="segmented" role="group" aria-label="Chế độ xem biểu đồ">
+            <button type="button" data-chart-mode="hourly" aria-pressed="true">Theo giờ</button>
+            <button type="button" data-chart-mode="cumulative" aria-pressed="false">Lũy kế</button>
+            <button type="button" data-chart-mode="blocked" aria-pressed="false">Lượt chặn</button>
+          </div>
+        </div>
+        <div class="chart-stage">
+          <div id="bandwidthTooltip" class="chart-tooltip" role="status" aria-live="polite"></div>
+          <div id="bandwidthChartContainer"></div>
+        </div>
+        <div id="bandwidthCategoryBreakdown"></div>
+        <p id="bandwidthMethodology" class="chart-note">
+          * Lưu ý: DNS chỉ xử lý tên miền (không đọc nội dung HTTP), nên dung lượng băng thông tiết kiệm được ước tính theo nhóm nội dung chặn (Video/Rich Media ~750 KB, Dịch vụ chặn theo quy tắc ~500 KB, Banner/Display ~180 KB, Tracker/Telemetry ~25 KB).
+        </p>
       </div>
 
       <div class="grid-2">
@@ -638,7 +805,19 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script>
-    const state = { status: null, logs: [] };
+    const state = { status: null, logs: [], chartMode: 'hourly' };
+
+    const CATEGORY_COLORS = {
+      display_ad: 'var(--accent)',
+      video_ad: 'var(--danger)',
+      service_rule: 'var(--warn)',
+      tracker: 'var(--success)',
+    };
+
+    const FALLBACK_TRACKER_RE =
+      /(^|[.-])(collector|logs?|logging|telemetry|metrics|analytics|googletagmanager|tagmanager|pixel|beacon|track|tracking|events|customerevents|ichnaea|crashlytics|sentry|clarity|hotjar|mixpanel|amplitude|appsflyer|adjust|branch|trellian|scorecardresearch|quantserve|adtrafficquality|newrelic|datadog|stats?|ping|report|diag|diagnostic)([.-]|$)/i;
+    const FALLBACK_VIDEO_RE =
+      /(imasdk|vungle|unityads|applovin|adcolony|pangle|mintegral|googlevideo|tiktokcdn|taboola|outbrain|mgid|videoad|video-ad|admedia|vast|vpaid|ytimg|mopub|fyber|ironsrc|supersonicads)/i;
 
     function esc(str) {
       return String(str ?? '')
@@ -646,6 +825,286 @@
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+    }
+
+    function formatBytes(bytes) {
+      const n = Number(bytes) || 0;
+      if (n < 1024) return `${Math.round(n)} B`;
+      if (n < 1024 * 1024) return `${(n / 1024).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} KB`;
+      if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toLocaleString('vi-VN', { maximumFractionDigits: 2 })} MB`;
+      return `${(n / (1024 * 1024 * 1024)).toLocaleString('vi-VN', { maximumFractionDigits: 2 })} GB`;
+    }
+
+    function estimateDomainBytesClient(domain) {
+      const d = String(domain || '').toLowerCase();
+      if (FALLBACK_TRACKER_RE.test(d)) return { category: 'tracker', bytes: 25 * 1024 };
+      if (FALLBACK_VIDEO_RE.test(d)) return { category: 'video_ad', bytes: 750 * 1024 };
+      return { category: 'display_ad', bytes: 180 * 1024 };
+    }
+
+    function resolveBandwidthData(summary) {
+      if (summary.bandwidth && Array.isArray(summary.hourly) && typeof summary.hourly[0]?.savedBytes === 'number') {
+        return {
+          totalSavedBytes: summary.bandwidth.totalSavedBytes || 0,
+          avgSavedBytesPerBlocked: summary.bandwidth.avgSavedBytesPerBlocked || 0,
+          byCategory: summary.bandwidth.byCategory || [],
+          hourly: summary.hourly.map((h, hour) => ({
+            hour,
+            total: h.total || 0,
+            blocked: h.blocked || 0,
+            savedBytes: h.savedBytes || 0,
+          })),
+          methodology: summary.bandwidth.methodology || '',
+        };
+      }
+
+      // Fallback tương thích khi server chưa khởi động lại sau bản cập nhật store.js
+      const catMap = {
+        video_ad: { key: 'video_ad', label: 'Quảng cáo Video / Rich Media', bytesPerQuery: 750 * 1024, count: 0, bytes: 0 },
+        service_rule: { key: 'service_rule', label: 'Dịch vụ chặn theo quy tắc', bytesPerQuery: 500 * 1024, count: 0, bytes: 0 },
+        display_ad: { key: 'display_ad', label: 'Quảng cáo Banner / Display', bytesPerQuery: 180 * 1024, count: 0, bytes: 0 },
+        tracker: { key: 'tracker', label: 'Tracker / Telemetry / Log', bytesPerQuery: 25 * 1024, count: 0, bytes: 0 },
+      };
+
+      let knownCount = 0;
+      let knownBytes = 0;
+      for (const item of summary.topBlockedDomains || []) {
+        const est = estimateDomainBytesClient(item.domain);
+        const bytes = est.bytes * item.count;
+        catMap[est.category].count += item.count;
+        catMap[est.category].bytes += bytes;
+        knownCount += item.count;
+        knownBytes += bytes;
+      }
+
+      const remaining = Math.max(0, (summary.blockedQueries || 0) - knownCount);
+      if (remaining > 0) {
+        const remBytes = remaining * 180 * 1024;
+        catMap.display_ad.count += remaining;
+        catMap.display_ad.bytes += remBytes;
+        knownBytes += remBytes;
+      }
+
+      const totalBlocked = summary.blockedQueries || 0;
+      const avg = totalBlocked > 0 ? Math.round(knownBytes / totalBlocked) : 120 * 1024;
+      const hourly = (summary.hourly || new Array(24).fill({ total: 0, blocked: 0 })).map((h, hour) => ({
+        hour,
+        total: h.total || 0,
+        blocked: h.blocked || 0,
+        savedBytes: (h.blocked || 0) * avg,
+      }));
+
+      return {
+        totalSavedBytes: knownBytes,
+        avgSavedBytesPerBlocked: totalBlocked > 0 ? avg : 0,
+        byCategory: Object.values(catMap),
+        hourly,
+        methodology:
+          'Ước tính từ số truy vấn DNS bị chặn theo nhóm nội dung (Video/Rich Media ~750 KB, Dịch vụ chặn theo quy tắc ~500 KB, Banner/Display ~180 KB, Tracker/Telemetry ~25 KB).',
+      };
+    }
+
+    function renderBandwidthChart(summary) {
+      const bw = resolveBandwidthData(summary);
+      const mode = state.chartMode;
+      const nowHour = new Date().getHours();
+
+      document.getElementById('statSavedBandwidth').textContent = formatBytes(bw.totalSavedBytes);
+      document.getElementById('statSavedSub').textContent =
+        summary.blockedQueries > 0
+          ? `≈ ${formatBytes(bw.avgSavedBytesPerBlocked)} / lượt chặn`
+          : 'Chưa có lượt chặn';
+
+      // Build series for 24 hours
+      let running = 0;
+      const points = bw.hourly.map((h) => {
+        running += h.savedBytes;
+        return {
+          ...h,
+          cumulativeBytes: running,
+          value: mode === 'hourly' ? h.savedBytes : mode === 'cumulative' ? running : h.blocked,
+        };
+      });
+
+      const activeHours = points.filter((p) => p.blocked > 0).length;
+      const peak = points.reduce((best, p) => (p.value > best.value ? p : best), points[0]);
+      const subtitleEl = document.getElementById('chartSubtitle');
+      if (summary.blockedQueries === 0) {
+        subtitleEl.textContent = 'Chưa có truy vấn quảng cáo nào bị chặn trong 24 giờ qua.';
+      } else if (mode === 'cumulative') {
+        subtitleEl.textContent = `Tổng băng thông tiết kiệm tích lũy trong ngày: ${formatBytes(running)} (${summary.blockedQueries.toLocaleString('vi-VN')} lượt chặn).`;
+      } else if (mode === 'blocked') {
+        subtitleEl.textContent = `Cao điểm lúc ${String(peak.hour).padStart(2, '0')}:00 với ${peak.blocked.toLocaleString('vi-VN')} lượt chặn (${activeHours} khung giờ hoạt động).`;
+      } else {
+        subtitleEl.textContent = `Cao điểm lúc ${String(peak.hour).padStart(2, '0')}:00 tiết kiệm ~${formatBytes(peak.savedBytes)} (${activeHours} khung giờ có chặn).`;
+      }
+
+      if (bw.methodology) {
+        document.getElementById('bandwidthMethodology').textContent = `* Lưu ý: ${bw.methodology}`;
+      }
+
+      // SVG dimensions
+      const W = 860;
+      const H = 240;
+      const padL = 62;
+      const padR = 16;
+      const padT = 18;
+      const padB = 30;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+      const rawMax = Math.max(...points.map((p) => p.value), 0);
+      const maxVal = rawMax > 0 ? rawMax * 1.12 : mode === 'blocked' ? 4 : 100 * 1024;
+
+      const yTicks = 4;
+      let gridHtml = '';
+      for (let i = 0; i <= yTicks; i++) {
+        const ratio = i / yTicks;
+        const y = padT + plotH - ratio * plotH;
+        const tickVal = maxVal * ratio;
+        const label =
+          mode === 'blocked'
+            ? Math.round(tickVal).toLocaleString('vi-VN')
+            : formatBytes(tickVal);
+        gridHtml += `<line class="chart-grid-line" x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" />`;
+        gridHtml += `<text class="chart-axis-text" x="${padL - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">${esc(label)}</text>`;
+      }
+
+      const slotW = plotW / 24;
+      let xLabelsHtml = '';
+      for (let h = 0; h < 24; h++) {
+        if (h % 2 === 0 || h === nowHour) {
+          const cx = padL + h * slotW + slotW / 2;
+          const isNow = h === nowHour;
+          xLabelsHtml += `<text class="chart-axis-text" x="${cx.toFixed(1)}" y="${H - 8}" text-anchor="middle" ${isNow ? 'style="fill:var(--accent);font-weight:700;"' : ''}>${String(h).padStart(2, '0')}h</text>`;
+        }
+      }
+
+      let dataHtml = '';
+      if (mode === 'cumulative') {
+        const coords = points.map((p, idx) => {
+          const x = padL + idx * slotW + slotW / 2;
+          const y = padT + plotH - (p.value / maxVal) * plotH;
+          return { x, y, p };
+        });
+        const linePath = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+        const areaPath = `${linePath} L${coords[coords.length - 1].x.toFixed(1)},${(padT + plotH).toFixed(1)} L${coords[0].x.toFixed(1)},${(padT + plotH).toFixed(1)} Z`;
+
+        dataHtml += `
+          <defs>
+            <linearGradient id="bwAreaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--success)" stop-opacity="0.34" />
+              <stop offset="100%" stop-color="var(--success)" stop-opacity="0.03" />
+            </linearGradient>
+          </defs>
+          <path d="${areaPath}" fill="url(#bwAreaGrad)" />
+          <path d="${linePath}" fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+        `;
+        for (const c of coords) {
+          const hitX = padL + c.p.hour * slotW;
+          const ariaLabel = `${String(c.p.hour).padStart(2, '0')} giờ: lũy kế ${formatBytes(c.p.cumulativeBytes)}, riêng giờ này ${formatBytes(c.p.savedBytes)}, ${c.p.blocked} lượt chặn`;
+          dataHtml += `<rect class="chart-hit" data-hour="${c.p.hour}" tabindex="0" role="button" aria-label="${esc(ariaLabel)}" x="${hitX.toFixed(1)}" y="${padT}" width="${slotW.toFixed(1)}" height="${plotH}" fill="transparent" />`;
+          if (c.p.blocked > 0 || c.p.hour === nowHour) {
+            dataHtml += `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${c.p.hour === nowHour ? 4.5 : 3}" fill="var(--success)" stroke="var(--surface)" stroke-width="1.5" pointer-events="none" />`;
+          }
+        }
+      } else {
+        const barColor = mode === 'blocked' ? 'var(--danger)' : 'var(--success)';
+        const barColorNow = 'var(--accent)';
+        const barW = Math.max(8, slotW * 0.62);
+        const barOffset = (slotW - barW) / 2;
+
+        for (const p of points) {
+          const hitX = padL + p.hour * slotW;
+          const barX = hitX + barOffset;
+          const barH = p.value > 0 ? Math.max(3, (p.value / maxVal) * plotH) : 0;
+          const barY = padT + plotH - barH;
+          const isNow = p.hour === nowHour;
+          const ariaLabel = `${String(p.hour).padStart(2, '0')} giờ: tiết kiệm ${formatBytes(p.savedBytes)}, ${p.blocked} lượt chặn trên ${p.total} truy vấn`;
+          dataHtml += `<rect class="chart-hit" data-hour="${p.hour}" tabindex="0" role="button" aria-label="${esc(ariaLabel)}" x="${hitX.toFixed(1)}" y="${padT}" width="${slotW.toFixed(1)}" height="${plotH}" fill="transparent" />`;
+          if (barH > 0) {
+            dataHtml += `<rect class="chart-bar" x="${barX.toFixed(1)}" y="${barY.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="4" fill="${isNow ? barColorNow : barColor}" fill-opacity="${isNow ? '0.95' : '0.82'}" pointer-events="none" />`;
+          } else {
+            dataHtml += `<rect x="${barX.toFixed(1)}" y="${(padT + plotH - 2).toFixed(1)}" width="${barW.toFixed(1)}" height="2" rx="1" fill="var(--border)" pointer-events="none" />`;
+          }
+        }
+      }
+
+      const container = document.getElementById('bandwidthChartContainer');
+      const chartTitle =
+        mode === 'cumulative'
+          ? 'Biểu đồ lũy kế băng thông tiết kiệm trong 24 giờ'
+          : mode === 'blocked'
+          ? 'Biểu đồ số lượt chặn quảng cáo theo 24 giờ'
+          : 'Biểu đồ băng thông tiết kiệm theo 24 giờ';
+
+      container.innerHTML = `
+        <svg class="chart-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(chartTitle)}">
+          ${gridHtml}
+          ${dataHtml}
+          ${xLabelsHtml}
+        </svg>
+      `;
+
+      // Bind interactive tooltip for mouse & keyboard focus
+      const tooltip = document.getElementById('bandwidthTooltip');
+      const showHourTip = (hour) => {
+        const p = points[hour];
+        if (!p) return;
+        const rate = p.total > 0 ? ((p.blocked / p.total) * 100).toFixed(1) : '0.0';
+        const hh = String(p.hour).padStart(2, '0');
+        tooltip.innerHTML = `
+          <div><strong>${hh}:00 – ${hh}:59</strong> ${p.hour === nowHour ? '<span class="badge cached">Giờ hiện tại</span>' : ''}</div>
+          <div>Tiết kiệm: <strong style="color:var(--success)">${formatBytes(p.savedBytes)}</strong></div>
+          ${mode === 'cumulative' ? `<div>Lũy kế tới ${hh}h: <strong>${formatBytes(p.cumulativeBytes)}</strong></div>` : ''}
+          <div style="color:var(--muted)">Chặn ${p.blocked.toLocaleString('vi-VN')} / ${p.total.toLocaleString('vi-VN')} truy vấn (${rate}%)</div>
+        `;
+        tooltip.classList.add('visible');
+      };
+      const hideHourTip = () => tooltip.classList.remove('visible');
+
+      container.querySelectorAll('.chart-hit').forEach((el) => {
+        const h = Number(el.dataset.hour);
+        el.addEventListener('mouseenter', () => showHourTip(h));
+        el.addEventListener('focus', () => showHourTip(h));
+        el.addEventListener('mouseleave', hideHourTip);
+        el.addEventListener('blur', hideHourTip);
+      });
+
+      // Category breakdown bar + legend
+      const breakdownEl = document.getElementById('bandwidthCategoryBreakdown');
+      const nonZeroCats = bw.byCategory.filter((c) => c.bytes > 0).sort((a, b) => b.bytes - a.bytes);
+      if (nonZeroCats.length === 0 || bw.totalSavedBytes === 0) {
+        breakdownEl.innerHTML = '';
+      } else {
+        const segments = nonZeroCats
+          .map((c) => {
+            const pct = (c.bytes / bw.totalSavedBytes) * 100;
+            const color = CATEGORY_COLORS[c.key] || 'var(--accent)';
+            return `<div class="cat-seg" style="width:${pct.toFixed(2)}%;background:${color};" title="${esc(c.label)}: ${formatBytes(c.bytes)} (${pct.toFixed(1)}%)"></div>`;
+          })
+          .join('');
+
+        const legend = nonZeroCats
+          .map((c) => {
+            const pct = ((c.bytes / bw.totalSavedBytes) * 100).toFixed(1);
+            const color = CATEGORY_COLORS[c.key] || 'var(--accent)';
+            return `
+              <div class="cat-item">
+                <span class="row" style="gap:0.45rem;flex-wrap:nowrap;">
+                  <span class="cat-dot" style="background:${color};"></span>
+                  <span>${esc(c.label)}</span>
+                </span>
+                <span><strong>${formatBytes(c.bytes)}</strong> <span class="stat-label">(${pct}% • ${c.count.toLocaleString('vi-VN')})</span></span>
+              </div>
+            `;
+          })
+          .join('');
+
+        breakdownEl.innerHTML = `
+          <div class="cat-bar" aria-label="Phân bổ băng thông tiết kiệm theo nhóm">${segments}</div>
+          <div class="cat-legend">${legend}</div>
+        `;
+      }
     }
 
     function showToast(msg) {
@@ -667,6 +1126,19 @@
       if (!res.ok) throw new Error(data.error || 'Lỗi máy chủ');
       return data;
     }
+
+    // Chart mode toggle
+    document.querySelectorAll('[data-chart-mode]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.chartMode = btn.dataset.chartMode;
+        document.querySelectorAll('[data-chart-mode]').forEach((b) =>
+          b.setAttribute('aria-pressed', String(b === btn))
+        );
+        if (state.status?.summary) {
+          renderBandwidthChart(state.status.summary);
+        }
+      });
+    });
 
     // Tabs
     document.querySelectorAll('nav.tabs button').forEach((btn) => {
@@ -704,16 +1176,36 @@
       document.getElementById('statRules').textContent = s.totalBlockedDomains.toLocaleString('vi-VN');
       document.getElementById('cacheCount').textContent = s.cacheSize;
 
+      renderBandwidthChart(s.summary);
+
       // Top blocked
       const tb = s.summary.topBlockedDomains;
       document.getElementById('topBlockedList').innerHTML = tb.length
-        ? tb.map((i) => `<div class="row" style="justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid var(--border);"><span>${esc(i.domain)}</span><strong>${i.count}</strong></div>`).join('')
+        ? tb
+            .map((i) => {
+              const saved =
+                typeof i.savedBytes === 'number'
+                  ? i.savedBytes
+                  : estimateDomainBytesClient(i.domain).bytes * i.count;
+              return `<div class="row" style="justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid var(--border);"><span>${esc(i.domain)}</span><span><strong>${i.count.toLocaleString('vi-VN')}</strong> <span class="stat-label">(~${formatBytes(saved)})</span></span></div>`;
+            })
+            .join('')
         : 'Chưa có truy vấn nào bị chặn.';
 
       // Top clients
       const tc = s.summary.topClients;
+      const bwData = resolveBandwidthData(s.summary);
       document.getElementById('topClientsList').innerHTML = tc.length
-        ? tc.map((c) => `<div class="row" style="justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid var(--border);"><span><strong>${esc(c.ip)}</strong> ${c.name ? `(${esc(c.name)})` : ''}</span><span>${c.total} truy vấn / <span style="color:var(--danger)">${c.blocked} chặn</span></span></div>`).join('')
+        ? tc
+            .map((c) => {
+              const saved =
+                typeof c.savedBytes === 'number'
+                  ? c.savedBytes
+                  : c.blocked * (bwData.avgSavedBytesPerBlocked || 120 * 1024);
+              const savedText = c.blocked > 0 ? ` • <span style="color:var(--success)">~${formatBytes(saved)}</span>` : '';
+              return `<div class="row" style="justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid var(--border);"><span><strong>${esc(c.ip)}</strong> ${c.name ? `(${esc(c.name)})` : ''}</span><span>${c.total.toLocaleString('vi-VN')} truy vấn / <span style="color:var(--danger)">${c.blocked.toLocaleString('vi-VN')} chặn</span>${savedText}</span></div>`;
+            })
+            .join('')
         : 'Chưa có thiết bị nào truy vấn.';
 
       // Blocklists với trạng thái trực quan (Đang hoạt động / Lỗi tải / Chưa tải / Đang tắt)
