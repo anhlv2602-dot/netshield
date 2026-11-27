@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.NetShield" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/ns_btn_primary_bg</item>
+        <item name="colorOnPrimary">@color/ns_btn_primary_fg</item>
+        <item name="colorSecondary">@color/ns_text_secondary</item>
+        <item name="android:colorBackground">@color/ns_bg</item>
+        <item name="android:statusBarColor">@color/ns_bg</item>
+        <item name="android:navigationBarColor">@color/ns_bg</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="Theme.NetShield.BottomSheet" parent="Theme.Material3.DayNight.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.NetShield.BottomSheet</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/ns_surface</item>
+        <item name="android:windowSoftInputMode">adjustResize</item>
+        <item name="colorPrimary">@color/ns_accent</item>
+        <item name="colorOnPrimary">@color/ns_btn_primary_fg</item>
+    </style>
+
+    <style name="Widget.NetShield.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="backgroundTint">@android:color/transparent</item>
+    </style>
+</resources>

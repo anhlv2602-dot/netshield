@@ -1,0 +1,1070 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>NetShield DNS — Quản trị Chặn Quảng Cáo Mạng LAN</title>
+  <style>
+    :root {
+      --bg-light: #f4f6f9;
+      --bg-dark: #0f141c;
+      --surface-light: #ffffff;
+      --surface-dark: #18202c;
+      --surface-alt-light: #eef2f7;
+      --surface-alt-dark: #202a3a;
+      --border-light: #dce3ec;
+      --border-dark: #2b374a;
+      --text-light: #121826;
+      --text-dark: #edf2f7;
+      --muted-light: #5c687a;
+      --muted-dark: #94a3b8;
+      --accent-light: #1d4ed8;
+      --accent-dark: #60a5fa;
+      --success-light: #15803d;
+      --success-dark: #4ade80;
+      --danger-light: #b91c1c;
+      --danger-dark: #f87171;
+      --warn-light: #b45309;
+      --warn-dark: #fbbf24;
+
+      --bg: var(--bg-light);
+      --surface: var(--surface-light);
+      --surface-alt: var(--surface-alt-light);
+      --border: var(--border-light);
+      --text: var(--text-light);
+      --muted: var(--muted-light);
+      --accent: var(--accent-light);
+      --success: var(--success-light);
+      --danger: var(--danger-light);
+      --warn: var(--warn-light);
+
+      @media (prefers-color-scheme: dark) {
+        --bg: var(--bg-dark);
+        --surface: var(--surface-dark);
+        --surface-alt: var(--surface-alt-dark);
+        --border: var(--border-dark);
+        --text: var(--text-dark);
+        --muted: var(--muted-dark);
+        --accent: var(--accent-dark);
+        --success: var(--success-dark);
+        --danger: var(--danger-dark);
+        --warn: var(--warn-dark);
+      }
+
+      @supports (color: light-dark(white, black)) {
+        --bg: light-dark(var(--bg-light), var(--bg-dark));
+        --surface: light-dark(var(--surface-light), var(--surface-dark));
+        --surface-alt: light-dark(var(--surface-alt-light), var(--surface-alt-dark));
+        --border: light-dark(var(--border-light), var(--border-dark));
+        --text: light-dark(var(--text-light), var(--text-dark));
+        --muted: light-dark(var(--muted-light), var(--muted-dark));
+        --accent: light-dark(var(--accent-light), var(--accent-dark));
+        --success: light-dark(var(--success-light), var(--success-dark));
+        --danger: light-dark(var(--danger-light), var(--danger-dark));
+        --warn: light-dark(var(--warn-light), var(--warn-dark));
+      }
+
+      color-scheme: light dark;
+      accent-color: var(--accent);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+    .brand small {
+      color: var(--muted);
+      display: block;
+      font-size: 0.8rem;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      padding: 0.3rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+    }
+    .pill.ok { color: var(--success); border-color: var(--success); }
+    .pill.off { color: var(--danger); border-color: var(--danger); }
+
+    nav.tabs {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      display: flex;
+      gap: 0.25rem;
+      overflow-x: auto;
+    }
+    nav.tabs button {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      padding: 0.8rem 1rem;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    nav.tabs button[aria-selected="true"] {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+    }
+    .card h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1rem;
+    }
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .stat-value {
+      font-size: 1.85rem;
+      font-weight: 700;
+      margin-top: 0.25rem;
+    }
+    .stat-value.danger { color: var(--danger); }
+    .stat-value.success { color: var(--success); }
+    .stat-value.accent { color: var(--accent); }
+
+    button.btn {
+      padding: 0.5rem 0.9rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    button.btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    button.btn.danger {
+      color: var(--danger);
+      border-color: var(--danger);
+      background: transparent;
+    }
+    button.btn.success {
+      color: var(--success);
+      border-color: var(--success);
+      background: transparent;
+    }
+    button.btn.sm {
+      padding: 0.25rem 0.55rem;
+      font-size: 0.78rem;
+    }
+    button.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    input[type="text"], input[type="url"], input[type="time"], select, textarea {
+      width: 100%;
+      padding: 0.5rem 0.7rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    .row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .row > input { flex: 1; min-width: 180px; }
+
+    /* Responsive Table (modern-web-guidance: responsive-table) */
+    .table-wrapper {
+      overflow: auto;
+      max-inline-size: 100%;
+      max-block-size: min(560px, 72vh);
+      container-type: inline-size;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 0.87rem;
+    }
+    caption {
+      text-align: left;
+      padding: 0.65rem 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    thead {
+      position: sticky;
+      inset-block-start: 0;
+      z-index: 2;
+      background: var(--surface-alt);
+    }
+    th, td {
+      padding: 0.55rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tbody th {
+      font-weight: 600;
+      background: var(--surface);
+      word-break: break-all;
+    }
+    tbody tr:hover td, tbody tr:hover th {
+      background: var(--surface-alt);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 600;
+    }
+    .badge.blocked { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); }
+    .badge.allowed { background: color-mix(in srgb, var(--success) 16%, transparent); color: var(--success); }
+    .badge.cached { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+
+    @container (width < 600px) {
+      table, thead, tbody, tr, th, td { display: block; }
+      thead { display: none; }
+      tr {
+        margin: 0.65rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      tbody th {
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 1;
+        background: var(--surface-alt);
+      }
+      .logs-table {
+        --label-2: "Thiết bị";
+        --label-3: "Loại";
+        --label-4: "Trạng thái";
+        --label-5: "Thời gian";
+        --label-6: "Thao tác";
+      }
+      .logs-table td:nth-child(2)::before { content: var(--label-2) ": "; font-weight: 600; color: var(--muted); }
+      .logs-table td:nth-child(3)::before { content: var(--label-3) ": "; font-weight: 600; color: var(--muted); }
+      .logs-table td:nth-child(4)::before { content: var(--label-4) ": "; font-weight: 600; color: var(--muted); }
+      .logs-table td:nth-child(5)::before { content: var(--label-5) ": "; font-weight: 600; color: var(--muted); }
+      .logs-table td:nth-child(6)::before { content: var(--label-6) ": "; font-weight: 600; color: var(--muted); }
+    }
+
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.75rem;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.28rem 0.6rem;
+      border-radius: 8px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      font-size: 0.84rem;
+    }
+    .chip button {
+      border: none;
+      background: transparent;
+      color: var(--danger);
+      cursor: pointer;
+      font-weight: 700;
+      padding: 0;
+    }
+
+    .checkbox-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin: 0.5rem 0;
+    }
+    .checkbox-grid label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .code-box {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.86rem;
+      overflow-x: auto;
+    }
+
+    .toast {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      color: var(--text);
+      padding: 0.7rem 1rem;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      z-index: 50;
+      display: none;
+    }
+    .toast.show { display: block; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div style="font-size: 1.7rem;">🛡️</div>
+      <div>
+        <h1>NetShield DNS</h1>
+        <small id="serverInfo">Đang tải thông tin máy chủ...</small>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="protectionBadge" class="pill ok">Đang bảo vệ</span>
+      <button id="toggleProtectionBtn" class="btn">Tạm dừng bảo vệ</button>
+      <button id="refreshListsBtn" class="btn primary">Cập nhật danh sách chặn</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Điều hướng chính">
+    <button role="tab" aria-selected="true" data-tab="overview">Tổng quan</button>
+    <button role="tab" aria-selected="false" data-tab="logs">Nhật ký trực tiếp</button>
+    <button role="tab" aria-selected="false" data-tab="lists">Bộ lọc & Danh sách</button>
+    <button role="tab" aria-selected="false" data-tab="clients">Thiết bị & Khung giờ</button>
+    <button role="tab" aria-selected="false" data-tab="setup">Cài đặt & Kết nối LAN</button>
+  </nav>
+
+  <main>
+    <!-- TAB 1: TỔNG QUAN -->
+    <section id="tab-overview" class="panel active">
+      <div class="grid-4">
+        <div class="card">
+          <div class="stat-label">Tổng truy vấn DNS</div>
+          <div id="statTotal" class="stat-value accent">0</div>
+        </div>
+        <div class="card">
+          <div class="stat-label">Đã chặn quảng cáo / lọc</div>
+          <div id="statBlocked" class="stat-value danger">0</div>
+        </div>
+        <div class="card">
+          <div class="stat-label">Tỷ lệ chặn</div>
+          <div id="statRate" class="stat-value success">0%</div>
+        </div>
+        <div class="card">
+          <div class="stat-label">Tên miền trong bộ lọc</div>
+          <div id="statRules" class="stat-value">0</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2>Top tên miền bị chặn nhiều nhất</h2>
+          <div id="topBlockedList" class="stat-label">Chưa có dữ liệu.</div>
+        </div>
+        <div class="card">
+          <h2>Top thiết bị trong mạng LAN</h2>
+          <div id="topClientsList" class="stat-label">Chưa có dữ liệu.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: NHẬT KÝ TRỰC TIẾP -->
+    <section id="tab-logs" class="panel">
+      <div class="card">
+        <div class="row" style="margin-bottom: 0.85rem;">
+          <input id="logSearch" type="text" placeholder="Tìm theo tên miền, IP thiết bị hoặc lý do..." />
+          <select id="logFilter" style="width: auto; min-width: 150px;">
+            <option value="all">Tất cả truy vấn</option>
+            <option value="blocked">Chỉ mục Đã chặn</option>
+            <option value="allowed">Chỉ mục Cho phép</option>
+          </select>
+          <button id="reloadLogsBtn" class="btn">Làm mới</button>
+        </div>
+
+        <div tabindex="0" role="region" aria-labelledby="logs-caption" class="table-wrapper">
+          <table class="logs-table">
+            <caption id="logs-caption">Nhật ký truy vấn DNS thời gian thực (tự cập nhật)</caption>
+            <thead>
+              <tr>
+                <th>Tên miền</th>
+                <th>Thiết bị (IP)</th>
+                <th>Loại</th>
+                <th>Trạng thái / Lý do</th>
+                <th>Thời gian</th>
+                <th>Thao tác nhanh</th>
+              </tr>
+            </thead>
+            <tbody id="logsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: BỘ LỌC & DANH SÁCH -->
+    <section id="tab-lists" class="panel">
+      <div class="card" style="margin-bottom: 1rem;">
+        <h2>Kiểm tra nhanh tác dụng bộ lọc</h2>
+        <div class="row">
+          <input id="testDomainInput" type="text" placeholder="Nhập tên miền cần thử (vd: admicro.vn, gdt.gov.vn, doubleclick.net)..." />
+          <button id="testDomainBtn" class="btn primary">Kiểm tra</button>
+        </div>
+        <div class="row" style="margin-top: 0.5rem;">
+          <span class="stat-label">Thử nhanh:</span>
+          <button class="btn sm" onclick="quickCheckDomain('admicro.vn')">admicro.vn (QC VN)</button>
+          <button class="btn sm" onclick="quickCheckDomain('doubleclick.net')">doubleclick.net (QC Google)</button>
+          <button class="btn sm" onclick="quickCheckDomain('thuedientu.gdt.gov.vn')">thuedientu.gdt.gov.vn (Thuế)</button>
+        </div>
+        <div id="testDomainResult" style="margin-top: 0.75rem; display: none; padding: 0.65rem 0.9rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-alt);"></div>
+      </div>
+
+      <div class="card" style="margin-bottom: 1rem;">
+        <h2>Danh sách chặn tự động (Blocklists)</h2>
+        <div id="blocklistsContainer"></div>
+        <hr style="border: none; border-top: 1px solid var(--border); margin: 1rem 0;" />
+        <div class="row">
+          <input id="newListName" type="text" placeholder="Tên danh sách (vd: URLHaus Malware)" />
+          <input id="newListUrl" type="url" placeholder="Đường dẫn URL (https://...)" />
+          <button id="addBlocklistBtn" class="btn primary">Thêm &amp; Tải ngay</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2>Whitelist (Luôn cho phép)</h2>
+          <div class="row">
+            <input id="whitelistInput" type="text" placeholder="Nhập tên miền (vd: example.com)" />
+            <button id="addWhitelistBtn" class="btn success">Thêm</button>
+          </div>
+          <div id="whitelistChips" class="chip-list"></div>
+        </div>
+
+        <div class="card">
+          <h2>Blacklist (Chặn tay toàn mạng)</h2>
+          <div class="row">
+            <input id="blacklistInput" type="text" placeholder="Nhập tên miền cần chặn (vd: ads.site.vn)" />
+            <button id="addBlacklistBtn" class="btn danger">Chặn</button>
+          </div>
+          <div id="blacklistChips" class="chip-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: THIẾT BỊ & KHUNG GIỜ -->
+    <section id="tab-clients" class="panel">
+      <div class="card" style="margin-bottom: 1rem;">
+        <h2>Thêm / Sửa quy tắc theo thiết bị & khung giờ</h2>
+        <div class="grid-2" style="margin-bottom: 0.75rem;">
+          <div>
+            <label class="stat-label">Tên gợi nhớ (vd: Máy kế toán, Toàn văn phòng)</label>
+            <input id="ruleName" type="text" placeholder="Ví dụ: Giờ hành chính văn phòng" />
+          </div>
+          <div>
+            <label class="stat-label">IP thiết bị (nhập <code>*</code> để áp dụng cho toàn mạng LAN)</label>
+            <input id="ruleIp" type="text" placeholder="192.168.1.55 hoặc *" />
+          </div>
+        </div>
+
+        <div class="stat-label">Chọn nhanh nhóm dịch vụ muốn chặn:</div>
+        <div id="serviceCheckboxes" class="checkbox-grid"></div>
+
+        <div style="margin: 0.75rem 0;">
+          <label class="stat-label">Hoặc nhập thêm tên miền riêng (cách nhau bởi dấu phẩy):</label>
+          <input id="ruleDomains" type="text" placeholder="vd: vnexpress.net, twitch.tv" />
+        </div>
+
+        <div class="checkbox-grid">
+          <label><input type="checkbox" id="ruleBypass" /> Miễn trừ lọc quảng cáo cho thiết bị này (Bypass)</label>
+          <label><input type="checkbox" id="ruleBlockAll" /> Khóa toàn bộ Internet trong khung giờ</label>
+          <label><input type="checkbox" id="ruleScheduleEnabled" checked /> Áp dụng theo khung giờ</label>
+        </div>
+
+        <div id="scheduleBox" class="row" style="margin: 0.75rem 0;">
+          <div>
+            <label class="stat-label">Từ giờ</label>
+            <input id="ruleStart" type="time" value="08:00" />
+          </div>
+          <div>
+            <label class="stat-label">Đến giờ</label>
+            <input id="ruleEnd" type="time" value="17:30" />
+          </div>
+          <div class="checkbox-grid" id="daysCheckboxes">
+            <label><input type="checkbox" value="1" checked /> T2</label>
+            <label><input type="checkbox" value="2" checked /> T3</label>
+            <label><input type="checkbox" value="3" checked /> T4</label>
+            <label><input type="checkbox" value="4" checked /> T5</label>
+            <label><input type="checkbox" value="5" checked /> T6</label>
+            <label><input type="checkbox" value="6" /> T7</label>
+            <label><input type="checkbox" value="0" /> CN</label>
+          </div>
+        </div>
+
+        <button id="saveRuleBtn" class="btn primary">Lưu quy tắc</button>
+      </div>
+
+      <div class="card">
+        <h2>Danh sách quy tắc đang áp dụng</h2>
+        <div id="clientRulesList" class="stat-label">Chưa có quy tắc thiết bị nào.</div>
+      </div>
+    </section>
+
+    <!-- TAB 5: CÀI ĐẶT & KẾT NỐI LAN -->
+    <section id="tab-setup" class="panel">
+      <div class="grid-2">
+        <div class="card">
+          <h2>Hướng dẫn trỏ DNS cho toàn mạng LAN</h2>
+          <p class="stat-label">Địa chỉ IP máy Mac Mini hiện tại:</p>
+          <div id="lanIpBox" class="code-box">Đang kiểm tra...</div>
+          <ol style="padding-left: 1.2rem; font-size: 0.9rem;">
+            <li><strong>Cố định IP cho Mac Mini</strong> trên Router/Modem (DHCP Reservation) để IP không bị đổi sau khi mất điện.</li>
+            <li>Chạy NetShield DNS ở cổng chuẩn <code>53</code> bằng lệnh:<br />
+              <code>sudo ./scripts/run-lan.sh</code> (hoặc cài tự chạy 24/7: <code>sudo ./scripts/install-launchd.sh</code>)
+            </li>
+            <li>Vào phần <strong>DHCP Settings</strong> trên Router/Modem nhà mạng → đổi <strong>Primary DNS</strong> thành IP Mac Mini ở trên (xóa trống Secondary DNS hoặc điền chính IP Mac Mini).</li>
+            <li>Ngắt kết nối Wi-Fi rồi kết nối lại trên điện thoại/laptop để nhận DNS mới.</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <h2>Cài đặt DNS Upstream & Bộ nhớ đệm</h2>
+          <div style="margin-bottom: 0.85rem;">
+            <label class="stat-label">Máy chủ DNS Upstream (cách nhau bằng dấu phẩy):</label>
+            <input id="upstreamInput" type="text" value="1.1.1.1, 8.8.8.8" />
+          </div>
+          <div style="margin-bottom: 0.85rem;">
+            <label class="stat-label">Cách phản hồi khi chặn tên miền:</label>
+            <select id="blockModeSelect">
+              <option value="zero">Trả về 0.0.0.0 / :: (Nhanh, khuyên dùng)</option>
+              <option value="nxdomain">Trả về NXDOMAIN (Không tồn tại)</option>
+            </select>
+          </div>
+          <div class="row">
+            <button id="saveSettingsBtn" class="btn primary">Lưu cài đặt</button>
+            <button id="clearCacheBtn" class="btn">Xóa DNS Cache (<span id="cacheCount">0</span>)</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const state = { status: null, logs: [] };
+
+    function esc(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.classList.remove('show'), 3200);
+    }
+
+    async function api(url, method = 'GET', body = null) {
+      const opts = { method, headers: {} };
+      if (body !== null) {
+        opts.headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(body);
+      }
+      const res = await fetch(url, opts);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Lỗi máy chủ');
+      return data;
+    }
+
+    // Tabs
+    document.querySelectorAll('nav.tabs button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('nav.tabs button').forEach((b) => b.setAttribute('aria-selected', 'false'));
+        document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
+        btn.setAttribute('aria-selected', 'true');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    function renderStatus() {
+      const s = state.status;
+      if (!s) return;
+
+      const lanIp = s.lanIps?.[0]?.ip || '127.0.0.1';
+      document.getElementById('serverInfo').textContent =
+        `DNS ${lanIp}:${s.dnsPort} • Web :${s.webPort} • Cache: ${s.cacheSize}`;
+
+      const badge = document.getElementById('protectionBadge');
+      const toggleBtn = document.getElementById('toggleProtectionBtn');
+      if (s.config.protectionEnabled) {
+        badge.textContent = 'Đang bảo vệ';
+        badge.className = 'pill ok';
+        toggleBtn.textContent = 'Tạm dừng bảo vệ';
+      } else {
+        badge.textContent = 'Đang tạm dừng';
+        badge.className = 'pill off';
+        toggleBtn.textContent = 'Bật lại bảo vệ';
+      }
+
+      document.getElementById('statTotal').textContent = s.summary.totalQueries.toLocaleString('vi-VN');
+      document.getElementById('statBlocked').textContent = s.summary.blockedQueries.toLocaleString('vi-VN');
+      document.getElementById('statRate').textContent = `${s.summary.blockRate}%`;
+      document.getElementById('statRules').textContent = s.totalBlockedDomains.toLocaleString('vi-VN');
+      document.getElementById('cacheCount').textContent = s.cacheSize;
+
+      // Top blocked
+      const tb = s.summary.topBlockedDomains;
+      document.getElementById('topBlockedList').innerHTML = tb.length
+        ? tb.map((i) => `<div class="row" style="justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid var(--border);"><span>${esc(i.domain)}</span><strong>${i.count}</strong></div>`).join('')
+        : 'Chưa có truy vấn nào bị chặn.';
+
+      // Top clients
+      const tc = s.summary.topClients;
+      document.getElementById('topClientsList').innerHTML = tc.length
+        ? tc.map((c) => `<div class="row" style="justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid var(--border);"><span><strong>${esc(c.ip)}</strong> ${c.name ? `(${esc(c.name)})` : ''}</span><span>${c.total} truy vấn / <span style="color:var(--danger)">${c.blocked} chặn</span></span></div>`).join('')
+        : 'Chưa có thiết bị nào truy vấn.';
+
+      // Blocklists với trạng thái trực quan (Đang hoạt động / Lỗi tải / Chưa tải / Đang tắt)
+      document.getElementById('blocklistsContainer').innerHTML = s.config.blocklists
+        .map((b) => {
+          let badge = '';
+          if (!b.enabled) {
+            badge = '<span class="badge" style="background:var(--surface-alt);color:var(--muted);">● Đang tắt</span>';
+          } else if (b.lastError) {
+            badge = `<span class="badge blocked">● Lỗi tải: ${esc(b.lastError)}</span>`;
+          } else if (b.count > 0) {
+            badge = `<span class="badge allowed">● Đang hoạt động (${b.count.toLocaleString('vi-VN')} tên miền)</span>`;
+          } else {
+            badge = '<span class="badge" style="background:color-mix(in srgb, var(--warn) 18%, transparent);color:var(--warn);">● Chưa tải dữ liệu</span>';
+          }
+          const updatedText = b.lastUpdated ? 'Cập nhật: ' + new Date(b.lastUpdated).toLocaleString('vi-VN') : 'Chưa tải';
+          return `
+          <div class="row" style="justify-content:space-between;padding:0.7rem 0;border-bottom:1px solid var(--border);gap:0.75rem;">
+            <div style="flex:1;min-width:240px;">
+              <div class="row" style="gap:0.5rem;">
+                <label style="font-weight:600;cursor:pointer;">
+                  <input type="checkbox" ${b.enabled ? 'checked' : ''} onchange="toggleBlocklist('${esc(b.id)}', this.checked)" />
+                  ${esc(b.name)}
+                </label>
+                ${badge}
+              </div>
+              <div class="stat-label" style="margin-top:0.2rem;word-break:break-all;">${esc(b.url)} • ${updatedText}</div>
+            </div>
+            <div class="row" style="gap:0.4rem;">
+              <button class="btn sm" onclick="refreshOneBlocklist('${esc(b.id)}', this)">Tải lại</button>
+              <button class="btn danger sm" onclick="deleteBlocklist('${esc(b.id)}')">Xóa</button>
+            </div>
+          </div>`;
+        })
+        .join('');
+
+      // Whitelist / Blacklist chips
+      document.getElementById('whitelistChips').innerHTML = s.config.whitelist
+        .map((d) => `<span class="chip">${esc(d)} <button onclick="removeListItem('whitelist','${esc(d)}')" title="Xóa">×</button></span>`)
+        .join('');
+      document.getElementById('blacklistChips').innerHTML = s.config.blacklist
+        .map((d) => `<span class="chip">${esc(d)} <button onclick="removeListItem('blacklist','${esc(d)}')" title="Xóa">×</button></span>`)
+        .join('');
+
+      // Service checkboxes (chỉ render 1 lần)
+      const svcContainer = document.getElementById('serviceCheckboxes');
+      if (!svcContainer.dataset.ready) {
+        svcContainer.innerHTML = Object.entries(s.servicePresets)
+          .map(([k, v]) => `<label><input type="checkbox" value="${esc(k)}" /> ${esc(v.label)}</label>`)
+          .join('');
+        svcContainer.dataset.ready = '1';
+      }
+
+      // Client Rules
+      const rules = s.config.clientRules || [];
+      document.getElementById('clientRulesList').innerHTML = rules.length
+        ? rules
+            .map(
+              (r) => `
+            <div class="row" style="justify-content:space-between;padding:0.6rem 0;border-bottom:1px solid var(--border);">
+              <div>
+                <strong>${esc(r.name)}</strong> — <code>${esc(r.clientIp)}</code>
+                <div class="stat-label">
+                  ${r.bypassProtection ? 'Miễn trừ lọc quảng cáo' : ''}
+                  ${r.blockAllInternet ? 'Khóa toàn bộ Internet • ' : ''}
+                  ${r.blockedServices?.length ? 'Dịch vụ: ' + r.blockedServices.join(', ') + ' • ' : ''}
+                  ${r.schedule?.enabled ? `Khung giờ: ${esc(r.schedule.start)}–${esc(r.schedule.end)}` : 'Áp dụng 24/7'}
+                </div>
+              </div>
+              <button class="btn danger sm" onclick="deleteClientRule('${esc(r.id)}')">Xóa</button>
+            </div>`
+            )
+            .join('')
+        : 'Chưa có quy tắc thiết bị nào.';
+
+      // Setup info
+      document.getElementById('lanIpBox').innerHTML = (s.lanIps || [])
+        .map((i) => `${esc(i.iface)}: <strong>${esc(i.ip)}</strong> (Cổng DNS đang chạy: ${s.dnsPort})`)
+        .join('<br/>') || 'Không tìm thấy IP LAN';
+
+      document.getElementById('upstreamInput').value = (s.config.upstreamDns || []).join(', ');
+      document.getElementById('blockModeSelect').value = s.config.blockResponseMode || 'zero';
+    }
+
+    function renderLogRow(item) {
+      const time = new Date(item.timestamp).toLocaleTimeString('vi-VN');
+      const statusHtml = item.blocked
+        ? `<span class="badge blocked">Đã chặn</span> <small style="color:var(--muted)">${esc(item.reason)}</small>`
+        : item.cached
+        ? `<span class="badge cached">Cache</span> <small style="color:var(--muted)">${item.latencyMs}ms</small>`
+        : `<span class="badge allowed">Cho phép</span> <small style="color:var(--muted)">${item.latencyMs}ms</small>`;
+
+      const actionBtn = item.blocked
+        ? `<button class="btn success sm" onclick="quickList('whitelist','${esc(item.domain)}')">Bỏ chặn</button>`
+        : `<button class="btn danger sm" onclick="quickList('blacklist','${esc(item.domain)}')">Chặn ngay</button>`;
+
+      return `<tr>
+        <th>${esc(item.domain)}</th>
+        <td>${esc(item.clientIp)}</td>
+        <td>${esc(item.qtype)}</td>
+        <td>${statusHtml}</td>
+        <td>${time}</td>
+        <td>${actionBtn}</td>
+      </tr>`;
+    }
+
+    function renderLogs() {
+      const search = document.getElementById('logSearch').value.trim().toLowerCase();
+      const filter = document.getElementById('logFilter').value;
+      let items = state.logs;
+      if (filter === 'blocked') items = items.filter((i) => i.blocked);
+      if (filter === 'allowed') items = items.filter((i) => !i.blocked);
+      if (search) {
+        items = items.filter(
+          (i) =>
+            i.domain.includes(search) ||
+            i.clientIp.includes(search) ||
+            (i.reason || '').toLowerCase().includes(search)
+        );
+      }
+      document.getElementById('logsBody').innerHTML = items.slice(0, 150).map(renderLogRow).join('');
+    }
+
+    async function loadAll() {
+      state.status = await api('/api/status');
+      renderStatus();
+    }
+
+    async function loadLogs() {
+      const res = await api('/api/logs?limit=200');
+      state.logs = res.items || [];
+      renderLogs();
+    }
+
+    // Global actions
+    window.toggleBlocklist = async (id, enabled) => {
+      showToast(enabled ? 'Đang bật và tải danh sách chặn...' : 'Đang tắt danh sách chặn...');
+      const res = await api(`/api/blocklists/${encodeURIComponent(id)}`, 'PATCH', { enabled });
+      await loadAll();
+      if (res.refreshResult) {
+        if (res.refreshResult.ok) {
+          showToast(`Đã kích hoạt: ${res.refreshResult.count.toLocaleString('vi-VN')} tên miền`);
+        } else {
+          showToast(`Lỗi tải nguồn: ${res.refreshResult.error}`);
+        }
+      } else {
+        showToast('Đã cập nhật trạng thái danh sách chặn');
+      }
+    };
+
+    window.refreshOneBlocklist = async (id, btnEl) => {
+      if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Đang tải...'; }
+      try {
+        const res = await api(`/api/blocklists/${encodeURIComponent(id)}/refresh`, 'POST');
+        await loadAll();
+        if (res.refreshResult?.ok) {
+          showToast(`Tải thành công ${res.refreshResult.count.toLocaleString('vi-VN')} tên miền`);
+        } else {
+          showToast(`Lỗi tải nguồn: ${res.refreshResult?.error || 'Không xác định'}`);
+        }
+      } finally {
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Tải lại'; }
+      }
+    };
+
+    window.quickCheckDomain = async (domain) => {
+      document.getElementById('testDomainInput').value = domain;
+      await runDomainCheck();
+    };
+
+    async function runDomainCheck() {
+      const domain = document.getElementById('testDomainInput').value.trim();
+      if (!domain) return;
+      const box = document.getElementById('testDomainResult');
+      try {
+        const res = await api(`/api/check?domain=${encodeURIComponent(domain)}`);
+        box.style.display = 'block';
+        if (res.blocked) {
+          box.innerHTML = `<span class="badge blocked">ĐANG BỊ CHẶN</span> <strong>${esc(res.domain)}</strong> — Lý do: <strong>${esc(res.reason)}</strong>`;
+        } else {
+          box.innerHTML = `<span class="badge allowed">ĐƯỢC PHÉP TRUY CẬP</span> <strong>${esc(res.domain)}</strong> — Trạng thái: <strong>${esc(res.reason)}</strong>`;
+        }
+      } catch (err) {
+        showToast(err.message);
+      }
+    }
+
+    document.getElementById('testDomainBtn').addEventListener('click', runDomainCheck);
+    document.getElementById('testDomainInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') runDomainCheck();
+    });
+
+    window.deleteBlocklist = async (id) => {
+      await api(`/api/blocklists/${encodeURIComponent(id)}`, 'DELETE');
+      await loadAll();
+      showToast('Đã xóa danh sách chặn');
+    };
+
+    window.removeListItem = async (type, domain) => {
+      await api(`/api/lists/${type}`, 'DELETE', { domain });
+      await loadAll();
+      showToast(`Đã gỡ ${domain}`);
+    };
+
+    window.quickList = async (type, domain) => {
+      await api(`/api/lists/${type}`, 'POST', { domain });
+      await loadAll();
+      showToast(type === 'whitelist' ? `Đã bỏ chặn ${domain}` : `Đã chặn ${domain}`);
+    };
+
+    window.deleteClientRule = async (id) => {
+      await api(`/api/clients/${encodeURIComponent(id)}`, 'DELETE');
+      await loadAll();
+      showToast('Đã xóa quy tắc thiết bị');
+    };
+
+    // Event bindings
+    document.getElementById('toggleProtectionBtn').addEventListener('click', async () => {
+      const next = !state.status?.config?.protectionEnabled;
+      await api('/api/protection', 'POST', { enabled: next });
+      await loadAll();
+      showToast(next ? 'Đã bật bảo vệ toàn mạng' : 'Đã tạm dừng bảo vệ');
+    });
+
+    document.getElementById('refreshListsBtn').addEventListener('click', async (e) => {
+      e.target.disabled = true;
+      e.target.textContent = 'Đang tải danh sách...';
+      try {
+        const res = await api('/api/blocklists/refresh', 'POST');
+        await loadAll();
+        showToast(`Cập nhật xong: ${(res.totalDomains || 0).toLocaleString('vi-VN')} tên miền chặn`);
+      } catch (err) {
+        showToast('Lỗi cập nhật: ' + err.message);
+      } finally {
+        e.target.disabled = false;
+        e.target.textContent = 'Cập nhật danh sách chặn';
+      }
+    });
+
+    document.getElementById('addBlocklistBtn').addEventListener('click', async (e) => {
+      const name = document.getElementById('newListName').value;
+      const url = document.getElementById('newListUrl').value;
+      e.target.disabled = true;
+      e.target.textContent = 'Đang tải & kiểm tra...';
+      try {
+        const res = await api('/api/blocklists', 'POST', { name, url });
+        document.getElementById('newListName').value = '';
+        document.getElementById('newListUrl').value = '';
+        await loadAll();
+        if (res.refreshResult?.ok) {
+          showToast(`Đã thêm & kích hoạt ${res.refreshResult.count.toLocaleString('vi-VN')} tên miền!`);
+        } else {
+          showToast(`Đã thêm nhưng tải lỗi: ${res.refreshResult?.error || 'Kiểm tra lại URL'}`);
+        }
+      } catch (err) {
+        showToast(err.message);
+      } finally {
+        e.target.disabled = false;
+        e.target.textContent = 'Thêm & Tải ngay';
+      }
+    });
+
+    document.getElementById('addWhitelistBtn').addEventListener('click', async () => {
+      const input = document.getElementById('whitelistInput');
+      if (!input.value.trim()) return;
+      await api('/api/lists/whitelist', 'POST', { domain: input.value });
+      input.value = '';
+      await loadAll();
+      showToast('Đã thêm vào Whitelist');
+    });
+
+    document.getElementById('addBlacklistBtn').addEventListener('click', async () => {
+      const input = document.getElementById('blacklistInput');
+      if (!input.value.trim()) return;
+      await api('/api/lists/blacklist', 'POST', { domain: input.value });
+      input.value = '';
+      await loadAll();
+      showToast('Đã thêm vào Blacklist');
+    });
+
+    document.getElementById('saveRuleBtn').addEventListener('click', async () => {
+      const blockedServices = [...document.querySelectorAll('#serviceCheckboxes input:checked')].map((i) => i.value);
+      const days = [...document.querySelectorAll('#daysCheckboxes input:checked')].map((i) => Number(i.value));
+      const blockedDomains = document
+        .getElementById('ruleDomains')
+        .value.split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      try {
+        await api('/api/clients', 'POST', {
+          name: document.getElementById('ruleName').value,
+          clientIp: document.getElementById('ruleIp').value,
+          bypassProtection: document.getElementById('ruleBypass').checked,
+          blockAllInternet: document.getElementById('ruleBlockAll').checked,
+          blockedServices,
+          blockedDomains,
+          schedule: {
+            enabled: document.getElementById('ruleScheduleEnabled').checked,
+            start: document.getElementById('ruleStart').value,
+            end: document.getElementById('ruleEnd').value,
+            days,
+          },
+        });
+        document.getElementById('ruleName').value = '';
+        document.getElementById('ruleIp').value = '';
+        document.getElementById('ruleDomains').value = '';
+        await loadAll();
+        showToast('Đã lưu quy tắc thiết bị');
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+
+    document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
+      const upstreamDns = document
+        .getElementById('upstreamInput')
+        .value.split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const blockResponseMode = document.getElementById('blockModeSelect').value;
+      await api('/api/settings', 'POST', { upstreamDns, blockResponseMode, clearCache: true });
+      await loadAll();
+      showToast('Đã lưu cài đặt DNS');
+    });
+
+    document.getElementById('clearCacheBtn').addEventListener('click', async () => {
+      await api('/api/settings', 'POST', { clearCache: true });
+      await loadAll();
+      showToast('Đã xóa sạch bộ nhớ đệm DNS');
+    });
+
+    document.getElementById('logSearch').addEventListener('input', renderLogs);
+    document.getElementById('logFilter').addEventListener('change', renderLogs);
+    document.getElementById('reloadLogsBtn').addEventListener('click', loadLogs);
+
+    // Live SSE stream
+    const es = new EventSource('/api/logs/stream');
+    es.onmessage = (ev) => {
+      try {
+        const rec = JSON.parse(ev.data);
+        state.logs.unshift(rec);
+        if (state.logs.length > 500) state.logs.length = 500;
+        renderLogs();
+      } catch {}
+    };
+
+    // Init + periodic stats refresh
+    loadAll();
+    loadLogs();
+    setInterval(loadAll, 5000);
+  </script>
+</body>
+</html>

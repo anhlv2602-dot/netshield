@@ -1,0 +1,5 @@
+node_modules/
+data/blocklists-cache/
+data/*.log
+data/*.tmp
+.DS_Store

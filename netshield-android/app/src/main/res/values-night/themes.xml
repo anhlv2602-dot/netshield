@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.NetShield" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/ns_btn_primary_bg</item>
+        <item name="colorOnPrimary">@color/ns_btn_primary_fg</item>
+        <item name="colorSecondary">@color/ns_text_secondary</item>
+        <item name="android:colorBackground">@color/ns_bg</item>
+        <item name="android:statusBarColor">@color/ns_bg</item>
+        <item name="android:navigationBarColor">@color/ns_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

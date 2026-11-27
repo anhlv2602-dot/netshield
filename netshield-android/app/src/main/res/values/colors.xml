@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ns_bg">#F8FAFC</color>
+    <color name="ns_surface">#FFFFFF</color>
+    <color name="ns_surface_subtle">#F1F5F9</color>
+    <color name="ns_border">#E2E8F0</color>
+
+    <color name="ns_text_primary">#0F172A</color>
+    <color name="ns_text_secondary">#64748B</color>
+    <color name="ns_text_muted">#94A3B8</color>
+
+    <color name="ns_btn_primary_bg">#0F172A</color>
+    <color name="ns_btn_primary_fg">#FFFFFF</color>
+    <color name="ns_btn_stop_bg">#F1F5F9</color>
+    <color name="ns_btn_stop_fg">#0F172A</color>
+    <color name="ns_btn_stop_stroke">#CBD5E1</color>
+
+    <color name="ns_status_active_bg">#ECFDF5</color>
+    <color name="ns_status_active_fg">#047857</color>
+    <color name="ns_status_inactive_bg">#F1F5F9</color>
+    <color name="ns_status_inactive_fg">#64748B</color>
+
+    <color name="ns_badge_blocked_bg">#FEF2F2</color>
+    <color name="ns_badge_blocked_fg">#B91C1C</color>
+    <color name="ns_badge_allowed_bg">#F1F5F9</color>
+    <color name="ns_badge_allowed_fg">#475569</color>
+
+    <color name="ns_accent">#059669</color>
+    <color name="ns_accent_track">#A7F3D0</color>
+    <color name="ns_switch_track_off">#CBD5E1</color>
+    <color name="ns_switch_thumb">#FFFFFF</color>
+</resources>
