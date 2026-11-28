@@ -24,10 +24,32 @@
   if (isProtectedHost(HOST)) return;
 
   const IS_FACEBOOK = HOST === 'facebook.com' || HOST.endsWith('.facebook.com');
+  const IS_MESSENGER = HOST === 'messenger.com' || HOST.endsWith('.messenger.com');
   const IS_YOUTUBE = HOST === 'youtube.com' || HOST.endsWith('.youtube.com');
   const IS_ZINGMP3 = HOST === 'zingmp3.vn' || HOST.endsWith('.zingmp3.vn') || HOST === 'mp3.zing.vn';
   const IS_SPOTIFY = HOST === 'open.spotify.com' || HOST.endsWith('.spotify.com');
   const IS_INVESTING = HOST === 'investing.com' || HOST.endsWith('.investing.com');
+  const IS_KNOWN_WEBAPP = IS_FACEBOOK || IS_MESSENGER || IS_YOUTUBE || IS_ZINGMP3 || IS_SPOTIFY;
+
+  function isInsideMessengerUi(el) {
+    if (!el || typeof el.closest !== 'function') return false;
+    return Boolean(
+      el.closest(
+        '[data-pagelet*="Chat"], [data-pagelet*="MW"], [role="dialog"], ' +
+        '[aria-label*="Messenger"], [aria-label*="Tin nhắn"], [aria-label*="Messages"], ' +
+        '[aria-label*="Cuộc trò chuyện"], [aria-label*="Conversation"]'
+      )
+    );
+  }
+
+  function containsUploadOrPreview(el) {
+    if (!el || typeof el.querySelector !== 'function') return false;
+    return Boolean(
+      el.querySelector(
+        'input[type="file"], [contenteditable="true"], [role="textbox"], img[src^="blob:"], img[src^="data:"]'
+      )
+    );
+  }
 
   let settings = {
     enabled: true,
@@ -151,6 +173,7 @@
     for (const el of candidates) {
       if (el.dataset.nsHidden === '1') continue;
       if (el.closest('[data-ns-hidden="1"]')) continue;
+      if (isInsideMessengerUi(el)) continue;
 
       const rawNorm = cleanText(el.textContent);
       if (rawNorm.length === 0 || rawNorm.length > 30) continue;
@@ -174,6 +197,7 @@
 
         const r = node.getBoundingClientRect();
         if (r.width > 520 || r.height > 1100) break;
+        if (isInsideMessengerUi(node) || containsUploadOrPreview(node)) break;
 
         const hasMediaOrLink = node.querySelector('a[href], img') !== null;
         if (hasMediaOrLink && r.height >= 70) {
@@ -218,6 +242,7 @@
     );
     for (const unit of feedUnits) {
       if (unit.dataset.nsHidden === '1' || unit.closest('[data-ns-hidden="1"]')) continue;
+      if (isInsideMessengerUi(unit) || containsUploadOrPreview(unit)) continue;
 
       const directAdSignal = unit.querySelector(
         'a[aria-label="Được tài trợ"], a[aria-label="Sponsored"], a[href*="/ads/about"], a[href*="ad_id="]'
@@ -364,7 +389,7 @@
   // 3. BÁO VIỆT NAM & WEB PHỔ THÔNG: Dọn khung & thu gọn vùng trắng quảng cáo
   // =========================================================================
   const AD_LABEL_ONLY_RE =
-    /^(quảng\s*cáo|advertisement|advertising|sponsored|tài\s*trợ|được\s*tài\s*trợ|tin\s*tài\s*trợ|liên\s*hệ\s*quảng\s*cáo|ads?|promoted|x|×)$/i;
+    /^(quảng\s*cáo|advertisement|advertising|sponsored|tài\s*trợ|được\s*tài\s*trợ|tin\s*tài\s*trợ|liên\s*hệ\s*quảng\s*cáo|ads?|promoted)$/i;
 
   const PROTECTED_ANCESTOR_TAGS = new Set([
     'HTML', 'BODY', 'MAIN', 'ARTICLE', 'HEADER', 'FOOTER', 'NAV', 'FORM',
@@ -396,11 +421,13 @@
   }
 
   function hasMeaningfulVisibleMedia(container) {
-    const mediaNodes = container.querySelectorAll('img, video, audio, canvas, input, textarea, select');
+    const mediaNodes = container.querySelectorAll('img, video, audio, canvas, input, textarea, select, [contenteditable="true"]');
     for (const m of mediaNodes) {
       if (m.dataset.nsHidden === '1' || m.closest('[data-ns-hidden="1"]')) continue;
+      if (m.tagName === 'INPUT' && m.type === 'file') return true;
       const cs = getComputedStyle(m);
       if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      if (m.tagName === 'IMG' && m.getAttribute('src') && !m.complete) return true;
       const r = m.getBoundingClientRect();
       // Bỏ qua pixel tracking 1x1 hoặc icon đóng nhỏ <= 20px
       if (r.width > 24 && r.height > 24) return true;
@@ -562,7 +589,7 @@
       // Chỉ thu gọn nếu khung này thực sự chứa iframe rỗng/lỗi hoặc chứa slot đã ẩn hoặc chỉ là hộp trắng rỗng
       const hasHiddenDescendant = Boolean(el.querySelector('[data-ns-hidden="1"]'));
       const hasAdFrame = Boolean(el.querySelector('iframe, ins'));
-      const hasAdHint = /ad|banner|sponsor|quangcao|promo|slot/i.test(
+      const hasAdHint = /(?:^|[-_\s])(ads?|adslot|adbox|adbanner|banner|sponsor|quangcao|promo|advert)(?:$|[-_\s\d])/i.test(
         `${el.id || ''} ${typeof el.className === 'string' ? el.className : ''}`
       );
       if (hasHiddenDescendant || hasAdFrame || hasAdHint) {
@@ -586,6 +613,7 @@
       try {
         document.querySelectorAll(sel).forEach((el) => {
           if (el.id === 'ns-picker-bar') return;
+          if ((IS_FACEBOOK || IS_MESSENGER) && (isInsideMessengerUi(el) || containsUploadOrPreview(el))) return;
           if (hideElement(el)) blocked++;
           collapseEmptyAncestors(el);
         });
@@ -839,7 +867,14 @@
       } catch (_) {}
       cur = cur.parentElement;
     }
-    return parts.join(' > ');
+    const finalSel = parts.join(' > ');
+    try {
+      // Tránh lưu selector quá rộng (ví dụ atomic class trên Facebook) làm ẩn nhầm nhiều vùng khác
+      if (finalSel && document.querySelectorAll(finalSel).length > 3) return '';
+    } catch (_) {
+      return '';
+    }
+    return finalSel;
   }
 
   function setPickerTarget(el) {
@@ -979,13 +1014,21 @@
 
   function runScan() {
     if (!settings.enabled || isWhitelisted(HOST, settings.whitelist)) return;
-    if (settings.defuseAntiAdblock) scanAntiAdblock();
+    if (settings.defuseAntiAdblock && !IS_KNOWN_WEBAPP) scanAntiAdblock();
     if (!IS_TOP_FRAME) return;
-    if (IS_FACEBOOK && settings.blockFacebook) scanFacebook();
-    else if (IS_YOUTUBE && settings.blockYoutube) scanYoutube();
-    else if (IS_ZINGMP3 && settings.blockMusic) scanZingMp3();
-    else if (IS_SPOTIFY && settings.blockMusic) scanSpotify();
-    else if (settings.blockVnNews) scanGenericAds();
+    if (IS_FACEBOOK) {
+      if (settings.blockFacebook) scanFacebook();
+    } else if (IS_MESSENGER) {
+      // Không can thiệp DOM trên Messenger để tránh ẩn nhầm khung chat/gửi ảnh
+    } else if (IS_YOUTUBE) {
+      if (settings.blockYoutube) scanYoutube();
+    } else if (IS_ZINGMP3) {
+      if (settings.blockMusic) scanZingMp3();
+    } else if (IS_SPOTIFY) {
+      if (settings.blockMusic) scanSpotify();
+    } else if (settings.blockVnNews) {
+      scanGenericAds();
+    }
     applyCustomRules();
   }
 

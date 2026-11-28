@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NetShield Web",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Ẩn quảng cáo Facebook (Được tài trợ), YouTube, Zing MP3, Spotify Web, báo Việt Nam và vượt màn hình chống Adblock. An toàn tuyệt đối cho Thuế, HĐĐT, Chữ ký số và Ngân hàng.",
   "permissions": [
     "storage",

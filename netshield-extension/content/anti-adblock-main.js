@@ -18,6 +18,7 @@
     'sacombank.com.vn', 'hdbank.com.vn', 'vib.com.vn', 'shb.com.vn', 'seabank.com.vn',
     'ocb.com.vn', 'msb.com.vn', 'eximbank.com.vn', 'lpbank.com.vn', 'napas.com.vn',
     'vnpay.vn', 'vnpayment.vn', 'localhost', '127.0.0.1',
+    'facebook.com', 'messenger.com', 'youtube.com', 'spotify.com', 'zingmp3.vn', 'mp3.zing.vn',
   ];
 
   if (PROTECTED_SUFFIXES.some((s) => HOST === s || HOST.endsWith('.' + s))) {

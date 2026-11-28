@@ -24,6 +24,12 @@ const PROTECTED_SUFFIXES = [
   'vnpay.vn', 'vnpayment.vn', 'localhost', '127.0.0.1',
 ];
 
+// Không inject MAIN-world scriptlet (monkey-patch fetch/XHR) lên các web app lớn
+// để tránh xung đột upload ảnh/E2EE trên Facebook Messenger, YouTube, Spotify...
+const MAIN_SCRIPT_EXCLUDED_WEBAPPS = [
+  'facebook.com', 'messenger.com', 'youtube.com', 'spotify.com', 'zingmp3.vn', 'mp3.zing.vn',
+];
+
 const MAIN_SCRIPT_ID = 'netshield-anti-adblock-main';
 
 // Các script Anti-Adblock & video ad phổ biến chặn ở tầng mạng (DNR) trước khi tải
@@ -100,6 +106,11 @@ async function applyDynamicProtections() {
     }
   }
 
+  const mainExcludedDomains = sanitizeDomains([
+    ...excludedDomains,
+    ...MAIN_SCRIPT_EXCLUDED_WEBAPPS,
+  ]);
+
   // 2. Đồng bộ MAIN-world scriptlet (tôn trọng nút bật/tắt & whitelist)
   if (chrome.scripting?.registerContentScripts) {
     try {
@@ -113,7 +124,7 @@ async function applyDynamicProtections() {
             id: MAIN_SCRIPT_ID,
             js: ['content/anti-adblock-main.js'],
             matches: ['http://*/*', 'https://*/*'],
-            excludeMatches: buildExcludeMatches(excludedDomains),
+            excludeMatches: buildExcludeMatches(mainExcludedDomains),
             runAt: 'document_start',
             world: 'MAIN',
             persistAcrossSessions: true,
