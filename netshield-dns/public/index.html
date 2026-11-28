@@ -559,7 +559,7 @@
     .stat-value.accent { color: var(--accent); }
 
     /* ================= BUTTONS & INPUTS ================= */
-    button.btn {
+    button.btn, label.btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -575,13 +575,13 @@
       white-space: nowrap;
       transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease, scale 120ms ease;
     }
-    button.btn svg { width: 15px; height: 15px; flex-shrink: 0; }
-    button.btn:hover:not(:disabled) {
+    button.btn svg, label.btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+    button.btn:hover:not(:disabled), label.btn:hover {
       background: var(--surface-alt);
       border-color: var(--border-strong);
       box-shadow: var(--shadow-sm);
     }
-    button.btn:active:not(:disabled) { scale: 0.97; }
+    button.btn:active:not(:disabled), label.btn:active { scale: 0.97; }
 
     button.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
     button.btn.primary:hover:not(:disabled) {
@@ -653,7 +653,23 @@
       display: grid;
       grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
       gap: 1.15rem;
-      align-items: start;
+      align-items: stretch;
+    }
+    .rules-split > .card,
+    .grid-2 > .card {
+      display: flex;
+      flex-direction: column;
+    }
+    .card-footer-actions {
+      margin-top: auto;
+      padding-top: 1rem;
+    }
+    .appearance-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
     }
     @media (max-width: 1120px) {
       .rules-split { grid-template-columns: 1fr; }
@@ -730,7 +746,7 @@
 
     button.btn.mobile-theme-btn { display: none; }
 
-    input[type="text"], input[type="url"], input[type="time"], select, textarea {
+    input[type="text"], input[type="url"], input[type="time"], input[type="password"], input[type="number"], select, textarea {
       width: 100%;
       padding: 0.5rem 0.72rem;
       border-radius: 9px;
@@ -741,14 +757,51 @@
       font-family: inherit;
       transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
     }
-    input[type="text"]:hover, input[type="url"]:hover, input[type="time"]:hover, select:hover {
+    input[type="text"]:hover, input[type="url"]:hover, input[type="time"]:hover, input[type="password"]:hover, input[type="number"]:hover, select:hover {
       border-color: var(--border-strong);
     }
-    input[type="text"]:focus, input[type="url"]:focus, input[type="time"]:focus, select:focus {
+    input[type="text"]:focus, input[type="url"]:focus, input[type="time"]:focus, input[type="password"]:focus, input[type="number"]:focus, select:focus {
       background: var(--surface);
       border-color: var(--accent);
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
       outline: none;
+    }
+
+    /* Clean Setting Toggle Rows */
+    .setting-list {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.82rem 1rem;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 120ms ease;
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-row:hover { background: var(--surface-alt); }
+    .setting-row-text { display: flex; flex-direction: column; gap: 0.14rem; min-width: 0; }
+    .setting-row-title { font-size: 0.86rem; font-weight: 600; color: var(--text); }
+    .setting-row-desc { font-size: 0.76rem; color: var(--muted); line-height: 1.4; }
+    .stack-col { display: flex; flex-direction: column; gap: 1.15rem; }
+    .local-form-grid {
+      display: grid;
+      grid-template-columns: minmax(140px, 1.1fr) minmax(110px, 0.85fr) minmax(120px, 0.95fr) 76px auto;
+      gap: 0.55rem;
+      align-items: end;
+      margin-bottom: 0.9rem;
+    }
+    @media (max-width: 780px) {
+      .local-form-grid { grid-template-columns: 1fr 1fr; }
     }
 
     /* Ghost inline inputs inside tables */
@@ -2163,97 +2216,96 @@
 
         <!-- TAB 5: CÀI ĐẶT & KẾT NỐI LAN -->
         <section id="tab-setup" class="panel" role="tabpanel">
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h2>Hướng dẫn trỏ DNS cho toàn mạng LAN</h2>
-                  <p class="card-desc">Cấu hình một lần trên Router để bảo vệ mọi thiết bị không cần cài app</p>
+          <div class="segmented sub-tabs" role="tablist" aria-label="Phân mục cài đặt">
+            <button type="button" role="tab" aria-selected="true" data-setup-tab="network">Kết nối &amp; DNS</button>
+            <button type="button" role="tab" aria-selected="false" data-setup-tab="security">Bảo mật lõi DNS</button>
+            <button type="button" role="tab" aria-selected="false" data-setup-tab="alerts">Cảnh báo &amp; Thông báo</button>
+            <button type="button" role="tab" aria-selected="false" data-setup-tab="local">Local DNS &amp; Lưu trữ</button>
+          </div>
+
+          <!-- SETUP 1: KẾT NỐI & DNS UPSTREAM -->
+          <div id="setup-network" class="setup-panel sub-panel active">
+            <div class="grid-2">
+              <div class="card">
+                <div class="card-head">
+                  <div>
+                    <h2>Hướng dẫn trỏ DNS cho toàn mạng LAN</h2>
+                    <p class="card-desc">Cấu hình một lần trên Router để bảo vệ mọi thiết bị không cần cài app</p>
+                  </div>
+                </div>
+                <div class="stat-label" style="margin-bottom: 0.45rem; font-weight: 600;">Giao diện mạng &amp; IP máy chủ DNS</div>
+                <div id="lanIpBox" class="iface-list">Đang kiểm tra...</div>
+                <ol class="step-list">
+                  <li>
+                    <span class="step-num">1</span>
+                    <div><strong>Cố định IP cho Mac Mini</strong> trên Router/Modem (DHCP Reservation) để IP không đổi sau khi mất điện.</div>
+                  </li>
+                  <li>
+                    <span class="step-num">2</span>
+                    <div>Chạy NetShield DNS ở cổng chuẩn <code>53</code>: <span class="cmd-chip">sudo ./scripts/run-lan.sh</span> hoặc tự chạy 24/7: <span class="cmd-chip">sudo ./scripts/install-launchd.sh</span></div>
+                  </li>
+                  <li>
+                    <span class="step-num">3</span>
+                    <div>Vào <strong>DHCP Settings</strong> trên Router/Modem → đổi <strong>Primary DNS</strong> thành IP được đánh dấu <strong>Khuyên dùng</strong> ở trên (để trống Secondary DNS hoặc điền cùng IP).</div>
+                  </li>
+                  <li>
+                    <span class="step-num">4</span>
+                    <div>Ngắt kết nối Wi-Fi rồi kết nối lại trên điện thoại/laptop để nhận DNS mới.</div>
+                  </li>
+                </ol>
+              </div>
+
+              <div class="card">
+                <div class="card-head">
+                  <div>
+                    <h2>Máy chủ DNS Upstream &amp; Bộ nhớ đệm</h2>
+                    <p class="card-desc">Hỗ trợ DoH mã hóa (<code>https://...</code>) và UDP IP truyền thống</p>
+                  </div>
+                  <div class="row" style="gap: 0.4rem;">
+                    <button id="applyDohPresetBtn" type="button" class="btn sm">Nạp DoH mẫu</button>
+                    <button id="testUpstreamsBtn" type="button" class="btn sm">Đo tốc độ</button>
+                  </div>
+                </div>
+
+                <div class="field" style="margin-bottom: 0.85rem;">
+                  <label for="upstreamInput">Danh sách Upstream DNS (cách nhau bằng dấu phẩy)</label>
+                  <input id="upstreamInput" type="text" value="https://1.1.1.2/dns-query, https://9.9.9.9/dns-query, 203.113.131.1" />
+                </div>
+
+                <div class="field" style="margin-bottom: 0.9rem;">
+                  <label for="upstreamStrategySelect">Chiến lược cân bằng tải Upstream</label>
+                  <select id="upstreamStrategySelect">
+                    <option value="failover">Failover tuần tự (Ưu tiên máy chủ khỏe đầu tiên)</option>
+                    <option value="round_robin">Round-Robin (Chia đều truy vấn qua các Upstream khỏe)</option>
+                    <option value="lowest_latency">Lowest-Latency (Tự chọn Upstream phản hồi nhanh nhất — EWMA)</option>
+                    <option value="parallel">Parallel / Fastest-first (Gửi đồng thời, lấy gói về trước)</option>
+                  </select>
+                </div>
+
+                <div class="stat-label" style="margin-bottom: 0.4rem; font-weight: 600;">Trạng thái máy chủ Upstream</div>
+                <div id="upstreamHealthBox" class="iface-list" style="margin-bottom: 0.95rem;"></div>
+
+                <div class="field">
+                  <label for="blockModeSelect">Cách phản hồi khi chặn tên miền</label>
+                  <select id="blockModeSelect">
+                    <option value="zero">Trả về 0.0.0.0 / :: (Nhanh, khuyên dùng)</option>
+                    <option value="nxdomain">Trả về NXDOMAIN (Không tồn tại)</option>
+                  </select>
+                </div>
+
+                <div class="row card-footer-actions" style="gap: 0.55rem;">
+                  <button id="saveSettingsBtn" type="button" class="btn primary">Lưu cài đặt DNS</button>
+                  <button id="clearCacheBtn" type="button" class="btn">Xóa DNS Cache (<span id="cacheCount" class="tabular">0</span>)</button>
                 </div>
               </div>
-              <div class="stat-label" style="margin-bottom: 0.45rem; font-weight: 600;">Giao diện mạng &amp; IP máy chủ DNS</div>
-              <div id="lanIpBox" class="iface-list">Đang kiểm tra...</div>
-              <ol class="step-list">
-                <li>
-                  <span class="step-num">1</span>
-                  <div><strong>Cố định IP cho Mac Mini</strong> trên Router/Modem (DHCP Reservation) để IP không đổi sau khi mất điện.</div>
-                </li>
-                <li>
-                  <span class="step-num">2</span>
-                  <div>Chạy NetShield DNS ở cổng chuẩn <code>53</code>: <span class="cmd-chip">sudo ./scripts/run-lan.sh</span> hoặc cài tự chạy 24/7: <span class="cmd-chip">sudo ./scripts/install-launchd.sh</span></div>
-                </li>
-                <li>
-                  <span class="step-num">3</span>
-                  <div>Vào <strong>DHCP Settings</strong> trên Router/Modem nhà mạng → đổi <strong>Primary DNS</strong> thành IP mạng LAN được đánh dấu <strong>Khuyên dùng</strong> ở trên (xóa trống Secondary DNS hoặc điền cùng IP).</div>
-                </li>
-                <li>
-                  <span class="step-num">4</span>
-                  <div>Ngắt kết nối Wi-Fi rồi kết nối lại trên điện thoại/laptop để nhận DNS mới.</div>
-                </li>
-              </ol>
             </div>
 
             <div class="card">
-              <div class="card-head">
+              <div class="appearance-bar">
                 <div>
-                  <h2>Cài đặt DNS Upstream &amp; Giao diện</h2>
-                  <p class="card-desc">Tùy chỉnh máy chủ phân giải cấp trên, bộ nhớ đệm và chế độ hiển thị</p>
+                  <h2>Giao diện hiển thị</h2>
+                  <p class="card-desc">Chọn chế độ Sáng, Tối hoặc tự động đồng bộ theo hệ điều hành</p>
                 </div>
-              </div>
-
-              <div class="field" style="margin-bottom: 0.75rem;">
-                <label for="upstreamInput">Máy chủ DNS Upstream (hỗ trợ DoH <code>https://...</code> và UDP IP, cách nhau bằng dấu phẩy)</label>
-                <input id="upstreamInput" type="text" value="https://1.1.1.2/dns-query, https://9.9.9.9/dns-query, 203.113.131.1" />
-              </div>
-
-              <div class="field" style="margin-bottom: 0.75rem;">
-                <label for="upstreamStrategySelect">Chiến lược cân bằng tải Upstream DNS</label>
-                <select id="upstreamStrategySelect">
-                  <option value="failover">Failover tuần tự (Ưu tiên máy chủ khỏe đầu tiên)</option>
-                  <option value="round_robin">Round-Robin (Chia đều truy vấn qua các Upstream khỏe)</option>
-                  <option value="lowest_latency">Lowest-Latency (Tự chọn Upstream phản hồi nhanh nhất — EWMA)</option>
-                  <option value="parallel">Parallel / Fastest-first (Gửi đồng thời, lấy gói về trước + tự hủy gói thua)</option>
-                </select>
-              </div>
-
-              <div class="row" style="margin-bottom: 0.9rem; gap: 0.5rem; flex-wrap: wrap;">
-                <button id="applyDohPresetBtn" type="button" class="btn sm">Dùng DoH mã hóa (1.1.1.2 + 9.9.9.9)</button>
-                <button id="testUpstreamsBtn" type="button" class="btn sm">Kiểm tra tốc độ Upstream</button>
-              </div>
-              <div id="upstreamHealthBox" class="iface-list" style="margin-bottom: 0.9rem;"></div>
-
-              <div class="field" style="margin-bottom: 0.9rem;">
-                <label for="blockModeSelect">Cách phản hồi khi chặn tên miền</label>
-                <select id="blockModeSelect">
-                  <option value="zero">Trả về 0.0.0.0 / :: (Nhanh, khuyên dùng)</option>
-                  <option value="nxdomain">Trả về NXDOMAIN (Không tồn tại)</option>
-                </select>
-              </div>
-
-              <div class="field" style="margin-bottom: 0.85rem;">
-                <label>Lá chắn bảo mật lõi DNS (Phase 1)</label>
-                <div class="checkbox-grid">
-                  <label><input type="checkbox" id="secRebindingGuard" checked /> Chống DNS Rebinding (bảo vệ Router/Camera LAN)</label>
-                  <label><input type="checkbox" id="secCnameGuard" checked /> Chống CNAME Cloaking (chặn tracker/malware ẩn)</label>
-                  <label><input type="checkbox" id="secAntiBypass" checked /> Chống vượt mặt DNS (Firefox DoH &amp; Apple Private Relay)</label>
-                  <label><input type="checkbox" id="secServeStale" checked /> Serve-Stale Cache (giữ mạng ổn định khi ISP chập chờn)</label>
-                </div>
-              </div>
-
-              <div class="field" style="margin-bottom: 1rem;">
-                <label for="rebindingWhitelistInput">Ngoại lệ DNS Rebinding (domain nội bộ được phép trả về IP LAN, cách nhau dấu phẩy)</label>
-                <input id="rebindingWhitelistInput" type="text" placeholder="vd: plex.direct, tailscale.net" />
-              </div>
-
-              <div class="row" style="margin-bottom: 1.2rem;">
-                <button id="saveSettingsBtn" type="button" class="btn primary">Lưu cài đặt</button>
-                <button id="clearCacheBtn" type="button" class="btn">Xóa DNS Cache (<span id="cacheCount" class="tabular">0</span>)</button>
-              </div>
-
-              <hr class="divider" />
-
-              <div class="field">
-                <label>Giao diện hiển thị (Theme)</label>
                 <div class="segmented equal-3" role="group" aria-label="Chọn giao diện" id="themeSegmented">
                   <button type="button" data-theme-val="system" aria-pressed="true">Theo hệ thống</button>
                   <button type="button" data-theme-val="light" aria-pressed="false">Sáng</button>
@@ -2263,98 +2315,227 @@
             </div>
           </div>
 
-          <div class="card" style="margin-top: 1.15rem;">
-            <div class="card-head">
-              <div>
-                <h2>Cảnh báo Bảo mật &amp; Thông báo Realtime (Phase 2)</h2>
-                <p class="card-desc">Báo động khi có thiết bị lạ (MAC thật), máy nội bộ chạm Malware/Phishing hoặc bất thường DNS</p>
+          <!-- SETUP 2: BẢO MẬT LÕI DNS -->
+          <div id="setup-security" class="setup-panel sub-panel">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Lá chắn bảo mật lõi DNS</h2>
+                  <p class="card-desc">Các lớp phòng vệ ở tầng phân giải DNS giúp chống rò rỉ dữ liệu, vượt mặt bộ lọc và tấn công mạng nội bộ</p>
+                </div>
               </div>
-            </div>
-            <div class="checkbox-grid" style="margin-bottom: 0.9rem;">
-              <label><input type="checkbox" id="alertEnabled" checked /> Bật bộ máy cảnh báo bảo mật</label>
-              <label><input type="checkbox" id="alertRogueDevice" checked /> Cảnh báo thiết bị lạ vào mạng LAN</label>
-              <label><input type="checkbox" id="alertIgnorePrivMac" checked /> Không đẩy Telegram cho Private Wi-Fi MAC (chỉ ghi UI)</label>
-              <label><input type="checkbox" id="alertThreatHit" checked /> Báo động ngay khi chạm Malware / Phishing / Rebinding</label>
-              <label><input type="checkbox" id="alertAnomaly" checked /> Phát hiện bất thường (DNS Tunneling / NXDOMAIN spike)</label>
-            </div>
-            <div class="grid-2" style="gap: 0.85rem; margin-bottom: 0.9rem;">
-              <div class="field">
-                <label for="alertTelegramToken">Telegram Bot Token (tùy chọn)</label>
-                <input id="alertTelegramToken" type="password" placeholder="123456:ABC-DEF..." autocomplete="off" />
+
+              <div class="setting-list">
+                <label class="setting-row" for="secRebindingGuard">
+                  <span class="setting-row-text">
+                    <span class="setting-row-title">Chống DNS Rebinding</span>
+                    <span class="setting-row-desc">Ngăn tên miền ngoài Internet trả về địa chỉ IP nội bộ để bảo vệ Router, Camera và NAS trong mạng LAN</span>
+                  </span>
+                  <input type="checkbox" class="switch" role="switch" id="secRebindingGuard" checked />
+                </label>
+
+                <label class="setting-row" for="secCnameGuard">
+                  <span class="setting-row-text">
+                    <span class="setting-row-title">Chống CNAME Cloaking</span>
+                    <span class="setting-row-desc">Kiểm tra chuỗi CNAME trung gian để chặn tracker và mã độc ngụy trang dưới tên miền chính chủ</span>
+                  </span>
+                  <input type="checkbox" class="switch" role="switch" id="secCnameGuard" checked />
+                </label>
+
+                <label class="setting-row" for="secAntiBypass">
+                  <span class="setting-row-text">
+                    <span class="setting-row-title">Chống vượt mặt DNS (Anti-Bypass)</span>
+                    <span class="setting-row-desc">Chặn tín hiệu canary của Firefox DoH và Apple Private Relay để thiết bị không tự bỏ qua bộ lọc LAN</span>
+                  </span>
+                  <input type="checkbox" class="switch" role="switch" id="secAntiBypass" checked />
+                </label>
+
+                <label class="setting-row" for="secServeStale">
+                  <span class="setting-row-text">
+                    <span class="setting-row-title">Serve-Stale Cache</span>
+                    <span class="setting-row-desc">Tạm phục vụ bản ghi cache cũ khi đường truyền ISP hoặc Upstream chập chờn để giữ mạng ổn định</span>
+                  </span>
+                  <input type="checkbox" class="switch" role="switch" id="secServeStale" checked />
+                </label>
               </div>
-              <div class="field">
-                <label for="alertTelegramChatId">Telegram Chat ID</label>
-                <input id="alertTelegramChatId" type="text" placeholder="vd: 123456789 hoặc -100..." />
+
+              <div class="field" style="margin-bottom: 1.05rem;">
+                <label for="rebindingWhitelistInput">Ngoại lệ DNS Rebinding (domain nội bộ được phép trả về IP LAN, cách nhau bằng dấu phẩy)</label>
+                <input id="rebindingWhitelistInput" type="text" placeholder="vd: plex.direct, tailscale.net" />
               </div>
-            </div>
-            <div class="field" style="margin-bottom: 1rem;">
-              <label for="alertWebhookUrl">Webhook URL tùy chỉnh (Discord / Slack / n8n — tùy chọn)</label>
-              <input id="alertWebhookUrl" type="url" placeholder="https://..." />
-            </div>
-            <div class="row" style="gap: 0.6rem;">
-              <button id="saveAlertsBtn" type="button" class="btn primary">Lưu cấu hình cảnh báo</button>
-              <button id="testAlertsBtn" type="button" class="btn">Gửi cảnh báo thử</button>
+
+              <button id="saveSecurityBtn" type="button" class="btn primary">Lưu cài đặt bảo mật</button>
             </div>
           </div>
 
-          <div class="grid-2" style="margin-top: 1.15rem;">
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h2>Local DNS Nội bộ &amp; Cân bằng tải Round-Robin</h2>
-                  <p class="card-desc">Ánh xạ tên miền nội bộ (vd <code>app.lan</code>) về 1 hoặc nhiều IP LAN — tự loại IP chết qua TCP/HTTP Health Check</p>
+          <!-- SETUP 3: CẢNH BÁO & THÔNG BÁO -->
+          <div id="setup-alerts" class="setup-panel sub-panel">
+            <div class="grid-2">
+              <div class="card">
+                <div class="card-head">
+                  <div>
+                    <h2>Quy tắc kích hoạt cảnh báo</h2>
+                    <p class="card-desc">Chọn các sự kiện bất thường trong mạng LAN sẽ được ghi nhận và đẩy thông báo</p>
+                  </div>
                 </div>
-                <button id="checkLocalHealthBtn" type="button" class="btn sm">Kiểm tra sức khỏe</button>
-              </div>
-              <div class="row" style="gap: 0.5rem; margin-bottom: 0.55rem; flex-wrap: wrap;">
-                <input id="localDnsDomain" type="text" placeholder="Tên miền (vd: app.lan)" style="flex: 1; min-width: 140px;" />
-                <input id="localDnsIp" type="text" placeholder="IP backend (vd: 192.168.1.10*2, 192.168.1.11)" style="flex: 2; min-width: 200px;" />
-                <button id="addLocalDnsBtn" type="button" class="btn primary">Lưu</button>
-              </div>
-              <div class="row" style="gap: 0.5rem; margin-bottom: 0.85rem; flex-wrap: wrap; align-items: center;">
-                <select id="localDnsStrategy" style="width: auto; min-width: 145px;">
-                  <option value="round_robin">Xoay vòng đều (RR)</option>
-                  <option value="weighted">Theo trọng số (IP*w)</option>
-                </select>
-                <input id="localDnsHealthPort" type="number" min="1" max="65535" placeholder="Cổng check (vd: 80)" style="width: 145px;" />
-                <input id="localDnsHealthPath" type="text" placeholder="HTTP path (vd: /health)" style="width: 155px;" />
-                <input id="localDnsTtl" type="number" min="1" max="86400" value="15" title="TTL (giây)" style="width: 78px;" />
-                <label style="display:flex;align-items:center;gap:0.35rem;font-size:0.82rem;cursor:pointer;">
-                  <input type="checkbox" id="localDnsSingleAnswer" /> 1 IP/lượt
-                </label>
-              </div>
-              <div id="localDnsList" class="iface-list"></div>
-            </div>
 
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h2>Lưu trữ SQLite &amp; Sao lưu Cấu hình (Phase 3)</h2>
-                  <p class="card-desc">Lưu lịch sử điều tra dài hạn bằng SQLite WAL và sao lưu/khôi phục toàn bộ thiết bị &amp; quy tắc</p>
+                <div class="setting-list" style="margin-bottom: 0;">
+                  <label class="setting-row" for="alertEnabled">
+                    <span class="setting-row-text">
+                      <span class="setting-row-title">Bật bộ máy cảnh báo bảo mật</span>
+                      <span class="setting-row-desc">Công tắc tổng cho hệ thống giám sát và cảnh báo theo thời gian thực</span>
+                    </span>
+                    <input type="checkbox" class="switch" role="switch" id="alertEnabled" checked />
+                  </label>
+
+                  <label class="setting-row" for="alertRogueDevice">
+                    <span class="setting-row-text">
+                      <span class="setting-row-title">Cảnh báo thiết bị lạ vào mạng LAN</span>
+                      <span class="setting-row-desc">Phát hiện thiết bị mới xuất hiện chưa có trong danh sách đã lưu</span>
+                    </span>
+                    <input type="checkbox" class="switch" role="switch" id="alertRogueDevice" checked />
+                  </label>
+
+                  <label class="setting-row" for="alertIgnorePrivMac">
+                    <span class="setting-row-text">
+                      <span class="setting-row-title">Bỏ qua đẩy Telegram với Private Wi-Fi MAC</span>
+                      <span class="setting-row-desc">Chỉ ghi log trên giao diện, tránh làm phiền khi điện thoại tự đổi MAC ngẫu nhiên</span>
+                    </span>
+                    <input type="checkbox" class="switch" role="switch" id="alertIgnorePrivMac" checked />
+                  </label>
+
+                  <label class="setting-row" for="alertThreatHit">
+                    <span class="setting-row-text">
+                      <span class="setting-row-title">Báo động Malware / Phishing / Rebinding</span>
+                      <span class="setting-row-desc">Cảnh báo ngay khi máy nội bộ chạm tên miền độc hại hoặc tấn công DNS</span>
+                    </span>
+                    <input type="checkbox" class="switch" role="switch" id="alertThreatHit" checked />
+                  </label>
+
+                  <label class="setting-row" for="alertAnomaly">
+                    <span class="setting-row-text">
+                      <span class="setting-row-title">Phát hiện bất thường DNS</span>
+                      <span class="setting-row-desc">Theo dõi dấu hiệu DNS Tunneling hoặc đột biến truy vấn NXDOMAIN</span>
+                    </span>
+                    <input type="checkbox" class="switch" role="switch" id="alertAnomaly" checked />
+                  </label>
                 </div>
               </div>
-              <div id="dbStatsBox" class="stat-sub" style="margin-bottom: 0.85rem;">Đang kiểm tra kho SQLite...</div>
-              <div class="row" style="gap: 0.6rem; margin-bottom: 1rem;">
-                <div class="field" style="flex: 1;">
-                  <label for="retentionDaysSelect">Thời gian lưu lịch sử truy vấn (SQLite)</label>
-                  <select id="retentionDaysSelect">
-                    <option value="7">7 ngày</option>
-                    <option value="14" selected>14 ngày (Khuyên dùng)</option>
-                    <option value="30">30 ngày</option>
-                    <option value="60">60 ngày</option>
-                  </select>
+
+              <div class="card">
+                <div class="card-head">
+                  <div>
+                    <h2>Kênh nhận thông báo Realtime</h2>
+                    <p class="card-desc">Đẩy cảnh báo tức thì về Telegram Bot hoặc Webhook (Discord / Slack / n8n)</p>
+                  </div>
                 </div>
-                <button id="saveStorageBtn" type="button" class="btn primary" style="align-self: flex-end;">Lưu lưu trữ</button>
+
+                <div class="field" style="margin-bottom: 0.85rem;">
+                  <label for="alertTelegramToken">Telegram Bot Token (tùy chọn)</label>
+                  <input id="alertTelegramToken" type="password" placeholder="123456:ABC-DEF..." autocomplete="off" />
+                </div>
+
+                <div class="field" style="margin-bottom: 0.85rem;">
+                  <label for="alertTelegramChatId">Telegram Chat ID</label>
+                  <input id="alertTelegramChatId" type="text" placeholder="vd: 123456789 hoặc -100..." />
+                </div>
+
+                <div class="field" style="margin-bottom: 1.05rem;">
+                  <label for="alertWebhookUrl">Webhook URL tùy chỉnh (Discord / Slack / n8n)</label>
+                  <input id="alertWebhookUrl" type="url" placeholder="https://..." />
+                </div>
+
+                <div class="row card-footer-actions" style="gap: 0.55rem;">
+                  <button id="saveAlertsBtn" type="button" class="btn primary">Lưu cấu hình cảnh báo</button>
+                  <button id="testAlertsBtn" type="button" class="btn">Gửi cảnh báo thử</button>
+                </div>
               </div>
-              <hr class="divider" />
-              <div class="row" style="gap: 0.6rem; flex-wrap: wrap;">
-                <button id="exportBackupBtn" type="button" class="btn">Tải file Backup (JSON)</button>
-                <label class="btn" style="cursor: pointer;">
-                  Khôi phục từ file JSON
-                  <input id="importBackupFile" type="file" accept="application/json,.json" style="display: none;" />
-                </label>
+            </div>
+          </div>
+
+          <!-- SETUP 4: LOCAL DNS & LƯU TRỮ -->
+          <div id="setup-local" class="setup-panel sub-panel">
+            <div class="grid-2">
+              <div class="card">
+                <div class="card-head">
+                  <div>
+                    <h2>Local DNS Nội bộ &amp; Round-Robin</h2>
+                    <p class="card-desc">Ánh xạ tên miền nội bộ (vd <code>app.lan</code>) về 1 hoặc nhiều IP LAN có Health Check</p>
+                  </div>
+                  <button id="checkLocalHealthBtn" type="button" class="btn sm">Kiểm tra sức khỏe</button>
+                </div>
+
+                <div class="row" style="gap: 0.5rem; margin-bottom: 0.65rem;">
+                  <input id="localDnsDomain" type="text" aria-label="Tên miền nội bộ" placeholder="Tên miền (vd: app.lan)" style="flex: 1; min-width: 140px;" />
+                  <input id="localDnsIp" type="text" aria-label="IP backend" placeholder="IP backend (vd: 192.168.1.10*2, 192.168.1.11)" style="flex: 2; min-width: 200px;" />
+                  <button id="addLocalDnsBtn" type="button" class="btn primary">Lưu</button>
+                </div>
+
+                <div class="local-form-grid">
+                  <div class="field">
+                    <label for="localDnsStrategy">Chiến lược</label>
+                    <select id="localDnsStrategy">
+                      <option value="round_robin">Xoay vòng đều (RR)</option>
+                      <option value="weighted">Trọng số (IP*w)</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="localDnsHealthPort">Cổng check</label>
+                    <input id="localDnsHealthPort" type="number" min="1" max="65535" placeholder="vd: 80" />
+                  </div>
+                  <div class="field">
+                    <label for="localDnsHealthPath">HTTP path</label>
+                    <input id="localDnsHealthPath" type="text" placeholder="vd: /health" />
+                  </div>
+                  <div class="field">
+                    <label for="localDnsTtl">TTL (s)</label>
+                    <input id="localDnsTtl" type="number" min="1" max="86400" value="15" />
+                  </div>
+                  <label class="switch-wrap" style="padding-bottom: 0.42rem; font-size: 0.8rem; white-space: nowrap;">
+                    <input type="checkbox" id="localDnsSingleAnswer" /> 1 IP/lượt
+                  </label>
+                </div>
+
+                <div id="localDnsList" class="iface-list"></div>
               </div>
-              <div class="stat-sub" style="margin-top: 0.5rem;">File backup mặc định ẩn Telegram Bot Token để bảo mật.</div>
+
+              <div class="card">
+                <div class="card-head">
+                  <div>
+                    <h2>Lưu trữ SQLite &amp; Sao lưu cấu hình</h2>
+                    <p class="card-desc">Quản lý thời gian lưu lịch sử truy vấn dài hạn và xuất/nhập cấu hình JSON</p>
+                  </div>
+                </div>
+
+                <div class="iface-row" style="margin-bottom: 1rem;">
+                  <div id="dbStatsBox" class="stat-sub" style="color: var(--text-secondary);">Đang kiểm tra kho SQLite...</div>
+                </div>
+
+                <div class="row" style="gap: 0.6rem; margin-bottom: 1.05rem;">
+                  <div class="field" style="flex: 1;">
+                    <label for="retentionDaysSelect">Thời gian lưu lịch sử truy vấn (SQLite)</label>
+                    <select id="retentionDaysSelect">
+                      <option value="7">7 ngày</option>
+                      <option value="14" selected>14 ngày (Khuyên dùng)</option>
+                      <option value="30">30 ngày</option>
+                      <option value="60">60 ngày</option>
+                    </select>
+                  </div>
+                  <button id="saveStorageBtn" type="button" class="btn primary" style="align-self: flex-end;">Lưu lưu trữ</button>
+                </div>
+
+                <hr class="divider" />
+
+                <div class="stat-label" style="margin-bottom: 0.55rem; font-weight: 600;">Sao lưu &amp; Khôi phục toàn bộ cấu hình</div>
+                <div class="row" style="gap: 0.55rem; flex-wrap: wrap;">
+                  <button id="exportBackupBtn" type="button" class="btn">Tải file Backup (JSON)</button>
+                  <label class="btn" tabindex="0">
+                    Khôi phục từ file JSON
+                    <input id="importBackupFile" type="file" accept="application/json,.json" style="display: none;" />
+                  </label>
+                </div>
+                <div class="stat-sub" style="margin-top: 0.55rem;">File backup mặc định ẩn Telegram Bot Token để đảm bảo an toàn.</div>
+              </div>
             </div>
           </div>
         </section>
@@ -3097,11 +3278,26 @@
       document.querySelectorAll('[data-subtab]').forEach((b) =>
         b.setAttribute('aria-selected', String(b.dataset.subtab === valid))
       );
-      document.querySelectorAll('.sub-panel').forEach((p) =>
+      document.querySelectorAll('#tab-clients .sub-panel').forEach((p) =>
         p.classList.toggle('active', p.id === `subtab-${valid}`)
       );
       if (updateHash && state.activeTab === 'clients') {
         const nextHash = valid === 'rules' ? '#clients/rules' : '#clients';
+        if (location.hash !== nextHash) history.replaceState(null, '', nextHash);
+      }
+    }
+
+    function switchSetupTab(subId, updateHash = true) {
+      const allowed = new Set(['network', 'security', 'alerts', 'local']);
+      const valid = allowed.has(subId) ? subId : 'network';
+      document.querySelectorAll('[data-setup-tab]').forEach((b) =>
+        b.setAttribute('aria-selected', String(b.dataset.setupTab === valid))
+      );
+      document.querySelectorAll('#tab-setup .setup-panel').forEach((p) =>
+        p.classList.toggle('active', p.id === `setup-${valid}`)
+      );
+      if (updateHash && state.activeTab === 'setup') {
+        const nextHash = valid === 'network' ? '#setup' : `#setup/${valid}`;
         if (location.hash !== nextHash) history.replaceState(null, '', nextHash);
       }
     }
@@ -3122,7 +3318,11 @@
       }
       if (updateHash) {
         const nextHash = `#${valid}`;
-        if (location.hash !== nextHash && !(valid === 'clients' && location.hash === '#clients/rules')) {
+        if (
+          location.hash !== nextHash &&
+          !(valid === 'clients' && location.hash === '#clients/rules') &&
+          !(valid === 'setup' && location.hash.startsWith('#setup/'))
+        ) {
           history.replaceState(null, '', nextHash);
         }
       }
@@ -3135,6 +3335,7 @@
       if (TAB_META[tab]) {
         switchTab(tab, false);
         if (tab === 'clients' && sub) switchSubtab(sub, false);
+        if (tab === 'setup' && sub) switchSetupTab(sub, false);
       }
     }
 
@@ -3146,7 +3347,17 @@
     });
 
     document.querySelectorAll('[data-subtab]').forEach((btn) => {
-      btn.addEventListener('click', () => switchSubtab(btn.dataset.subtab, true));
+      btn.addEventListener('click', () => {
+        switchSubtab(btn.dataset.subtab, true);
+        btn.blur();
+      });
+    });
+
+    document.querySelectorAll('[data-setup-tab]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        switchSetupTab(btn.dataset.setupTab, true);
+        btn.blur();
+      });
     });
 
     window.addEventListener('hashchange', applyHashRoute);
@@ -4406,6 +4617,10 @@
         btn.disabled = false;
         btn.textContent = 'Kiểm tra tốc độ Upstream';
       }
+    });
+
+    document.getElementById('saveSecurityBtn')?.addEventListener('click', () => {
+      document.getElementById('saveSettingsBtn')?.click();
     });
 
     document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
