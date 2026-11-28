@@ -11,6 +11,10 @@
     "dnsRebindingGuard": true,
     "cnameCloakingGuard": true,
     "antiBypass": true,
+    "blockDnsTunneling": true,
+    "autoQuarantineOnAnomaly": true,
+    "quarantineDurationMin": 15,
+    "activeLanSweep": true,
     "serveStaleCache": true,
     "enableIpv6": true,
     "rebindingWhitelist": []
@@ -30,6 +34,29 @@
   "storage": {
     "sqliteEnabled": true,
     "retentionDays": 14
+  },
+  "encryptedDns": {
+    "dohEnabled": true,
+    "dohHost": "127.0.0.1",
+    "dohPort": 8053,
+    "dotEnabled": false,
+    "dotPort": 853,
+    "publicHostname": "",
+    "tlsCertPath": "",
+    "tlsKeyPath": "",
+    "iosExcludeSsids": []
+  },
+  "haSync": {
+    "enabled": false,
+    "autoSyncOnSave": true,
+    "debounceSec": 5,
+    "healthCheckIntervalSec": 60,
+    "secondaryHost": "192.168.1.209",
+    "secondaryUser": "server-mac",
+    "secondaryAppDir": "~/Apps/netshield/netshield-dns",
+    "sshKeyPath": "/Users/anhlv2602/.ssh/id_ed25519",
+    "sshKnownHostsPath": "/Users/anhlv2602/.ssh/known_hosts",
+    "alertOnOffline": true
   },
   "localRecords": [
     {
