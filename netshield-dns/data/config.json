@@ -277,7 +277,7 @@
       "id": "mac:1C:F6:4C:4A:18:08",
       "ip": "192.168.1.209",
       "name": "server-mac",
-      "groupId": "",
+      "groupId": "computer",
       "mac": "1C:F6:4C:4A:18:08"
     },
     {
@@ -496,6 +496,13 @@
       "name": "Máy tính Windows",
       "groupId": "computer",
       "mac": "00:1D:43:30:07:73"
+    },
+    {
+      "id": "mac:22:48:4D:06:CB:A9",
+      "ip": "192.168.1.199",
+      "name": "",
+      "groupId": "computer",
+      "mac": "22:48:4D:06:CB:A9"
     }
   ],
   "clientRules": []
