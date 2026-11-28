@@ -286,8 +286,9 @@ class AlertEngine extends EventEmitter {
 
   /**
    * Kiểm tra thiết bị lạ từ kết quả quét ARP/mDNS:
+   * - Mỗi MAC lạ chỉ cảnh báo ĐÚNG 1 LẦN (không lặp lại sau mỗi chu kỳ quét ARP 10 phút)
+   * - Private Wi-Fi MAC (điện thoại tự đổi MAC) bỏ qua mặc định khi ignorePrivateMacPush=true để tránh làm nhiễu tab Cảnh báo
    * - MAC thật (non-private OUI) chưa có trong config.devices -> mức 'high', đẩy Telegram ngay
-   * - Private MAC chưa lưu -> mức 'low', chỉ ghi nhận trên UI (tránh spam điện thoại khách)
    */
   handleDiscoveredDevice(info) {
     const cfg = this._cfg();
@@ -301,8 +302,16 @@ class AlertEngine extends EventEmitter {
     const known = savedDevices.some((d) => normalizeMac(d.mac) === mac || (info.ip && d.ip === info.ip && !d.mac));
     if (known) return null;
 
+    // Không lặp lại cảnh báo cho cùng 1 MAC đã từng được ghi nhận trong danh sách cảnh báo
+    if (this.alerts.some((a) => a.type === 'rogue_device' && normalizeMac(a.mac) === mac)) {
+      return null;
+    }
+
     const isPriv = Boolean(info.isPrivateMac);
-    const shouldPush = !(isPriv && cfg.ignorePrivateMacPush !== false);
+    if (isPriv && cfg.ignorePrivateMacPush !== false) {
+      return null;
+    }
+
     const label = info.suggestedName || info.hostname || info.vendor || 'Chưa xác định';
 
     return this.createAlert({
@@ -313,7 +322,7 @@ class AlertEngine extends EventEmitter {
       clientIp: info.ip || '',
       mac,
       reason: isPriv ? 'Private MAC chưa duyệt' : 'MAC thật chưa có trong danh sách thiết bị',
-      push: shouldPush,
+      push: !isPriv,
       fingerprint: `rogue_device|${mac}`,
     });
   }
@@ -414,7 +423,7 @@ class AlertEngine extends EventEmitter {
       total: this.alerts.length,
       unacknowledged,
       highUnacknowledged,
-      recent: this.alerts.slice(0, 8),
+      recent: this.alerts.slice(0, 50),
     };
   }
 

@@ -116,8 +116,8 @@ test('AlertEngine: phân 2 cấp Rogue Device (MAC thật = high, Private MAC = 
   assert.equal(rogueReal.type, 'rogue_device');
   assert.equal(rogueReal.severity, 'high');
 
-  // Thiết bị lạ Private MAC -> low (không spam)
-  const roguePriv = alertEngine.handleDiscoveredDevice({
+  // Thiết bị lạ Private MAC -> bỏ qua khi ignorePrivateMacPush=true (tránh làm nhiễu tab Cảnh báo)
+  const roguePrivSuppressed = alertEngine.handleDiscoveredDevice({
     ip: '192.168.1.188',
     mac: '0A:11:22:33:44:55',
     isPrivateMac: true,
@@ -126,10 +126,10 @@ test('AlertEngine: phân 2 cấp Rogue Device (MAC thật = high, Private MAC = 
     isGateway: false,
     isSharedMac: false,
   });
-  assert.ok(roguePriv);
-  assert.equal(roguePriv.severity, 'low');
+  assert.equal(roguePrivSuppressed, null);
 
-  // Dedupe: quét lại cùng MAC trong 10 phút không tạo cảnh báo trùng
+  // Dedupe vĩnh viễn theo MAC: kể cả khi hết cửa sổ 10 phút cũng không lặp lại cùng 1 MAC lạ
+  alertEngine.dedupeMap.clear();
   const dup = alertEngine.handleDiscoveredDevice({
     ip: '192.168.1.99',
     mac: '00:1B:21:AA:BB:CC',
