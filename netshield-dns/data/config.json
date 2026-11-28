@@ -85,6 +85,24 @@
           "healthPort": null
         }
       ]
+    },
+    {
+      "domain": "server.lan2",
+      "ip": "192.168.1.199",
+      "ips": [
+        "192.168.1.199"
+      ],
+      "ttl": 60,
+      "strategy": "round_robin",
+      "singleAnswer": false,
+      "enabled": true,
+      "targets": [
+        {
+          "ip": "192.168.1.199",
+          "weight": 1,
+          "healthPort": null
+        }
+      ]
     }
   ],
   "blocklists": [

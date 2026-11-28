@@ -1424,17 +1424,42 @@
       gap: 0.85rem;
     }
     .group-card {
+      position: relative;
       background: var(--surface-alt);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
+      transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+    }
+    .group-card:hover { border-color: var(--border-strong); }
+    .group-card.active {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface));
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    .group-card-trigger {
+      all: unset;
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
       padding: 0.9rem 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
-      transition: border-color 140ms ease;
+      gap: 0.65rem;
+      cursor: pointer;
+      text-align: left;
+      border-radius: inherit;
     }
-    .group-card:hover { border-color: var(--border-strong); }
-    .group-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+    .group-card-trigger:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .group-card-delete {
+      position: absolute;
+      top: 0.65rem;
+      right: 0.65rem;
+      z-index: 2;
+    }
+    .group-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; padding-right: 2.1rem; }
     .group-title { font-weight: 700; font-size: 0.92rem; display: flex; align-items: center; gap: 0.45rem; }
     .group-metrics {
       display: grid;
@@ -1446,9 +1471,28 @@
       border-radius: 8px;
       font-variant-numeric: tabular-nums;
     }
+    .group-card.active .group-metrics {
+      border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+    }
     .group-metric-item { display: flex; flex-direction: column; }
     .group-metric-val { font-size: 0.84rem; font-weight: 700; color: var(--text); }
     .group-metric-lbl { font-size: 0.69rem; color: var(--muted); }
+    .device-filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--accent-soft) 70%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+      font-size: 0.82rem;
+      color: var(--text);
+    }
+    .device-filter-bar[hidden] { display: none; }
+    .device-filter-info { display: inline-flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
 
     .disc-tags { display: flex; flex-wrap: wrap; gap: 0.25rem; }
     .disc-tag {
@@ -2037,7 +2081,7 @@
               <div class="card-head">
                 <div>
                   <h2>Nhóm thiết bị trong mạng LAN</h2>
-                  <p class="card-desc">Phân loại thiết bị để áp dụng quy tắc chặn đồng loạt theo nhóm</p>
+                  <p class="card-desc">Phân loại thiết bị để áp dụng quy tắc chặn đồng loạt — bấm chọn một nhóm để lọc danh sách bên dưới</p>
                 </div>
                 <button id="toggleAddGroupBtn" type="button" class="btn primary sm">+ Tạo nhóm mới</button>
               </div>
@@ -2088,6 +2132,8 @@
                   <button id="addManualDeviceBtn" type="button" class="btn primary">Gán vào nhóm</button>
                 </div>
               </div>
+
+              <div id="deviceFilterBar" class="device-filter-bar" hidden></div>
 
               <div class="list-table-head dev-grid">
                 <span>IP &amp; Lưu lượng</span>
@@ -2565,6 +2611,7 @@
       chartMode: 'hourly',
       streamPaused: false,
       activeTab: 'overview',
+      deviceGroupFilter: '',
     };
 
     const TAB_META = {
@@ -3579,6 +3626,9 @@
       const devices = Array.isArray(s.config.devices) ? s.config.devices : [];
       const groupById = new Map(groups.map((g) => [g.id, g]));
       const groupStatsById = new Map((s.summary.groupStats || []).map((gs) => [gs.id, gs]));
+      if (state.deviceGroupFilter && !groupById.has(state.deviceGroupFilter)) {
+        state.deviceGroupFilter = '';
+      }
 
       document.getElementById('deviceGroupsGrid').innerHTML = groups.length
         ? groups
@@ -3587,29 +3637,23 @@
               const gs = groupStatsById.get(g.id);
               const totalQ = gs?.total || 0;
               const blockedQ = gs?.blocked || 0;
-              const memberChips = members.length
-                ? `<div class="chip-list" style="margin-top:0;max-height:92px;">${members
-                    .map((m) => {
-                      const label = m.name ? `${m.name} • ${m.ip}` : m.ip;
-                      return `<span class="chip" title="${esc(label)}"><span class="chip-text">${esc(label)}</span><button type="button" onclick="removeDevice('${esc(m.ip)}')" title="Gỡ khỏi nhóm" aria-label="Gỡ ${esc(m.ip)}">×</button></span>`;
-                    })
-                    .join('')}</div>`
-                : '<div class="stat-sub">Chưa có thiết bị nào trong nhóm</div>';
+              const isSelected = state.deviceGroupFilter === g.id;
               return `
-                <div class="group-card">
-                  <div class="group-card-head">
-                    <div style="min-width:0;">
-                      <div class="group-title"><span>${esc(g.icon || '📁')}</span><span>${esc(g.name)}</span></div>
-                      ${g.description ? `<div class="stat-sub" style="margin-top:2px;">${esc(g.description)}</div>` : ''}
+                <div class="group-card${isSelected ? ' active' : ''}">
+                  <button type="button" class="group-card-trigger" aria-pressed="${isSelected ? 'true' : 'false'}" onclick="toggleDeviceGroupFilter('${esc(g.id)}')">
+                    <div class="group-card-head">
+                      <div style="min-width:0;">
+                        <div class="group-title"><span>${esc(g.icon || '📁')}</span><span>${esc(g.name)}</span></div>
+                        ${g.description ? `<div class="stat-sub" style="margin-top:2px;">${esc(g.description)}</div>` : ''}
+                      </div>
                     </div>
-                    <button type="button" class="btn icon-btn danger-hover" onclick="deleteDeviceGroup('${esc(g.id)}')" title="Xóa nhóm ${esc(g.name)}" aria-label="Xóa nhóm ${esc(g.name)}">${SVG_TRASH}</button>
-                  </div>
-                  <div class="group-metrics">
-                    <div class="group-metric-item"><span class="group-metric-val">${members.length}</span><span class="group-metric-lbl">Thiết bị</span></div>
-                    <div class="group-metric-item"><span class="group-metric-val">${totalQ.toLocaleString('vi-VN')}</span><span class="group-metric-lbl">Truy vấn</span></div>
-                    <div class="group-metric-item"><span class="group-metric-val" style="color:${blockedQ > 0 ? 'var(--danger)' : 'var(--text)'};">${blockedQ.toLocaleString('vi-VN')}</span><span class="group-metric-lbl">Đã chặn</span></div>
-                  </div>
-                  ${memberChips}
+                    <div class="group-metrics">
+                      <div class="group-metric-item"><span class="group-metric-val">${members.length}</span><span class="group-metric-lbl">Thiết bị</span></div>
+                      <div class="group-metric-item"><span class="group-metric-val">${totalQ.toLocaleString('vi-VN')}</span><span class="group-metric-lbl">Truy vấn</span></div>
+                      <div class="group-metric-item"><span class="group-metric-val" style="color:${blockedQ > 0 ? 'var(--danger)' : 'var(--text)'};">${blockedQ.toLocaleString('vi-VN')}</span><span class="group-metric-lbl">Đã chặn</span></div>
+                    </div>
+                  </button>
+                  <button type="button" class="btn icon-btn danger-hover group-card-delete" onclick="deleteDeviceGroup('${esc(g.id)}')" title="Xóa nhóm ${esc(g.name)}" aria-label="Xóa nhóm ${esc(g.name)}">${SVG_TRASH}</button>
                 </div>
               `;
             })
@@ -3696,8 +3740,31 @@
           }
         }
 
-        assignContainer.innerHTML = deviceItems.length
-          ? deviceItems
+        const activeFilterGroup = state.deviceGroupFilter ? groupById.get(state.deviceGroupFilter) || null : null;
+        const filteredDeviceItems = activeFilterGroup
+          ? deviceItems.filter((d) => d.groupId === activeFilterGroup.id)
+          : deviceItems;
+
+        const filterBarEl = document.getElementById('deviceFilterBar');
+        if (filterBarEl) {
+          if (activeFilterGroup) {
+            filterBarEl.hidden = false;
+            filterBarEl.innerHTML = `
+              <div class="device-filter-info">
+                <span>Đang lọc theo nhóm:</span>
+                <strong>${esc(activeFilterGroup.icon || '📁')} ${esc(activeFilterGroup.name)}</strong>
+                <span class="badge cached">${filteredDeviceItems.length} / ${deviceItems.length} thiết bị</span>
+              </div>
+              <button type="button" class="btn sm" onclick="clearDeviceGroupFilter()">Xem tất cả</button>
+            `;
+          } else {
+            filterBarEl.hidden = true;
+            filterBarEl.innerHTML = '';
+          }
+        }
+
+        assignContainer.innerHTML = filteredDeviceItems.length
+          ? filteredDeviceItems
               .map((d, idx) => {
                 const disc = discoveredMap[d.ip] || null;
                 const sugGroupId = disc?.suggestedGroupId && groupById.has(disc.suggestedGroupId) ? disc.suggestedGroupId : '';
@@ -3768,7 +3835,9 @@
                 `;
               })
               .join('')
-          : '<div style="padding:1rem;">Chưa phát hiện thiết bị nào trong mạng LAN. Bạn có thể thêm IP thủ công ở nút phía trên.</div>';
+          : activeFilterGroup
+            ? `<div style="padding:1rem;display:flex;align-items:center;justify-content:space-between;gap:0.75rem;flex-wrap:wrap;"><span>Chưa có thiết bị nào thuộc nhóm <strong>${esc(activeFilterGroup.icon || '📁')} ${esc(activeFilterGroup.name)}</strong>.</span><button type="button" class="btn sm" onclick="clearDeviceGroupFilter()">Xem tất cả thiết bị</button></div>`
+            : '<div style="padding:1rem;">Chưa phát hiện thiết bị nào trong mạng LAN. Bạn có thể thêm IP thủ công ở nút phía trên.</div>';
         initActionMenus(assignContainer);
       }
 
@@ -4205,6 +4274,26 @@
       showToast('Đã xóa quy tắc thiết bị');
     };
 
+    window.toggleDeviceGroupFilter = (groupId) => {
+      state.deviceGroupFilter = state.deviceGroupFilter === groupId ? '' : groupId;
+      renderStatus();
+      const srEl = document.getElementById('srLiveRegion');
+      if (srEl) {
+        const grp = (state.status?.config?.deviceGroups || []).find((g) => g.id === state.deviceGroupFilter);
+        srEl.textContent = grp
+          ? `Đang lọc danh sách thiết bị theo nhóm ${grp.name}.`
+          : 'Đang hiển thị toàn bộ thiết bị mạng LAN.';
+      }
+    };
+
+    window.clearDeviceGroupFilter = () => {
+      if (!state.deviceGroupFilter) return;
+      state.deviceGroupFilter = '';
+      renderStatus();
+      const srEl = document.getElementById('srLiveRegion');
+      if (srEl) srEl.textContent = 'Đang hiển thị toàn bộ thiết bị mạng LAN.';
+    };
+
     window.deleteDeviceGroup = async (id) => {
       const grp = (state.status?.config?.deviceGroups || []).find((g) => g.id === id);
       const ok = await confirmAction(
@@ -4215,6 +4304,7 @@
       if (!ok) return;
       try {
         await api(`/api/groups/${encodeURIComponent(id)}`, 'DELETE');
+        if (state.deviceGroupFilter === id) state.deviceGroupFilter = '';
         await loadAll();
         showToast('Đã xóa nhóm thiết bị');
       } catch (err) {
