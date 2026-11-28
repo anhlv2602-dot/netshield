@@ -2486,6 +2486,26 @@
                   <input type="checkbox" class="switch" role="switch" id="secBlockTunneling" checked />
                 </label>
 
+                <div class="setting-row">
+                  <span class="setting-row-text">
+                    <span class="setting-row-title">Chống giả mạo thương hiệu &amp; cơ quan Việt Nam (VN Lookalike Guard)</span>
+                    <span class="setting-row-desc">Phát hiện tức thì tên miền mạo danh VNeID, Thuế GDT, Dịch vụ công, Ngân hàng VN, MISA, MoMo… (miễn trừ *.gov.vn, *.edu.vn và Whitelist)</span>
+                  </span>
+                  <select id="secVnImpersonationMode" style="width: auto; min-width: 170px;">
+                    <option value="block">Chặn cứng + Cảnh báo</option>
+                    <option value="audit">Chỉ cảnh báo (Audit)</option>
+                    <option value="off">Tắt</option>
+                  </select>
+                </div>
+
+                <label class="setting-row" for="secDgaBeaconingGuard">
+                  <span class="setting-row-text">
+                    <span class="setting-row-title">Phát hiện mã độc DGA &amp; C2 Beaconing</span>
+                    <span class="setting-row-desc">Cảnh báo máy tính/điện thoại gọi tên miền ngẫu nhiên (entropy cao) hoặc điểm danh theo chu kỳ đều đặn bất thường (loại trừ IoT/Camera/Chrome)</span>
+                  </span>
+                  <input type="checkbox" class="switch" role="switch" id="secDgaBeaconingGuard" checked />
+                </label>
+
                 <label class="setting-row" for="secAutoQuarantine">
                   <span class="setting-row-text">
                     <span class="setting-row-title">Tự động cách ly DNS khi bùng phát bất thường (Auto-Quarantine)</span>
@@ -4036,6 +4056,12 @@
       document.getElementById('secCnameGuard').checked = sec.cnameCloakingGuard !== false;
       document.getElementById('secAntiBypass').checked = sec.antiBypass !== false;
       document.getElementById('secBlockTunneling').checked = sec.blockDnsTunneling !== false;
+      const vnModeEl = document.getElementById('secVnImpersonationMode');
+      if (vnModeEl && document.activeElement !== vnModeEl) {
+        vnModeEl.value = sec.vnImpersonationMode || 'block';
+      }
+      const dgaEl = document.getElementById('secDgaBeaconingGuard');
+      if (dgaEl) dgaEl.checked = sec.dgaBeaconingGuard !== false;
       document.getElementById('secAutoQuarantine').checked = sec.autoQuarantineOnAnomaly === true;
       document.getElementById('secActiveLanSweep').checked = sec.activeLanSweep !== false;
       document.getElementById('secServeStale').checked = sec.serveStaleCache !== false;
@@ -4088,10 +4114,10 @@
           : 'Chưa rõ';
         haBox.innerHTML = `
           <div class="iface-item">
-            <div><strong>Đích đồng bộ</strong><div class="stat-label">${escapeHtml(haCfg.secondaryUser || 'server-mac')}@${escapeHtml(haCfg.secondaryHost || '192.168.1.209')} · ${secDomains}</div></div>
-            <span class="stat-label">Lần sync cuối: ${escapeHtml(lastSyncStr)}</span>
+            <div><strong>Đích đồng bộ</strong><div class="stat-label">${esc(haCfg.secondaryUser || 'server-mac')}@${esc(haCfg.secondaryHost || '192.168.1.209')} · ${secDomains}</div></div>
+            <span class="stat-label">Lần sync cuối: ${esc(lastSyncStr)}</span>
           </div>
-          ${ha.lastError ? `<div class="iface-item"><div><strong>Lỗi gần nhất</strong><div class="stat-label" style="color:var(--danger)">${escapeHtml(ha.lastError)}</div></div></div>` : ''}
+          ${ha.lastError ? `<div class="iface-item"><div><strong>Lỗi gần nhất</strong><div class="stat-label" style="color:var(--danger)">${esc(ha.lastError)}</div></div></div>` : ''}
         `;
       }
       const encStatus = s.encryptedDnsStatus || {};
@@ -4119,13 +4145,13 @@
         const dohLocal = `${encStatus.dohTls ? 'https' : 'http'}://${encStatus.dohHost || '127.0.0.1'}:${encStatus.dohPort || 8053}${encStatus.dohEndpoint || '/dns-query'}`;
         previewEl.innerHTML = `
           <div class="iface-item">
-            <div><strong>DoH nội bộ (cho Cloudflare Tunnel / Caddy)</strong><div class="stat-label">${escapeHtml(dohLocal)}</div></div>
+            <div><strong>DoH nội bộ (cho Cloudflare Tunnel / Caddy)</strong><div class="stat-label">${esc(dohLocal)}</div></div>
             <span class="badge ${encStatus.dohRunning ? 'ok' : ''}">${encStatus.dohRunning ? 'Đang chạy' : 'Tắt'}</span>
           </div>
           <div class="iface-item">
             <div><strong>Android Private DNS / iOS DoH</strong><div class="stat-label">${
               hostVal
-                ? `DoH: https://${escapeHtml(hostVal)}/dns-query · Android DoT: ${escapeHtml(hostVal)}`
+                ? `DoH: https://${esc(hostVal)}/dns-query · Android DoT: ${esc(hostVal)}`
                 : 'Nhập tên miền công khai ở trên để tạo URL DoH & tải hồ sơ .mobileconfig cho iOS'
             }</div></div>
           </div>
@@ -4954,11 +4980,8 @@
         secondaryUser: (document.getElementById('haSecondaryUserInput')?.value || '').trim(),
       };
       try {
-        await api('/api/settings', {
-          method: 'POST',
-          body: JSON.stringify({ haSync }),
-        });
-        await loadStatus();
+        await api('/api/settings', 'POST', { haSync });
+        await loadAll();
         showToast('Đã lưu cấu hình HA Sync');
       } catch (err) {
         showToast('Lỗi lưu HA Sync: ' + err.message);
@@ -4970,14 +4993,11 @@
       btn.disabled = true;
       btn.textContent = 'Đang đồng bộ...';
       try {
-        const res = await api('/api/ha/sync', {
-          method: 'POST',
-          body: JSON.stringify({ syncBlocklistCache: true }),
-        });
-        await loadStatus();
+        const res = await api('/api/ha/sync', 'POST', { syncBlocklistCache: true });
+        await loadAll();
         showToast(`Đã đồng bộ nóng sang máy phụ (${res.durationMs || 0}ms)`);
       } catch (err) {
-        await loadStatus();
+        await loadAll();
         showToast('Đồng bộ thất bại: ' + err.message);
       } finally {
         btn.disabled = false;
@@ -4987,8 +5007,8 @@
 
     document.getElementById('checkHaHealthBtn')?.addEventListener('click', async () => {
       try {
-        const res = await api('/api/ha/health', { method: 'POST', body: '{}' });
-        await loadStatus();
+        const res = await api('/api/ha/health', 'POST', {});
+        await loadAll();
         showToast(res.ok ? `Node phụ Online (${(res.totalBlockedDomains || 0).toLocaleString('vi-VN')} domain)` : 'Node phụ Offline: ' + (res.error || ''));
       } catch (err) {
         showToast('Lỗi kiểm tra sức khỏe: ' + err.message);
@@ -5002,11 +5022,8 @@
         .map((s) => s.trim())
         .filter(Boolean);
       try {
-        await api('/api/settings', {
-          method: 'POST',
-          body: JSON.stringify({ encryptedDns: { publicHostname, iosExcludeSsids } }),
-        });
-        await loadStatus();
+        await api('/api/settings', 'POST', { encryptedDns: { publicHostname, iosExcludeSsids } });
+        await loadAll();
         showToast('Đã lưu cấu hình Mobile DoH/DoT');
       } catch (err) {
         showToast('Lỗi lưu cấu hình Mobile: ' + err.message);
@@ -5042,6 +5059,8 @@
         cnameCloakingGuard: document.getElementById('secCnameGuard').checked,
         antiBypass: document.getElementById('secAntiBypass').checked,
         blockDnsTunneling: document.getElementById('secBlockTunneling').checked,
+        vnImpersonationMode: document.getElementById('secVnImpersonationMode')?.value || 'block',
+        dgaBeaconingGuard: document.getElementById('secDgaBeaconingGuard')?.checked !== false,
         autoQuarantineOnAnomaly: document.getElementById('secAutoQuarantine').checked,
         activeLanSweep: document.getElementById('secActiveLanSweep').checked,
         serveStaleCache: document.getElementById('secServeStale').checked,

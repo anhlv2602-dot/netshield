@@ -78,7 +78,7 @@ test('HASyncManager: sync nóng qua rsync + ssh curl & giám sát chống flappi
     alerts: { rogueDeviceEnabled: true, telegramBotToken: 'tok' },
   };
   const fakeAlertEngine = {
-    recordAlert: (a) => alerts.push(a),
+    createAlert: (a) => alerts.push(a),
   };
 
   const mgr = new HASyncManager({ runner: mockRunner });

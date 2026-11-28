@@ -356,15 +356,17 @@ class HASyncManager {
       // Chống flapping: cần 2 lần liên tiếp lỗi mới đánh dấu offline & gửi 1 cảnh báo duy nhất
       if (this.consecutiveHealthFailures >= 2) {
         this.status.secondaryHealthy = false;
-        if (cfg.alertOnOffline && !this.offlineAlertSent && this.alertEngine?.recordAlert) {
+        if (cfg.alertOnOffline && !this.offlineAlertSent && this.alertEngine?.createAlert) {
           this.offlineAlertSent = true;
-          this.alertEngine.recordAlert({
+          this.alertEngine.createAlert({
             type: 'ha_secondary_offline',
             severity: 'high',
             title: `DNS dự phòng (${cfg.secondaryHost}) đang ngoại tuyến`,
             message: `Không thể kết nối tới Secondary Node ${cfg.secondaryHost} sau ${this.consecutiveHealthFailures} lần kiểm tra: ${err.message}`,
             clientIp: cfg.secondaryHost,
-            dedupeKey: `ha_offline:${cfg.secondaryHost}`,
+            reason: 'HA Secondary Offline',
+            push: true,
+            fingerprint: `ha_offline|${cfg.secondaryHost}`,
           });
         }
       }

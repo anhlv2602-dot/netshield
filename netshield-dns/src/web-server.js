@@ -18,6 +18,7 @@ import { blocklistEngine } from './blocklist.js';
 import { dnsCache, getUpstreamHealth, resetUpstreamHealth, testAllUpstreams } from './dns-server.js';
 import { buildIosMobileConfig, normalizePublicHostname } from './encrypted-dns.js';
 import { haSyncManager, normalizeHaSyncConfig } from './ha-sync.js';
+import { checkVnImpersonation, isDgaLikeDomain } from './threat-guard.js';
 import { deviceDiscovery, normalizeMac } from './discovery.js';
 import { alertEngine } from './alerts.js';
 import { forensicsDb } from './db.js';
@@ -313,7 +314,9 @@ export function startWebServer({
         const clientIp = (url.searchParams.get('clientIp') || '127.0.0.1').trim();
         if (!domain) return sendJson(res, 400, { error: 'Vui lòng nhập tên miền cần kiểm tra' });
         const decision = blocklistEngine.evaluate(domain, clientIp);
-        return sendJson(res, 200, { domain, clientIp, ...decision });
+        const vnImpersonation = checkVnImpersonation(domain, blocklistEngine.whitelistSet);
+        const dgaLike = isDgaLikeDomain(domain);
+        return sendJson(res, 200, { domain, clientIp, ...decision, vnImpersonation, dgaLike });
       }
 
       // 6. Blocklists management
@@ -770,6 +773,7 @@ export function startWebServer({
             'cnameCloakingGuard',
             'antiBypass',
             'blockDnsTunneling',
+            'dgaBeaconingGuard',
             'autoQuarantineOnAnomaly',
             'activeLanSweep',
             'serveStaleCache',
@@ -778,6 +782,9 @@ export function startWebServer({
             if (typeof body.security[key] === 'boolean') {
               cur[key] = body.security[key];
             }
+          }
+          if (['block', 'audit', 'off'].includes(body.security.vnImpersonationMode)) {
+            cur.vnImpersonationMode = body.security.vnImpersonationMode;
           }
           if (Number.isFinite(Number(body.security.quarantineDurationMin))) {
             cur.quarantineDurationMin = Math.max(1, Math.min(1440, Number(body.security.quarantineDurationMin)));

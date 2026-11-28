@@ -229,13 +229,14 @@ export const DEFAULT_ALERTS_CONFIG = {
 
 export function inferBlocklistMeta(list) {
   const explicit = String(list?.category || '').toLowerCase();
-  if (['malware', 'phishing', 'threat_intel', 'ads'].includes(explicit)) {
+  if (['malware', 'phishing', 'threat_intel', 'nrd', 'ads'].includes(explicit)) {
     return {
       category: explicit,
       severity: explicit === 'ads' ? 'info' : 'high',
     };
   }
   const haystack = `${list?.id || ''} ${list?.name || ''} ${list?.url || ''}`.toLowerCase();
+  if (haystack.includes('nrd')) return { category: 'nrd', severity: 'high' };
   if (haystack.includes('phish')) return { category: 'phishing', severity: 'high' };
   if (haystack.includes('urlhaus') || haystack.includes('malware')) return { category: 'malware', severity: 'high' };
   if (haystack.includes('tif') || haystack.includes('threat') || haystack.includes('botnet')) {
@@ -283,6 +284,8 @@ export const DEFAULT_SECURITY_CONFIG = {
   cnameCloakingGuard: true,
   antiBypass: true,
   blockDnsTunneling: true,
+  vnImpersonationMode: 'block', // 'block' | 'audit' | 'off'
+  dgaBeaconingGuard: true,
   autoQuarantineOnAnomaly: false,
   quarantineDurationMin: 15,
   activeLanSweep: true,
@@ -357,6 +360,15 @@ export const DEFAULT_CONFIG = {
       id: 'adguard-dns',
       name: 'AdGuard DNS Filter',
       url: 'https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt',
+      enabled: false,
+      count: 0,
+      lastUpdated: null,
+    },
+    {
+      id: 'hagezi-nrd7',
+      name: 'HaGeZi NRD 7 ngày (Tên miền mới đăng ký — chống lừa đảo)',
+      url: 'https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/nrd7-onlydomains.txt',
+      category: 'nrd',
       enabled: false,
       count: 0,
       lastUpdated: null,

@@ -10,6 +10,7 @@ import {
   store,
 } from './store.js';
 import { deviceDiscovery, normalizeMac } from './discovery.js';
+import { checkVnImpersonation } from './threat-guard.js';
 
 const ANTI_BYPASS_SET = new Set(ANTI_BYPASS_DOMAINS.map(normalizeDomain));
 
@@ -165,15 +166,17 @@ class BlocklistEngine {
       try {
         const content = await fs.readFile(cacheFile, 'utf8');
         const lines = content.split('\n');
+        // Tái sử dụng 1 object metadata chung cho cả danh sách để tiết kiệm 60-70% RAM
+        const sharedMeta = Object.freeze({ name: list.name, category: meta.category, severity: meta.severity });
         let count = 0;
         for (const line of lines) {
           const d = line.trim();
           if (!d) continue;
           count += 1;
           const prev = nextMap.get(d);
-          // Ưu tiên nâng mức nghiêm trọng lên 'high' nếu domain xuất hiện trong nguồn Malware/Phishing/TIF
+          // Ưu tiên nâng mức nghiêm trọng lên 'high' nếu domain xuất hiện trong nguồn Malware/Phishing/TIF/NRD
           if (!prev || (prev.severity !== 'high' && meta.severity === 'high')) {
-            nextMap.set(d, { name: list.name, category: meta.category, severity: meta.severity });
+            nextMap.set(d, sharedMeta);
           }
         }
         list.count = count;
@@ -419,6 +422,28 @@ class BlocklistEngine {
       const hit = this.blocklistMap.get(s);
       if (hit) {
         return { blocked: true, reason: hit.name, severity: hit.severity, category: hit.category };
+      }
+    }
+
+    // 5. Lá chắn chống giả mạo thương hiệu & cơ quan Việt Nam (VN Lookalike Guard)
+    const vnMode = store.config.security?.vnImpersonationMode || 'block';
+    if (vnMode !== 'off') {
+      const vnCheck = checkVnImpersonation(domain, this.whitelistSet);
+      if (vnCheck.suspicious) {
+        if (vnMode === 'audit') {
+          return {
+            blocked: false,
+            reason: `Audit: ${vnCheck.reason}`,
+            severity: 'high',
+            category: 'phishing',
+          };
+        }
+        return {
+          blocked: true,
+          reason: vnCheck.reason,
+          severity: 'critical',
+          category: 'phishing',
+        };
       }
     }
 

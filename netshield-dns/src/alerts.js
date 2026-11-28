@@ -3,6 +3,7 @@ import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { DATA_DIR, DEFAULT_ALERTS_CONFIG } from './store.js';
 import { deviceDiscovery, normalizeMac } from './discovery.js';
+import { DgaTracker, BeaconingTracker } from './threat-guard.js';
 
 const ALERTS_PATH = path.join(DATA_DIR, 'alerts.json');
 const MAX_ALERTS = 500;
@@ -51,6 +52,30 @@ export function hasLongDnsLabel(domain, maxLabelLen = 60) {
   return false;
 }
 
+/**
+ * Loại trừ các truy vấn NXDOMAIN hợp lệ (không phải DGA/Botnet):
+ * - Reverse DNS (PTR): *.in-addr.arpa, *.ip6.arpa
+ * - Tên miền nội bộ / mDNS / Bonjour: *.local, *.lan, *.home.arpa, _dns-sd.*
+ * - Single-label hostname (không có dấu chấm, VD: wpad, printer, chuỗi dò DNS hijack của Chrome)
+ */
+export function isBenignNxdomainDomain(domain) {
+  if (!domain || typeof domain !== 'string') return true;
+  const low = domain.trim().toLowerCase().replace(/\.+$/, '');
+  if (!low || !low.includes('.')) return true;
+  if (
+    low.endsWith('.in-addr.arpa') ||
+    low.endsWith('.ip6.arpa') ||
+    low.endsWith('.local') ||
+    low.endsWith('.lan') ||
+    low.endsWith('.home.arpa') ||
+    low.startsWith('_dns-sd.') ||
+    low.includes('._dns-sd.')
+  ) {
+    return true;
+  }
+  return false;
+}
+
 class AlertEngine extends EventEmitter {
   constructor() {
     super();
@@ -59,6 +84,8 @@ class AlertEngine extends EventEmitter {
     this.dedupeMap = new Map(); // fingerprint -> lastTriggeredMs
     this.nxdomainMap = new Map(); // clientIp -> { windowStart, domains: Set<string> }
     this.quarantineMap = new Map(); // clientIp -> { ip, mac, deviceLabel, reason, quarantinedAt, expiresAt }
+    this.dgaTracker = new DgaTracker();
+    this.beaconingTracker = new BeaconingTracker();
     this._saveTimer = null;
     this._saving = false;
     this._onQuery = null;
@@ -206,11 +233,24 @@ class AlertEngine extends EventEmitter {
     const mac = deviceDiscovery.getMacForIp(clientIp) || '';
     const devLabel = formatDeviceLabel(clientIp, mac, devices);
 
-    // 1. Chạm Threat Intelligence / Malware / Phishing / DNS Rebinding / DNS Tunneling
-    if (cfg.threatHitEnabled && record.blocked && !record.quarantined && record.severity === 'high') {
+    // 1. Chạm Threat Intelligence / Malware / Phishing / Giả mạo VN / NRD / DNS Rebinding / DNS Tunneling
+    if (
+      cfg.threatHitEnabled &&
+      record.blocked &&
+      !record.quarantined &&
+      (record.severity === 'high' || record.severity === 'critical')
+    ) {
       const rLow = String(record.reason || '').toLowerCase();
       let title = 'Chặn truy cập Nguy hiểm';
-      if (rLow.includes('rebinding')) title = 'Chặn tấn công DNS Rebinding';
+      let fingerprint = `threat_hit|${clientIp}|${domain}`;
+      if (rLow.includes('rebinding')) {
+        title = 'Chặn tấn công DNS Rebinding';
+        const ipMatch = String(record.reason || '').match(/\(([^)]+)\)/);
+        const targetIp = ipMatch ? ipMatch[1].trim().toLowerCase() : domain;
+        fingerprint = `rebinding|${targetIp}`;
+      }
+      else if (rLow.includes('giả mạo thương hiệu')) title = 'Chặn trang Giả mạo thương hiệu VN';
+      else if (rLow.includes('nrd')) title = 'Chặn tên miền mới đăng ký (NRD)';
       else if (rLow.includes('tunnel')) title = 'Chặn nghi vấn DNS Tunneling';
       else if (rLow.includes('phish')) title = 'Chặn trang Lừa đảo (Phishing)';
       else if (rLow.includes('urlhaus') || rLow.includes('malware')) title = 'Chặn tên miền Mã độc (Malware)';
@@ -218,7 +258,7 @@ class AlertEngine extends EventEmitter {
 
       this.createAlert({
         type: 'threat_hit',
-        severity: 'high',
+        severity: record.severity === 'critical' ? 'high' : 'high',
         title,
         message: `${devLabel} đã gọi tới ${domain} (${record.reason || 'Threat Intel'})`,
         clientIp,
@@ -226,7 +266,7 @@ class AlertEngine extends EventEmitter {
         domain,
         reason: record.reason || '',
         push: true,
-        fingerprint: `threat_hit|${clientIp}|${domain}`,
+        fingerprint,
       });
     }
 
@@ -269,7 +309,7 @@ class AlertEngine extends EventEmitter {
         });
       }
 
-      if (!record.blocked && record.rcode === 'NXDOMAIN') {
+      if (!record.blocked && record.rcode === 'NXDOMAIN' && !isBenignNxdomainDomain(domain)) {
         const now = Date.now();
         let entry = this.nxdomainMap.get(clientIp);
         if (!entry || now - entry.windowStart >= NXDOMAIN_WINDOW_MS) {
@@ -303,6 +343,50 @@ class AlertEngine extends EventEmitter {
             reason: `NXDOMAIN spike (${entry.domains.size}/min)`,
             push: true,
             fingerprint: `nxdomain_spike|${clientIp}`,
+          });
+        }
+      }
+
+      // 3b. Phát hiện DGA & C2 Beaconing (chỉ cảnh báo, không tự động chặn)
+      const secCfg = this.store?.config?.security || {};
+      if (
+        secCfg.dgaBeaconingGuard !== false &&
+        !record.blocked &&
+        record.reason !== 'whitelist' &&
+        record.reason !== 'local_dns'
+      ) {
+        const dgaHit = this.dgaTracker.record(clientIp, domain);
+        if (dgaHit) {
+          this.createAlert({
+            type: 'dga_detected',
+            severity: 'high',
+            title: 'Nghi vấn mã độc DGA (tên miền ngẫu nhiên)',
+            message: `${devLabel} gọi ${dgaHit.count} tên miền entropy cao trong 5 phút (mẫu: ${dgaHit.samples.join(', ')})`,
+            clientIp,
+            mac,
+            domain,
+            reason: `DGA (${dgaHit.count} domain/5m)`,
+            push: true,
+            fingerprint: `dga|${clientIp}`,
+          });
+        }
+
+        const devObj = deviceDiscovery.resolveDeviceForIp(clientIp, devices);
+        const beacon = this.beaconingTracker.record(clientIp, domain, {
+          deviceGroup: devObj?.groupId || '',
+        });
+        if (beacon) {
+          this.createAlert({
+            type: 'c2_beaconing',
+            severity: 'medium',
+            title: 'Nghi vấn C2 Beaconing (gọi định kỳ bất thường)',
+            message: `${devLabel} gọi đều đặn mỗi ~${beacon.avgIntervalSec}s (${beacon.hits} lần, CV=${beacon.cv}) tới ${beacon.domain}`,
+            clientIp,
+            mac,
+            domain: beacon.domain,
+            reason: `Beaconing ~${beacon.avgIntervalSec}s`,
+            push: false,
+            fingerprint: `beacon|${clientIp}|${beacon.domain}`,
           });
         }
       }
