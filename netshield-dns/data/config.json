@@ -166,7 +166,7 @@
       "id": "stevenblack-ads",
       "name": "StevenBlack Unified (Ads + Malware)",
       "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
-      "enabled": true,
+      "enabled": false,
       "count": 81676,
       "lastUpdated": "2026-11-27T08:15:25.033Z",
       "lastError": null
