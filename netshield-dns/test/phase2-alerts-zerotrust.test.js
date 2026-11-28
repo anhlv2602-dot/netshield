@@ -285,6 +285,26 @@ test('Phương án A: hasLongDnsLabel miễn trừ PTR/DKIM và Auto-Quarantine 
   assert.equal(hasLongDnsLabel('a'.repeat(61) + '.evil.example', 60), true);
   assert.equal(hasLongDnsLabel('1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa', 60), false);
   assert.equal(hasLongDnsLabel('selector-' + 'a'.repeat(60) + '._domainkey.example.com', 60), false);
+  assert.equal(
+    hasLongDnsLabel('4amyzsg2limcr4s7z2kh8wykvuyx5nuin3y4hotyu4k1ru65m7-h1023759661.scf.usercontent.goog', 60),
+    false
+  );
+  assert.equal(hasLongDnsLabel('a'.repeat(62) + '.cloudfront.net', 60), false);
+
+  alertEngine.clearAll();
+  store.config.alerts = { ...DEFAULT_ALERTS_CONFIG, enabled: true, anomalyEnabled: true, tunnelingLabelLength: 60 };
+  // Domain đã nằm trong whitelist không được tạo cảnh báo DNS Tunneling
+  store.recordQuery({
+    clientIp: '192.168.1.76',
+    domain: 'a'.repeat(62) + '.trusted-custom.example',
+    qtype: 'A',
+    blocked: false,
+    cached: false,
+    rcode: 'NOERROR',
+    reason: 'whitelist',
+    latencyMs: 5,
+  });
+  assert.equal(alertEngine.getAlerts().length, 0, 'Domain đã whitelist không được báo DNS Tunneling');
 
   alertEngine.clearAll();
   alertEngine.clearQuarantine();

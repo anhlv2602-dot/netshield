@@ -17,12 +17,31 @@ function formatDeviceLabel(ip, mac, devices = []) {
   return ip || 'unknown';
 }
 
+const SAFE_LONG_LABEL_SUFFIXES = [
+  'usercontent.goog',
+  'googleusercontent.com',
+  'cloudfront.net',
+  'amazonaws.com',
+  'akamaiedge.net',
+  'akadns.net',
+  'azureedge.net',
+  'fastly.net',
+  'edgekey.net',
+  'edgesuite.net',
+  'trafficmanager.net',
+];
+
 export function hasLongDnsLabel(domain, maxLabelLen = 60) {
   if (!domain) return false;
   const low = domain.toLowerCase();
-  // Loại trừ các truy vấn hợp lệ vốn có nhãn dài (reverse PTR, DKIM email)
+  // Loại trừ các truy vấn hợp lệ vốn có nhãn dài (reverse PTR, DKIM email, cloud/sandbox CDN)
   if (low.endsWith('.in-addr.arpa') || low.endsWith('.ip6.arpa') || low.includes('._domainkey.')) {
     return false;
+  }
+  for (const suf of SAFE_LONG_LABEL_SUFFIXES) {
+    if (low === suf || low.endsWith(`.${suf}`)) {
+      return false;
+    }
   }
   if (low.length > 150) return true;
   const labels = low.split('.');
@@ -230,7 +249,12 @@ class AlertEngine extends EventEmitter {
     // 3. Phát hiện bất thường (DNS Tunneling & NXDOMAIN Spike)
     if (cfg.anomalyEnabled) {
       const maxLabelLen = Number(cfg.tunnelingLabelLength) || 60;
-      if (!record.blocked && hasLongDnsLabel(domain, maxLabelLen)) {
+      if (
+        !record.blocked &&
+        record.reason !== 'whitelist' &&
+        record.reason !== 'local_dns' &&
+        hasLongDnsLabel(domain, maxLabelLen)
+      ) {
         this.createAlert({
           type: 'dns_anomaly',
           severity: 'high',
