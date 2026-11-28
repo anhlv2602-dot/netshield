@@ -440,6 +440,34 @@
       "name": "Máy tính Windows",
       "groupId": "computer",
       "mac": "18:60:24:F9:CC:85"
+    },
+    {
+      "id": "mac:C0:B5:D7:AB:67:39",
+      "ip": "192.168.1.239",
+      "name": "Máy in Brother DCP-B7535DW",
+      "groupId": "iot",
+      "mac": "C0:B5:D7:AB:67:39"
+    },
+    {
+      "id": "mac:94:C6:91:56:43:2F",
+      "ip": "192.168.1.129",
+      "name": "Máy tính Windows",
+      "groupId": "computer",
+      "mac": "94:C6:91:56:43:2F"
+    },
+    {
+      "id": "mac:00:08:2C:17:13:B7",
+      "ip": "192.168.1.249",
+      "name": "Máy in Canon (.249)",
+      "groupId": "iot",
+      "mac": "00:08:2C:17:13:B7"
+    },
+    {
+      "id": "mac:6C:3C:7C:E8:62:AB",
+      "ip": "192.168.1.246",
+      "name": "Máy in Canon (.246)",
+      "groupId": "iot",
+      "mac": "6C:3C:7C:E8:62:AB"
     }
   ],
   "clientRules": []
