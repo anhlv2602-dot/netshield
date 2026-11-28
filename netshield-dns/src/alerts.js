@@ -287,7 +287,7 @@ class AlertEngine extends EventEmitter {
   /**
    * Kiểm tra thiết bị lạ từ kết quả quét ARP/mDNS:
    * - Mỗi MAC lạ chỉ cảnh báo ĐÚNG 1 LẦN (không lặp lại sau mỗi chu kỳ quét ARP 10 phút)
-   * - Private Wi-Fi MAC (điện thoại tự đổi MAC) bỏ qua mặc định khi ignorePrivateMacPush=true để tránh làm nhiễu tab Cảnh báo
+   * - Private Wi-Fi MAC (điện thoại tự đổi MAC): ghi nhận mức 'low' trên giao diện; chỉ đẩy Telegram/Webhook khi tắt ignorePrivateMacPush
    * - MAC thật (non-private OUI) chưa có trong config.devices -> mức 'high', đẩy Telegram ngay
    */
   handleDiscoveredDevice(info) {
@@ -308,10 +308,7 @@ class AlertEngine extends EventEmitter {
     }
 
     const isPriv = Boolean(info.isPrivateMac);
-    if (isPriv && cfg.ignorePrivateMacPush !== false) {
-      return null;
-    }
-
+    const shouldPush = !isPriv || cfg.ignorePrivateMacPush === false;
     const label = info.suggestedName || info.hostname || info.vendor || 'Chưa xác định';
 
     return this.createAlert({
@@ -322,7 +319,7 @@ class AlertEngine extends EventEmitter {
       clientIp: info.ip || '',
       mac,
       reason: isPriv ? 'Private MAC chưa duyệt' : 'MAC thật chưa có trong danh sách thiết bị',
-      push: !isPriv,
+      push: shouldPush,
       fingerprint: `rogue_device|${mac}`,
     });
   }
@@ -336,7 +333,7 @@ class AlertEngine extends EventEmitter {
       tasks.push(this._sendTelegram(cfg.telegramBotToken, cfg.telegramChatId, text));
     }
     if (cfg.webhookUrl && /^https?:\/\//i.test(cfg.webhookUrl)) {
-      tasks.push(this._sendWebhook(cfg.webhookUrl, { text, alert }));
+      tasks.push(this._sendWebhook(cfg.webhookUrl, { content: text, text, alert }));
     }
     if (tasks.length > 0) {
       await Promise.allSettled(tasks);
@@ -390,7 +387,7 @@ class AlertEngine extends EventEmitter {
     }
     if (cfg.webhookUrl && /^https?:\/\//i.test(cfg.webhookUrl)) {
       try {
-        await this._sendWebhook(cfg.webhookUrl, { text, test: true });
+        await this._sendWebhook(cfg.webhookUrl, { content: text, text, test: true });
         results.push({ channel: 'Webhook', ok: true });
       } catch (err) {
         results.push({ channel: 'Webhook', ok: false, error: err.message });

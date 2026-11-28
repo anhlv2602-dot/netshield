@@ -116,17 +116,46 @@ test('AlertEngine: phân 2 cấp Rogue Device (MAC thật = high, Private MAC = 
   assert.equal(rogueReal.type, 'rogue_device');
   assert.equal(rogueReal.severity, 'high');
 
-  // Thiết bị lạ Private MAC -> bỏ qua khi ignorePrivateMacPush=true (tránh làm nhiễu tab Cảnh báo)
-  const roguePrivSuppressed = alertEngine.handleDiscoveredDevice({
-    ip: '192.168.1.188',
-    mac: '0A:11:22:33:44:55',
-    isPrivateMac: true,
-    isSelf: false,
-    isLoopback: false,
-    isGateway: false,
-    isSharedMac: false,
-  });
-  assert.equal(roguePrivSuppressed, null);
+  // Theo dõi xem external push có bị gọi hay không
+  const pushedAlerts = [];
+  const origDispatch = alertEngine._dispatchExternal.bind(alertEngine);
+  alertEngine._dispatchExternal = async (alert) => {
+    pushedAlerts.push(alert);
+  };
+
+  try {
+    // Thiết bị lạ Private MAC -> ghi log mức 'low' trên giao diện, KHÔNG đẩy Telegram khi ignorePrivateMacPush=true
+    const roguePrivLogged = alertEngine.handleDiscoveredDevice({
+      ip: '192.168.1.188',
+      mac: '0A:11:22:33:44:55',
+      isPrivateMac: true,
+      isSelf: false,
+      isLoopback: false,
+      isGateway: false,
+      isSharedMac: false,
+    });
+    assert.ok(roguePrivLogged);
+    assert.equal(roguePrivLogged.type, 'rogue_device');
+    assert.equal(roguePrivLogged.severity, 'low');
+    assert.equal(pushedAlerts.length, 0, 'Không được đẩy push khi ignorePrivateMacPush=true');
+
+    // Khi tắt ignorePrivateMacPush -> vừa ghi log 'low' vừa đẩy external push
+    store.config.alerts.ignorePrivateMacPush = false;
+    const roguePrivPushed = alertEngine.handleDiscoveredDevice({
+      ip: '192.168.1.189',
+      mac: '0E:11:22:33:44:66',
+      isPrivateMac: true,
+      isSelf: false,
+      isLoopback: false,
+      isGateway: false,
+      isSharedMac: false,
+    });
+    assert.ok(roguePrivPushed);
+    assert.equal(roguePrivPushed.severity, 'low');
+    assert.equal(pushedAlerts.length, 1, 'Phải đẩy push khi ignorePrivateMacPush=false');
+  } finally {
+    alertEngine._dispatchExternal = origDispatch;
+  }
 
   // Dedupe vĩnh viễn theo MAC: kể cả khi hết cửa sổ 10 phút cũng không lặp lại cùng 1 MAC lạ
   alertEngine.dedupeMap.clear();
@@ -200,4 +229,42 @@ test('AlertEngine: phát hiện Threat Hit, DNS Tunneling và NXDOMAIN Spike', (
   assert.ok(sumBefore.unacknowledged >= 3);
   alertEngine.acknowledgeAll();
   assert.equal(alertEngine.getSummary().unacknowledged, 0);
+});
+
+test('AlertEngine: Webhook gửi đủ trường content (Discord) và text (Slack/n8n)', async () => {
+  const payloads = [];
+  const origSendWebhook = alertEngine._sendWebhook.bind(alertEngine);
+  alertEngine._sendWebhook = async (_url, payload) => {
+    payloads.push(payload);
+    return true;
+  };
+
+  try {
+    const cfg = {
+      ...DEFAULT_ALERTS_CONFIG,
+      webhookUrl: 'https://discord.com/api/webhooks/123/abc',
+    };
+    await alertEngine._dispatchExternal(
+      {
+        severity: 'high',
+        title: 'Test Alert',
+        message: 'Body',
+        timestamp: new Date().toISOString(),
+      },
+      cfg
+    );
+    const testRes = await alertEngine.sendTestNotification({
+      webhookUrl: 'https://discord.com/api/webhooks/123/abc',
+    });
+
+    assert.equal(testRes.ok, true);
+    assert.equal(payloads.length, 2);
+    for (const p of payloads) {
+      assert.equal(typeof p.content, 'string');
+      assert.equal(p.content, p.text);
+      assert.ok(p.content.includes('[NetShield DNS]'));
+    }
+  } finally {
+    alertEngine._sendWebhook = origSendWebhook;
+  }
 });
