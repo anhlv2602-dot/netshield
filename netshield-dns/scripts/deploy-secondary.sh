@@ -7,7 +7,7 @@ set -euo pipefail
 #   ./scripts/deploy-secondary.sh user@192.168.1.209      # chỉ định user khác
 #   ./scripts/deploy-secondary.sh user@192.168.1.209 ~/Apps/netshield/netshield-dns
 
-TARGET="${1:-${USER}@192.168.1.209}"
+TARGET="${1:-server-mac@192.168.1.209}"
 REMOTE_DIR="${2:-~/Apps/netshield/netshield-dns}"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -48,6 +48,7 @@ scp "$TMP_CFG" "$TARGET:$REMOTE_DIR/data/config.json"
 echo "🚀 Cài đặt dependencies & khởi chạy dịch vụ 24/7 (cổng 53) trên $TARGET ..."
 ssh -t "$TARGET" "bash -lc '
   set -euo pipefail
+  export PATH=\"/opt/homebrew/bin:/usr/local/bin:\$PATH\"
   cd $REMOTE_DIR
   if ! command -v node >/dev/null 2>&1; then
     echo \"❌ Chưa cài Node.js trên máy $TARGET. Hãy cài Node.js (v20+) trước.\"
