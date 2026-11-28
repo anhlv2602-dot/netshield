@@ -3,7 +3,7 @@
   "upstreamDns": [
     "https://1.1.1.2/dns-query",
     "https://9.9.9.9/dns-query",
-    "203.113.131.1"
+    "https://8.8.8.8/dns-query"
   ],
   "upstreamStrategy": "failover",
   "blockResponseMode": "zero",
