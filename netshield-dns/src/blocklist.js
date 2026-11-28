@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CACHE_DIR, PROTECTED_WHITELIST, SERVICE_PRESETS, normalizeDomain, store } from './store.js';
+import { deviceDiscovery, normalizeMac } from './discovery.js';
 
 const DOMAIN_REGEX = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
 
@@ -223,8 +224,9 @@ class BlocklistEngine {
       }
     }
 
-    // 2. Quy tắc theo thiết bị (Client IP) hoặc Nhóm thiết bị & Khung giờ
-    const clientDevice = (store.config.devices || []).find((d) => d.ip === clientIp);
+    // 2. Quy tắc theo thiết bị (ưu tiên khớp theo MAC qua ARP, fallback IP) hoặc Nhóm thiết bị & Khung giờ
+    const clientMac = deviceDiscovery.getMacForIp(clientIp);
+    const clientDevice = deviceDiscovery.resolveDeviceForIp(clientIp, store.config.devices || []);
     for (const rule of store.config.clientRules || []) {
       if (!rule.enabled) continue;
       let targetMatches = false;
@@ -237,7 +239,11 @@ class BlocklistEngine {
           targetLabel = rule.name || (grp ? `Nhóm ${grp.name}` : rule.groupId);
         }
       } else {
-        targetMatches = rule.clientIp === '*' || rule.clientIp === clientIp;
+        const ruleMac = normalizeMac(rule.clientIp);
+        targetMatches =
+          rule.clientIp === '*' ||
+          rule.clientIp === clientIp ||
+          Boolean(clientMac && ruleMac && ruleMac === clientMac);
       }
       if (!targetMatches) continue;
 

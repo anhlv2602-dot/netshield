@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { fileURLToPath } from 'node:url';
+import { deviceDiscovery, normalizeMac } from './discovery.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT_DIR = path.resolve(__dirname, '..');
@@ -349,7 +350,22 @@ class Store extends EventEmitter {
         blacklist: Array.isArray(parsed.blacklist) ? parsed.blacklist : [],
         blocklists: Array.isArray(parsed.blocklists) ? parsed.blocklists : DEFAULT_CONFIG.blocklists,
         deviceGroups: Array.isArray(parsed.deviceGroups) ? parsed.deviceGroups : structuredClone(DEFAULT_CONFIG.deviceGroups),
-        devices: Array.isArray(parsed.devices) ? parsed.devices : [],
+        devices: Array.isArray(parsed.devices)
+          ? parsed.devices
+              .filter((d) => d && (d.mac || d.ip))
+              .map((d) => {
+                const mac = normalizeMac(d.mac);
+                const ip = (d.ip || '').trim();
+                const id = d.id || (mac ? `mac:${mac}` : `ip:${ip}`);
+                return {
+                  id,
+                  ip,
+                  name: (d.name || '').trim(),
+                  groupId: (d.groupId || '').trim(),
+                  ...(mac ? { mac } : {}),
+                };
+              })
+          : [],
         clientRules: Array.isArray(parsed.clientRules) ? parsed.clientRules : [],
       };
     } catch {
@@ -450,10 +466,7 @@ class Store extends EventEmitter {
       groupMap.set(g.id, g);
     }
 
-    const deviceMap = new Map();
-    for (const d of this.config.devices || []) {
-      if (d.ip) deviceMap.set(d.ip, d);
-    }
+    const savedDevices = this.config.devices || [];
 
     const clientNames = new Map();
     for (const rule of this.config.clientRules) {
@@ -466,11 +479,14 @@ class Store extends EventEmitter {
       .sort((a, b) => b[1].total - a[1].total)
       .slice(0, 20)
       .map(([ip, s]) => {
-        const dev = deviceMap.get(ip);
+        const dev = deviceDiscovery.resolveDeviceForIp(ip, savedDevices);
         const grp = dev?.groupId ? groupMap.get(dev.groupId) : null;
+        const mac = dev?.mac || deviceDiscovery.getMacForIp(ip) || '';
         return {
           ip,
-          name: dev?.name || clientNames.get(ip) || '',
+          mac,
+          deviceId: dev?.id || '',
+          name: dev?.name || clientNames.get(ip) || (mac ? clientNames.get(mac) || '' : ''),
           groupId: grp?.id || '',
           groupName: grp?.name || '',
           groupIcon: grp?.icon || '',
@@ -496,17 +512,25 @@ class Store extends EventEmitter {
         savedBytes: 0,
       });
     }
-    for (const d of this.config.devices || []) {
+    for (const d of savedDevices) {
       const gs = d.groupId ? groupStatsMap.get(d.groupId) : null;
       if (!gs) continue;
       gs.deviceCount += 1;
-      const cs = this.stats.byClient.get(d.ip);
-      if (cs) {
-        gs.activeCount += 1;
-        gs.total += cs.total;
-        gs.blocked += cs.blocked;
-        gs.savedBytes += cs.savedBytes;
-      }
+    }
+    const activeDevicesByGroup = new Map();
+    for (const [ip, cs] of this.stats.byClient.entries()) {
+      const dev = deviceDiscovery.resolveDeviceForIp(ip, savedDevices);
+      const gs = dev?.groupId ? groupStatsMap.get(dev.groupId) : null;
+      if (!gs) continue;
+      if (!activeDevicesByGroup.has(gs.id)) activeDevicesByGroup.set(gs.id, new Set());
+      activeDevicesByGroup.get(gs.id).add(dev.id || dev.mac || dev.ip);
+      gs.total += cs.total;
+      gs.blocked += cs.blocked;
+      gs.savedBytes += cs.savedBytes;
+    }
+    for (const [gid, set] of activeDevicesByGroup.entries()) {
+      const gs = groupStatsMap.get(gid);
+      if (gs) gs.activeCount = set.size;
     }
     const groupStats = [...groupStatsMap.values()];
 

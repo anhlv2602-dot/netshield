@@ -5,7 +5,7 @@ import os from 'node:os';
 import { ROOT_DIR, SERVICE_PRESETS, normalizeDomain, store } from './store.js';
 import { blocklistEngine } from './blocklist.js';
 import { dnsCache } from './dns-server.js';
-import { deviceDiscovery } from './discovery.js';
+import { deviceDiscovery, normalizeMac } from './discovery.js';
 
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 
@@ -293,30 +293,37 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
         let applied = 0;
 
         for (const item of items) {
-          const ip = (item?.ip || '').trim();
+          let ip = (item?.ip || '').trim();
+          let mac = normalizeMac(item?.mac);
+          if (!mac && ip) mac = deviceDiscovery.getMacForIp(ip);
+          if (!ip && mac) ip = deviceDiscovery.getIpForMac(mac);
+
           const name = (item?.name || '').trim();
           const groupId = validGroups.has((item?.groupId || '').trim()) ? item.groupId.trim() : '';
-          if (!ip || (!name && !groupId)) continue;
+          if ((!mac && !ip) || (!name && !groupId)) continue;
 
-          const discovered = deviceDiscovery.getDeviceInfo(ip);
-          const safeMac =
-            discovered?.mac && !discovered.isPrivateMac && !discovered.isSharedMac ? discovered.mac : '';
-
-          const idx = store.config.devices.findIndex((d) => d.ip === ip);
+          const id = mac ? `mac:${mac}` : `ip:${ip}`;
+          const idx = store.config.devices.findIndex(
+            (d) => d.id === id || (mac && d.mac && normalizeMac(d.mac) === mac) || (ip && d.ip === ip)
+          );
           if (idx >= 0) {
             const cur = store.config.devices[idx];
+            const finalMac = mac || normalizeMac(cur.mac);
+            const finalIp = ip || cur.ip || '';
             store.config.devices[idx] = {
-              ip,
+              id: finalMac ? `mac:${finalMac}` : `ip:${finalIp}`,
+              ip: finalIp,
               name: cur.name || name,
               groupId: cur.groupId || groupId,
-              ...(cur.mac || safeMac ? { mac: cur.mac || safeMac } : {}),
+              ...(finalMac ? { mac: finalMac } : {}),
             };
           } else {
             store.config.devices.push({
+              id,
               ip,
               name,
               groupId,
-              ...(safeMac ? { mac: safeMac } : {}),
+              ...(mac ? { mac } : {}),
             });
           }
           applied += 1;
@@ -331,8 +338,18 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
 
       if (method === 'POST' && pathname === '/api/devices') {
         const body = await readJsonBody(req);
-        const ip = (body.ip || '').trim();
-        if (!ip) return sendJson(res, 400, { error: 'Cần nhập địa chỉ IP thiết bị' });
+        const rawIp = (body.ip || '').trim();
+        const rawMac = (body.mac || '').trim();
+
+        // Hỗ trợ nhập thẳng địa chỉ MAC vào ô IP thủ công
+        let mac = normalizeMac(rawMac) || normalizeMac(rawIp);
+        let ip = normalizeMac(rawIp) ? '' : rawIp;
+        if (!mac && ip) mac = deviceDiscovery.getMacForIp(ip);
+        if (!ip && mac) ip = deviceDiscovery.getIpForMac(mac);
+
+        if (!mac && !ip) {
+          return sendJson(res, 400, { error: 'Cần nhập địa chỉ MAC hoặc IP thiết bị hợp lệ' });
+        }
 
         const groupId = (body.groupId || '').trim();
         if (groupId && !(store.config.deviceGroups || []).some((g) => g.id === groupId)) {
@@ -341,12 +358,24 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
 
         if (!Array.isArray(store.config.devices)) store.config.devices = [];
         const name = (body.name || '').trim();
-        const idx = store.config.devices.findIndex((d) => d.ip === ip);
-        const existingMac = idx >= 0 ? store.config.devices[idx].mac || '' : '';
-        const discovered = deviceDiscovery.getDeviceInfo(ip);
-        const safeMac =
-          discovered?.mac && !discovered.isPrivateMac && !discovered.isSharedMac ? discovered.mac : existingMac;
-        const entry = { ip, name, groupId, ...(safeMac ? { mac: safeMac } : {}) };
+        const id = mac ? `mac:${mac}` : `ip:${ip}`;
+        const idx = store.config.devices.findIndex(
+          (d) =>
+            d.id === id ||
+            (mac && d.mac && normalizeMac(d.mac) === mac) ||
+            (!mac && ip && d.ip === ip) ||
+            (ip && d.ip === ip && !d.mac)
+        );
+        const existing = idx >= 0 ? store.config.devices[idx] : null;
+        const finalMac = mac || normalizeMac(existing?.mac);
+        const finalIp = ip || existing?.ip || '';
+        const entry = {
+          id: finalMac ? `mac:${finalMac}` : `ip:${finalIp}`,
+          ip: finalIp,
+          name,
+          groupId,
+          ...(finalMac ? { mac: finalMac } : {}),
+        };
         if (idx >= 0) store.config.devices[idx] = entry;
         else store.config.devices.push(entry);
 
@@ -356,8 +385,11 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
       }
 
       if (method === 'DELETE' && pathname.startsWith('/api/devices/')) {
-        const ip = decodeURIComponent(pathname.slice('/api/devices/'.length));
-        store.config.devices = (store.config.devices || []).filter((d) => d.ip !== ip);
+        const key = decodeURIComponent(pathname.slice('/api/devices/'.length)).trim();
+        const keyMac = normalizeMac(key);
+        store.config.devices = (store.config.devices || []).filter(
+          (d) => d.id !== key && d.ip !== key && (!keyMac || normalizeMac(d.mac) !== keyMac)
+        );
         await store.save();
         dnsCache.clear();
         return sendJson(res, 200, { devices: store.config.devices });

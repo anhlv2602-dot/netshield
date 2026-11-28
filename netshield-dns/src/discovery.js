@@ -9,6 +9,7 @@ const execFileAsync = promisify(execFile);
 const EXEC_TIMEOUT_MS = 1200;
 const PTR_TIMEOUT_MS = 400;
 const HOSTNAME_CACHE_TTL_MS = 10 * 60 * 1000;
+const ARP_REFRESH_MS = 60 * 1000;
 const PERIODIC_SCAN_MS = 10 * 60 * 1000;
 const DEBOUNCE_SCAN_MS = 2500;
 const MAX_TRACKED_IPS = 250;
@@ -565,11 +566,16 @@ class DeviceDiscovery {
     this.domainsByIp = new Map(); // ip -> Set<domain>
     this.hostnameCache = new Map(); // ip -> { hostname, fetchedAt }
     this.discovered = new Map(); // ip -> info object
+    this.ipToMac = new Map(); // ip -> normalized MAC (non-shared)
+    this.macToIp = new Map(); // normalized MAC (non-shared) -> latest ip
+    this.sharedMacs = new Set(); // MAC xuất hiện ở >= 2 IP cùng lúc (Repeater/Proxy ARP)
     this.gatewayIp = '';
     this.localIps = new Set();
     this.isScanning = false;
+    this.isRefreshingArp = false;
     this.lastScanAt = null;
     this.debounceTimer = null;
+    this.arpTimer = null;
     this.periodicTimer = null;
     this._onQuery = null;
   }
@@ -596,6 +602,12 @@ class DeviceDiscovery {
     // Quét lần đầu ở nền (không chặn khởi động DNS)
     this.scanAll({ force: false }).catch(() => {});
 
+    // Làm mới nhanh bảng ARP mỗi 60s (~5ms, 0 gói tin mạng) để ánh xạ IP ↔ MAC luôn chính xác
+    this.arpTimer = setInterval(() => {
+      this.refreshArpFast().catch(() => {});
+    }, ARP_REFRESH_MS);
+    this.arpTimer.unref();
+
     this.periodicTimer = setInterval(() => {
       this.scanAll({ force: false }).catch(() => {});
     }, PERIODIC_SCAN_MS);
@@ -611,9 +623,72 @@ class DeviceDiscovery {
       clearTimeout(this.debounceTimer);
       this.debounceTimer = null;
     }
+    if (this.arpTimer) {
+      clearInterval(this.arpTimer);
+      this.arpTimer = null;
+    }
     if (this.periodicTimer) {
       clearInterval(this.periodicTimer);
       this.periodicTimer = null;
+    }
+  }
+
+  _updateArpMaps(arpByIp, sharedMacs) {
+    this.sharedMacs = sharedMacs;
+    const nextIpToMac = new Map();
+    const nextMacToIp = new Map();
+    for (const [ip, entry] of arpByIp.entries()) {
+      if (!entry?.mac || sharedMacs.has(entry.mac)) continue;
+      nextIpToMac.set(ip, entry.mac);
+      nextMacToIp.set(entry.mac, ip);
+    }
+    this.ipToMac = nextIpToMac;
+    this.macToIp = nextMacToIp;
+  }
+
+  /**
+   * Tra MAC nhanh O(1) từ bộ nhớ cho luồng DNS chính (trả '' nếu không có hoặc là Shared MAC sau Repeater)
+   */
+  getMacForIp(ip) {
+    if (!ip) return '';
+    return this.ipToMac.get(ip) || '';
+  }
+
+  getIpForMac(mac) {
+    const norm = normalizeMac(mac);
+    if (!norm || this.sharedMacs.has(norm)) return '';
+    return this.macToIp.get(norm) || '';
+  }
+
+  /**
+   * Tìm thiết bị đã lưu ưu tiên theo MAC trước, fallback theo IP khi không có MAC hoặc sau Repeater
+   */
+  resolveDeviceForIp(clientIp, devices = []) {
+    if (!clientIp || !Array.isArray(devices) || devices.length === 0) return null;
+    const mac = this.getMacForIp(clientIp);
+    if (mac) {
+      const byMac = devices.find((d) => d.mac && normalizeMac(d.mac) === mac);
+      if (byMac) return byMac;
+    }
+    // Fallback theo IP (chỉ khớp nếu thiết bị đó chưa bị gắn cố định cho một MAC khác)
+    return (
+      devices.find((d) => {
+        if (d.ip !== clientIp) return false;
+        if (mac && d.mac && normalizeMac(d.mac) !== mac) return false;
+        return true;
+      }) || null
+    );
+  }
+
+  async refreshArpFast() {
+    if (this.isRefreshingArp || this.isScanning) return;
+    this.isRefreshingArp = true;
+    try {
+      const arp = await readArpTable();
+      this._updateArpMaps(arp.byIp, arp.sharedMacs);
+      await this._reconcileSavedDevicesByMac(arp.byIp, arp.sharedMacs);
+    } finally {
+      this.isRefreshingArp = false;
     }
   }
 
@@ -672,38 +747,50 @@ class DeviceDiscovery {
       if (d.ip) savedByIp.set(d.ip, d);
     }
 
-    // Xây bản đồ MAC -> IP mới nhất (chỉ cho MAC thật và không bị Repeater/Proxy ARP dùng chung)
+    // Xây bản đồ MAC -> IP mới nhất (mọi MAC hợp lệ không bị Repeater/Proxy ARP dùng chung)
     const uniqueMacToIp = new Map();
     for (const [ip, entry] of arpByIp.entries()) {
-      if (!entry.mac || isPrivateMac(entry.mac) || sharedMacs.has(entry.mac)) continue;
+      if (!entry.mac || sharedMacs.has(entry.mac)) continue;
       uniqueMacToIp.set(entry.mac, ip);
     }
 
     let changed = false;
     for (const dev of this.store.config.devices) {
-      // Nếu thiết bị đã lưu chưa có MAC nhưng hiện đang ở đúng IP có MAC sạch → tự gắn MAC để theo dõi về sau
-      if (!dev.mac) {
-        const currentArp = arpByIp.get(dev.ip);
-        if (currentArp?.mac && !isPrivateMac(currentArp.mac) && !sharedMacs.has(currentArp.mac)) {
+      const devMac = normalizeMac(dev.mac);
+      // Nếu thiết bị đã lưu chưa có MAC nhưng hiện đang ở đúng IP có MAC không bị dùng chung → tự gắn MAC
+      if (!devMac) {
+        const currentArp = dev.ip ? arpByIp.get(dev.ip) : null;
+        if (currentArp?.mac && !sharedMacs.has(currentArp.mac)) {
           dev.mac = currentArp.mac;
+          dev.id = `mac:${currentArp.mac}`;
           changed = true;
         }
         continue;
       }
 
-      if (isPrivateMac(dev.mac) || sharedMacs.has(dev.mac)) continue;
+      if (dev.mac !== devMac) {
+        dev.mac = devMac;
+        changed = true;
+      }
+      if (!dev.id) {
+        dev.id = `mac:${devMac}`;
+        changed = true;
+      }
 
-      const currentIpForMac = uniqueMacToIp.get(dev.mac);
+      if (sharedMacs.has(devMac)) continue;
+
+      const currentIpForMac = uniqueMacToIp.get(devMac);
       if (!currentIpForMac || currentIpForMac === dev.ip) continue;
 
       // Chỉ di chuyển IP nếu IP mới chưa bị gắn cho thiết bị đã lưu khác
-      if (savedByIp.has(currentIpForMac)) continue;
+      const existingAtNewIp = savedByIp.get(currentIpForMac);
+      if (existingAtNewIp && existingAtNewIp !== dev) continue;
 
       // Và IP cũ không còn trỏ tới MAC này nữa
-      const oldIpArp = arpByIp.get(dev.ip);
-      if (oldIpArp?.mac === dev.mac) continue;
+      const oldIpArp = dev.ip ? arpByIp.get(dev.ip) : null;
+      if (oldIpArp?.mac === devMac) continue;
 
-      savedByIp.delete(dev.ip);
+      if (dev.ip) savedByIp.delete(dev.ip);
       dev.ip = currentIpForMac;
       savedByIp.set(currentIpForMac, dev);
       changed = true;
@@ -857,8 +944,9 @@ class DeviceDiscovery {
       this.localIps = getLocalLanIps();
       const [gatewayIp, arp] = await Promise.all([getDefaultGateway(), readArpTable()]);
       if (gatewayIp) this.gatewayIp = gatewayIp;
+      this._updateArpMaps(arp.byIp, arp.sharedMacs);
 
-      // Tự động cập nhật IP cho các thiết bị đã lưu có MAC cố định & không phải Shared MAC
+      // Tự động cập nhật IP cho các thiết bị đã lưu theo MAC (trừ Shared MAC sau Repeater)
       await this._reconcileSavedDevicesByMac(arp.byIp, arp.sharedMacs);
 
       // Tập hợp tất cả IP cần nhận diện (đang hoạt động + đã lưu)

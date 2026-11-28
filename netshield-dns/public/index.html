@@ -829,9 +829,9 @@
             <button id="applySuggestionsBtn" type="button" class="btn success sm" style="display: none;">Áp dụng gợi ý</button>
           </div>
         </div>
-        <p class="stat-label" style="margin-top: 0;">Hệ thống tự dò tên máy (mDNS/PTR), hãng (ARP/MAC) và hành vi DNS để gợi ý — <strong>không tự áp luật chặn</strong> khi bạn chưa xác nhận. <span id="discoveryMeta"></span></p>
+        <p class="stat-label" style="margin-top: 0;">Quản lý thiết bị theo <strong>địa chỉ MAC</strong> (tự theo dõi khi router đổi IP, tự lùi về IP nếu sau Repeater). Hệ thống chỉ gợi ý tên &amp; nhóm — <strong>không tự áp luật chặn</strong> khi bạn chưa xác nhận. <span id="discoveryMeta"></span></p>
         <div class="row" style="margin-bottom: 0.85rem;">
-          <input id="manualDeviceIp" type="text" aria-label="Địa chỉ IP thiết bị mới" placeholder="Nhập IP thiết bị (vd: 192.168.1.50)" style="max-width: 200px;" />
+          <input id="manualDeviceIp" type="text" aria-label="Địa chỉ MAC hoặc IP thiết bị mới" placeholder="Nhập MAC hoặc IP (vd: 54:46:17:DF:0E:01)" style="max-width: 245px;" />
           <input id="manualDeviceName" type="text" aria-label="Tên thiết bị mới" placeholder="Tên gợi nhớ (vd: Camera cổng chính)" />
           <select id="manualDeviceGroup" aria-label="Chọn nhóm cho thiết bị mới" style="width: auto; min-width: 190px;"></select>
           <button id="addManualDeviceBtn" type="button" class="btn primary">Gán vào nhóm</button>
@@ -854,8 +854,8 @@
             <select id="ruleGroupId"></select>
           </div>
           <div id="ruleIpWrap" style="display: none;">
-            <label for="ruleIp" class="stat-label">IP thiết bị (nhập <code>*</code> để áp dụng cho toàn mạng LAN)</label>
-            <input id="ruleIp" type="text" placeholder="192.168.1.55 hoặc *" />
+            <label for="ruleIp" class="stat-label">Địa chỉ MAC / IP thiết bị (nhập <code>*</code> cho toàn mạng LAN)</label>
+            <input id="ruleIp" type="text" placeholder="54:46:17:DF:0E:01, 192.168.1.55 hoặc *" />
           </div>
         </div>
 
@@ -1435,10 +1435,15 @@
                   : 'Chưa có lưu lượng DNS';
               const memberChips = members.length
                 ? `<div class="chip-list" style="margin-top:0.35rem;max-height:110px;">${members
-                    .map(
-                      (m) =>
-                        `<span class="chip">${esc(m.name ? `${m.name} (${m.ip})` : m.ip)} <button type="button" onclick="removeDevice('${esc(m.ip)}')" title="Gỡ khỏi nhóm">×</button></span>`
-                    )
+                    .map((m) => {
+                      const delKey = m.id || m.mac || m.ip;
+                      const label = m.name
+                        ? `${m.name} (${m.ip || m.mac})`
+                        : m.mac
+                        ? `${m.mac}${m.ip ? ' • ' + m.ip : ''}`
+                        : m.ip;
+                      return `<span class="chip" title="${esc(m.mac ? 'MAC: ' + m.mac : '')}">${esc(label)} <button type="button" onclick="removeDevice('${esc(delKey)}')" title="Gỡ khỏi nhóm">×</button></span>`;
+                    })
                     .join('')}</div>`
                 : '<div class="stat-label" style="margin-top:0.2rem;">Chưa có thiết bị nào trong nhóm</div>';
               return `
@@ -1490,17 +1495,50 @@
       const applyAllBtn = document.getElementById('applySuggestionsBtn');
       if (!assignContainer.contains(document.activeElement)) {
         const merged = new Map();
+        const keyByIp = new Map();
+        const makeKey = (mac, ip) => (mac ? `mac:${mac}` : `ip:${ip}`);
+
         for (const d of devices) {
-          merged.set(d.ip, { ip: d.ip, name: d.name || '', groupId: d.groupId || '', mac: d.mac || '', saved: true, total: 0, blocked: 0 });
+          const disc = d.ip ? discoveredMap[d.ip] : null;
+          const mac = d.mac || (disc && !disc.isSharedMac ? disc.mac : '') || '';
+          const key = d.id || makeKey(mac, d.ip);
+          merged.set(key, {
+            key,
+            id: d.id || key,
+            ip: d.ip || '',
+            mac,
+            name: d.name || '',
+            groupId: d.groupId || '',
+            saved: true,
+            total: 0,
+            blocked: 0,
+          });
+          if (d.ip) keyByIp.set(d.ip, key);
         }
         for (const c of tc) {
-          const existing = merged.get(c.ip);
+          const disc = discoveredMap[c.ip] || null;
+          const mac = c.mac || (disc && !disc.isSharedMac ? disc.mac : '') || '';
+          const key = (mac && merged.has(`mac:${mac}`) ? `mac:${mac}` : keyByIp.get(c.ip)) || makeKey(mac, c.ip);
+          const existing = merged.get(key);
           if (existing) {
-            existing.total = c.total;
-            existing.blocked = c.blocked;
+            existing.ip = c.ip || existing.ip;
+            if (!existing.mac && mac) existing.mac = mac;
+            existing.total += c.total;
+            existing.blocked += c.blocked;
           } else {
-            merged.set(c.ip, { ip: c.ip, name: c.name || '', groupId: c.groupId || '', mac: '', saved: false, total: c.total, blocked: c.blocked });
+            merged.set(key, {
+              key,
+              id: key,
+              ip: c.ip,
+              mac,
+              name: c.name || '',
+              groupId: c.groupId || '',
+              saved: false,
+              total: c.total,
+              blocked: c.blocked,
+            });
           }
+          if (c.ip) keyByIp.set(c.ip, key);
         }
         const deviceItems = [...merged.values()].sort((a, b) => {
           const aLoop = a.ip === '127.0.0.1' || a.ip === '::1' ? 1 : 0;
@@ -1511,14 +1549,16 @@
 
         const pendingSuggestions = [];
         for (const d of deviceItems) {
-          const disc = discoveredMap[d.ip];
+          const disc = d.ip ? discoveredMap[d.ip] : null;
           if (!disc || disc.isLoopback) continue;
           const sugGroup = disc.suggestedGroupId && groupById.has(disc.suggestedGroupId) ? disc.suggestedGroupId : '';
           const needsName = !d.name && Boolean(disc.suggestedName);
           const needsGroup = !d.groupId && Boolean(sugGroup);
           if (needsName || needsGroup) {
             pendingSuggestions.push({
+              key: d.key,
               ip: d.ip,
+              mac: d.mac || (!disc.isSharedMac ? disc.mac || '' : ''),
               name: d.name || disc.suggestedName || '',
               groupId: d.groupId || sugGroup,
             });
@@ -1537,7 +1577,8 @@
         assignContainer.innerHTML = deviceItems.length
           ? deviceItems
               .map((d, idx) => {
-                const disc = discoveredMap[d.ip] || null;
+                const disc = d.ip ? discoveredMap[d.ip] || null : null;
+                const displayMac = d.mac || disc?.mac || '';
                 const sugGroupId = disc?.suggestedGroupId && groupById.has(disc.suggestedGroupId) ? disc.suggestedGroupId : '';
                 const sugGroup = sugGroupId ? groupById.get(sugGroupId) : null;
                 const canSuggest = Boolean(
@@ -1545,6 +1586,9 @@
                 );
 
                 const tags = [];
+                if (d.mac && !disc?.isSharedMac) {
+                  tags.push('<span class="disc-tag info" title="Định danh cố định theo địa chỉ MAC (tự cập nhật khi router đổi IP)">🔑 Theo MAC</span>');
+                }
                 if (disc?.isLoopback) tags.push('<span class="disc-tag info">🖥️ Localhost</span>');
                 else if (disc?.isSelf) tags.push('<span class="disc-tag info">🖥️ Máy chủ NetShield</span>');
                 else if (disc?.isGateway) tags.push('<span class="disc-tag info">🌐 Router / Gateway</span>');
@@ -1555,14 +1599,16 @@
                   tags.push(`<span class="disc-tag">${esc(disc.vendor)}</span>`);
                 }
                 if (disc?.isPrivateMac) {
-                  tags.push('<span class="disc-tag warn" title="Thiết bị bật Private Wi-Fi Address (MAC ngẫu nhiên)">🔒 MAC ẩn</span>');
+                  tags.push('<span class="disc-tag warn" title="Thiết bị bật Private Wi-Fi Address. Khuyến nghị tắt trên Wi-Fi nhà để MAC không đổi.">🔒 MAC ẩn</span>');
                 }
                 if (disc?.isSharedMac) {
-                  tags.push('<span class="disc-tag warn" title="Cùng 1 MAC cho nhiều IP (sau Wi-Fi Repeater/Mesh)">📡 Sau Repeater</span>');
+                  tags.push('<span class="disc-tag warn" title="Cùng 1 MAC cho nhiều IP (sau Wi-Fi Repeater/Mesh) — tự quản lý theo IP">📡 Sau Repeater</span>');
                 }
 
                 const tagsHtml = tags.length ? `<div class="disc-tags">${tags.join('')}</div>` : '';
-                const macTitle = disc?.mac || d.mac ? `MAC: ${disc?.mac || d.mac}` : '';
+                const macLine = displayMac
+                  ? `<div class="stat-sub"><code>${esc(displayMac)}</code></div>`
+                  : '';
                 const suggestLine =
                   canSuggest && disc
                     ? `<div class="disc-suggest" title="${esc((disc.reasons || []).join(' • '))}">Gợi ý: <strong>${esc(disc.suggestedName || 'Chưa rõ tên')}</strong>${sugGroup ? ` → ${esc(sugGroup.icon || '📁')} ${esc(sugGroup.name)}` : ''}${disc.confidence ? ` (${disc.confidence}%)` : ''}</div>`
@@ -1579,28 +1625,30 @@
                 const namePlaceholder = disc?.suggestedName
                   ? `Gợi ý: ${disc.suggestedName}`
                   : 'Đặt tên (vd: Cam sân trước, iPhone...)';
+                const primaryLabel = d.ip || d.mac;
                 return `
                   <div class="device-row">
                     <div>
-                      <strong title="${esc(macTitle)}"><code>${esc(d.ip)}</code></strong>
+                      <strong><code>${esc(primaryLabel)}</code></strong>
+                      ${d.ip && displayMac ? macLine : ''}
                       <div class="stat-sub">${d.total ? `${d.total.toLocaleString('vi-VN')} truy vấn / ${d.blocked.toLocaleString('vi-VN')} chặn` : 'Đã lưu thủ công'}</div>
                       ${tagsHtml}
                     </div>
                     <div>
-                      <input type="text" id="devName-${idx}" aria-label="Tên thiết bị ${esc(d.ip)}" value="${esc(d.name)}" placeholder="${esc(namePlaceholder)}" />
+                      <input type="text" id="devName-${idx}" aria-label="Tên thiết bị ${esc(primaryLabel)}" value="${esc(d.name)}" placeholder="${esc(namePlaceholder)}" />
                       ${suggestLine}
                     </div>
-                    <select id="devGroup-${idx}" aria-label="Nhóm cho ${esc(d.ip)}">${opts}</select>
+                    <select id="devGroup-${idx}" aria-label="Nhóm cho ${esc(primaryLabel)}">${opts}</select>
                     <div class="row" style="gap:0.35rem;flex-wrap:nowrap;">
-                      ${canSuggest ? `<button type="button" class="btn success sm" onclick="applySingleSuggestion('${esc(d.ip)}')" title="Áp dụng tên & nhóm gợi ý">Dùng gợi ý</button>` : ''}
-                      <button type="button" class="btn primary sm" onclick="saveDeviceRow('${esc(d.ip)}', ${idx})">Lưu</button>
-                      ${d.saved ? `<button type="button" class="btn danger sm" onclick="removeDevice('${esc(d.ip)}')" title="Xóa khỏi danh sách đã lưu">Gỡ</button>` : ''}
+                      ${canSuggest ? `<button type="button" class="btn success sm" onclick="applySingleSuggestion('${esc(d.key)}')" title="Áp dụng tên & nhóm gợi ý">Dùng gợi ý</button>` : ''}
+                      <button type="button" class="btn primary sm" onclick="saveDeviceRow('${esc(d.ip)}', '${esc(d.mac)}', ${idx})">Lưu</button>
+                      ${d.saved ? `<button type="button" class="btn danger sm" onclick="removeDevice('${esc(d.id)}')" title="Xóa khỏi danh sách đã lưu">Gỡ</button>` : ''}
                     </div>
                   </div>
                 `;
               })
               .join('')
-          : 'Chưa phát hiện thiết bị nào trong mạng LAN. Bạn có thể nhập IP thủ công ở ô phía trên.';
+          : 'Chưa phát hiện thiết bị nào trong mạng LAN. Bạn có thể nhập MAC hoặc IP thủ công ở ô phía trên.';
       }
 
       // Client Rules
@@ -1782,40 +1830,41 @@
       }
     };
 
-    window.saveDeviceRow = async (ip, idx) => {
+    window.saveDeviceRow = async (ip, mac, idx) => {
       const nameEl = document.getElementById(`devName-${idx}`);
       const groupEl = document.getElementById(`devGroup-${idx}`);
       try {
         await api('/api/devices', 'POST', {
           ip,
+          mac,
           name: nameEl ? nameEl.value : '',
           groupId: groupEl ? groupEl.value : '',
         });
         if (document.activeElement) document.activeElement.blur();
         await loadAll();
-        showToast(`Đã cập nhật thiết bị ${ip}`);
+        showToast(`Đã cập nhật thiết bị ${mac || ip}`);
       } catch (err) {
         showToast(err.message);
       }
     };
 
-    window.removeDevice = async (ip) => {
+    window.removeDevice = async (key) => {
       try {
-        await api(`/api/devices/${encodeURIComponent(ip)}`, 'DELETE');
+        await api(`/api/devices/${encodeURIComponent(key)}`, 'DELETE');
         await loadAll();
-        showToast(`Đã gỡ thiết bị ${ip}`);
+        showToast(`Đã gỡ thiết bị`);
       } catch (err) {
         showToast(err.message);
       }
     };
 
-    window.applySingleSuggestion = async (ip) => {
-      const item = (state.pendingSuggestions || []).find((p) => p.ip === ip);
+    window.applySingleSuggestion = async (key) => {
+      const item = (state.pendingSuggestions || []).find((p) => p.key === key);
       if (!item) return;
       try {
         await api('/api/devices/apply-suggestions', 'POST', { items: [item] });
         await loadAll();
-        showToast(`Đã áp dụng gợi ý cho ${ip}`);
+        showToast(`Đã áp dụng gợi ý cho ${item.mac || item.ip}`);
       } catch (err) {
         showToast(err.message);
       }
