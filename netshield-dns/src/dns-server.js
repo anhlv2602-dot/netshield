@@ -417,6 +417,44 @@ function forwardUdp(rawQuery, upstreamEntry, { signal } = {}) {
   });
 }
 
+const H2_IDLE_TIMEOUT_MS = 60_000;
+const h2Sessions = new Map(); // origin -> ClientHttp2Session
+
+function evictH2Session(origin, session) {
+  if (h2Sessions.get(origin) === session) {
+    h2Sessions.delete(origin);
+  }
+}
+
+function getH2Session(origin) {
+  const existing = h2Sessions.get(origin);
+  if (existing && !existing.closed && !existing.destroyed) {
+    return existing;
+  }
+  const session = http2.connect(origin);
+  session.unref?.();
+  session.setTimeout(H2_IDLE_TIMEOUT_MS, () => {
+    evictH2Session(origin, session);
+    try {
+      session.close();
+    } catch {}
+  });
+  session.on('close', () => evictH2Session(origin, session));
+  session.on('goaway', () => evictH2Session(origin, session));
+  session.on('error', () => evictH2Session(origin, session));
+  h2Sessions.set(origin, session);
+  return session;
+}
+
+export function closeAllH2Sessions() {
+  for (const [origin, session] of h2Sessions) {
+    h2Sessions.delete(origin);
+    try {
+      session.close();
+    } catch {}
+  }
+}
+
 function forwardDohHttp2(rawQuery, urlStr, { signal } = {}) {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
@@ -425,18 +463,24 @@ function forwardDohHttp2(rawQuery, urlStr, { signal } = {}) {
       return reject(err);
     }
     const u = new URL(urlStr);
-    const client = http2.connect(u.origin);
+    const client = getH2Session(u.origin);
     let settled = false;
+    let req = null;
+
     const done = (err, buf) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
       if (signal) signal.removeEventListener('abort', onAbort);
-      try {
-        client.close();
-      } catch {}
-      if (err) reject(err);
-      else resolve(buf);
+      client.off('error', onSessionError);
+      if (err) {
+        try {
+          req?.close();
+        } catch {}
+        reject(err);
+      } else {
+        resolve(buf);
+      }
     };
 
     const onAbort = () => {
@@ -444,18 +488,28 @@ function forwardDohHttp2(rawQuery, urlStr, { signal } = {}) {
       err.name = 'AbortError';
       done(err);
     };
+    const onSessionError = (err) => {
+      evictH2Session(u.origin, client);
+      done(err);
+    };
+
     if (signal) signal.addEventListener('abort', onAbort, { once: true });
 
     const timer = setTimeout(() => done(new Error('DoH/H2 timeout')), UPSTREAM_TIMEOUT_MS);
-    client.once('error', (err) => done(err));
+    client.once('error', onSessionError);
 
-    const req = client.request({
-      ':method': 'POST',
-      ':path': `${u.pathname}${u.search}`,
-      'content-type': 'application/dns-message',
-      accept: 'application/dns-message',
-      'content-length': rawQuery.length,
-    });
+    try {
+      req = client.request({
+        ':method': 'POST',
+        ':path': `${u.pathname}${u.search}`,
+        'content-type': 'application/dns-message',
+        accept: 'application/dns-message',
+        'content-length': rawQuery.length,
+      });
+    } catch (err) {
+      evictH2Session(u.origin, client);
+      return done(err);
+    }
 
     let status = 0;
     const chunks = [];
@@ -556,6 +610,7 @@ export async function testAllUpstreams(list = null) {
         const latencyMs = Number((performance.now() - t0).toFixed(1));
         const decoded = dnsPacket.decode(resp);
         recordUpstreamSuccess(u, latencyMs);
+        upstreamLB.recordLatency(u, latencyMs);
         return {
           upstream: u,
           protocol,
@@ -883,6 +938,7 @@ export function startDnsServer({ host = '0.0.0.0', port = 5335 } = {}) {
           ipv6Enabled: Boolean(udp6Server),
           close: () =>
             new Promise((done) => {
+              closeAllH2Sessions();
               const finishUdp6 = () => {
                 if (!udp6Server) return done();
                 udp6Server.close(() => done());

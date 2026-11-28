@@ -3,6 +3,7 @@ import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { DATA_DIR, DEFAULT_ALERTS_CONFIG } from './store.js';
 import { deviceDiscovery, normalizeMac } from './discovery.js';
+import { blocklistEngine } from './blocklist.js';
 import { DgaTracker, BeaconingTracker } from './threat-guard.js';
 
 const ALERTS_PATH = path.join(DATA_DIR, 'alerts.json');
@@ -374,6 +375,7 @@ class AlertEngine extends EventEmitter {
         const devObj = deviceDiscovery.resolveDeviceForIp(clientIp, devices);
         const beacon = this.beaconingTracker.record(clientIp, domain, {
           deviceGroup: devObj?.groupId || '',
+          whitelistSet: blocklistEngine.whitelistSet,
         });
         if (beacon) {
           this.createAlert({

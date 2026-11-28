@@ -6,6 +6,7 @@ import dnsPacket from 'dns-packet';
 import {
   UpstreamLoadBalancer,
   LocalDnsLoadBalancer,
+  LOWEST_LATENCY_PROBE_EVERY,
   normalizeLocalRecord,
   probeTcpEndpoint,
   probeHttpEndpoint,
@@ -89,7 +90,7 @@ describe('UpstreamLoadBalancer (4 chế độ)', () => {
     lb.recordLatency('u3', 45);
 
     const picks = [];
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < LOWEST_LATENCY_PROBE_EVERY; i++) {
       const resp = await lb.forward(dummyQuery, {
         upstreams,
         strategy: 'lowest_latency',
@@ -97,9 +98,12 @@ describe('UpstreamLoadBalancer (4 chế độ)', () => {
       });
       picks.push(resp.toString());
     }
-    // 9 truy vấn đầu đi vào u2 (nhanh nhất), truy vấn thứ 10 thăm dò upstream khác
-    assert.deepEqual(picks.slice(0, 9), Array(9).fill('u2'));
-    assert.notEqual(picks[9], 'u2');
+    // (N-1) truy vấn đầu đi vào u2 (nhanh nhất), truy vấn thứ N thăm dò upstream khác
+    assert.deepEqual(
+      picks.slice(0, LOWEST_LATENCY_PROBE_EVERY - 1),
+      Array(LOWEST_LATENCY_PROBE_EVERY - 1).fill('u2')
+    );
+    assert.notEqual(picks[LOWEST_LATENCY_PROBE_EVERY - 1], 'u2');
   });
 
   it('parallel: gửi đồng thời và trả về gói từ upstream phản hồi nhanh nhất', async () => {

@@ -61,11 +61,32 @@ test('VN Lookalike Guard: KHÔNG chặn nhầm tên miền chính chủ VN và t
     // Đuôi chính thống VN luôn miễn trừ
     'portal.edu.vn',
     'vneid-guide.org.vn',
+    // Hạ tầng API/DB/Push/Deep-link hợp lệ của app ngân hàng (không có từ khóa mồi nhử)
+    'pushnotificationtpbank.firebaseio.com',
+    'mbbank-push.firebasedatabase.app',
+    'vietcombank.onelink.me',
   ];
 
   for (const d of safeSamples) {
     const res = checkVnImpersonation(d, WHITELIST_SET);
     assert.equal(res.suspicious, false, `Không được chặn nhầm domain hợp pháp: ${d}`);
+  }
+});
+
+test('VN Lookalike Guard: vẫn chặn phishing trên web hosting (web.app, firebaseapp.com, pages.dev) và API có từ khóa mồi nhử', () => {
+  const mustBlock = [
+    'tpbank.web.app',
+    'vneid-capnhat.firebaseapp.com',
+    'vietcombank.pages.dev',
+    'tpbank-login.firebaseio.com',
+    'mbbank-xacthuc.firebasedatabase.app',
+    'tpbank.evil-host.com',
+  ];
+
+  for (const d of mustBlock) {
+    const res = checkVnImpersonation(d, WHITELIST_SET);
+    assert.equal(res.suspicious, true, `Phải tiếp tục chặn phishing: ${d}`);
+    assert.equal(res.severity, 'critical');
   }
 });
 
@@ -143,7 +164,26 @@ test('BeaconingTracker: phát hiện nhịp C2 đều đặn trên computer/mobi
   assert.equal(detected.domain, 'c2-panel.unknown-host.xyz');
   assert.ok(detected.avgIntervalSec >= 59 && detected.avgIntervalSec <= 61);
 
-  // 3. Giới hạn cứng LRU (maxEntries = 3)
+  // 3. Domain hạ tầng dev/sync phổ biến (github.com) & domain trong whitelistSet KHÔNG bị báo nhầm Beaconing
+  for (let i = 0; i < 8; i++) {
+    assert.equal(
+      tracker.record('192.168.1.210', 'github.com', {
+        nowMs: t0 + i * 157_000,
+        deviceGroup: 'computer',
+      }),
+      null
+    );
+    assert.equal(
+      tracker.record('192.168.1.210', 'api.internal-sync.example', {
+        nowMs: t0 + i * 60_000,
+        deviceGroup: 'computer',
+        whitelistSet: new Set(['internal-sync.example']),
+      }),
+      null
+    );
+  }
+
+  // 4. Giới hạn cứng LRU (maxEntries = 3)
   tracker.record('192.168.1.107', 'a.example.org', { nowMs: t0 + 10_000, deviceGroup: 'computer' });
   tracker.record('192.168.1.107', 'b.example.org', { nowMs: t0 + 20_000, deviceGroup: 'computer' });
   tracker.record('192.168.1.107', 'c.example.org', { nowMs: t0 + 30_000, deviceGroup: 'computer' });

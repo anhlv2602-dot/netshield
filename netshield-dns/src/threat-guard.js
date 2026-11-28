@@ -69,6 +69,19 @@ const SHORT_VN_BRANDS = [
   { key: 'shopee', label: 'Shopee', official: ['shopee.vn', 'shopee.com', 'shopeemobile.com', 'shopee.io'] },
 ];
 
+// Hạ tầng API/DB/Push/Deep-link/SDK của ứng dụng di động (không phục vụ trang web giao diện phishing)
+// -> Miễn trừ khi tên thương hiệu VN chỉ xuất hiện ở subdomain và KHÔNG kèm từ khóa mồi nhử (LURE_TOKENS).
+// LƯU Ý: KHÔNG đưa web/file hosting (web.app, firebaseapp.com, pages.dev, github.io, s3.amazonaws.com...) vào đây.
+const TRUSTED_APP_BACKEND_SUFFIXES = [
+  'firebaseio.com',
+  'firebasedatabase.app',
+  'onelink.me',
+  'app.link',
+  'appsflyer.com',
+  'adjust.com',
+  'clevertap-prod.com',
+];
+
 const SAFE_DGA_SUFFIXES = [
   'gov.vn', 'edu.vn', 'org.vn', 'com.vn', 'vn',
   'google.com', 'googleapis.com', 'gstatic.com', 'googleusercontent.com', 'usercontent.goog',
@@ -76,6 +89,16 @@ const SAFE_DGA_SUFFIXES = [
   'cloudfront.net', 'amazonaws.com', 'azureedge.net', 'fastly.net', 'cloudflare.com',
   'facebook.com', 'fbcdn.net', 'microsoft.com', 'windows.com', 'live.com', 'office.com',
   'ntp.org', 'in-addr.arpa', 'ip6.arpa', 'local', 'lan',
+];
+
+// Danh sách tên miền hợp lệ vốn có cơ chế polling / sync / push định kỳ (dùng riêng cho BeaconingTracker)
+const SAFE_BEACONING_SUFFIXES = [
+  ...SAFE_DGA_SUFFIXES,
+  'github.com', 'githubusercontent.com', 'githubassets.com', 'gitlab.com', 'bitbucket.org',
+  'npmjs.org', 'npmjs.com', 'pypi.org', 'docker.io', 'docker.com', 'ghcr.io', 'brew.sh',
+  'cloudflare.net', 'firebaseio.com', 'firebasedatabase.app', 'tailscale.com', 'tailscale.io',
+  'zalo.me', 'zdn.vn', 'telegram.org', 'discord.com', 'discordapp.com', 'slack.com',
+  'openai.com', 'anthropic.com',
 ];
 
 function matchesAnySuffix(domain, suffixes) {
@@ -131,17 +154,21 @@ export function checkVnImpersonation(rawDomain, whitelistSet = null) {
   const isRiskyTld = RISKY_TLDS.has(tld);
   const hasLureToken = tokens.some((t) => LURE_TOKENS.has(t));
   const hasFakeGovPattern = /(^|[.-])(gov-vn|com-vn|govvn|chinhphu-vn)([.-]|$)/.test(bodyJoined);
+  const isTrustedAppBackend = matchesAnySuffix(domain, TRUSTED_APP_BACKEND_SUFFIXES);
 
   // 2. Nhóm thương hiệu dài đặc trưng VN (khớp cả leetspeak trên MỌI TLD nếu không phải domain chính chủ)
-  for (const brand of LONG_VN_BRANDS) {
-    if (matchesAnySuffix(domain, brand.official)) continue;
-    if (bodyJoined.includes(brand.key) || leetBody.includes(brand.key)) {
-      return {
-        suspicious: true,
-        brand: brand.label,
-        severity: 'critical',
-        reason: `Giả mạo thương hiệu VN (${brand.label})`,
-      };
+  // Miễn trừ nếu chỉ là subdomain hạ tầng API/Push/SDK hợp lệ (vd: pushnotificationtpbank.firebaseio.com) và không có từ khóa mồi nhử
+  if (!(isTrustedAppBackend && !hasLureToken && !hasFakeGovPattern && !hasPunycode)) {
+    for (const brand of LONG_VN_BRANDS) {
+      if (matchesAnySuffix(domain, brand.official)) continue;
+      if (bodyJoined.includes(brand.key) || leetBody.includes(brand.key)) {
+        return {
+          suspicious: true,
+          brand: brand.label,
+          severity: 'critical',
+          reason: `Giả mạo thương hiệu VN (${brand.label})`,
+        };
+      }
     }
   }
 
@@ -257,7 +284,7 @@ export class BeaconingTracker {
     if (deviceGroup === 'iot' || deviceGroup === 'camera') return null;
 
     const domain = normalizeDomain(rawDomain);
-    if (!domain || !domain.includes('.') || matchesAnySuffix(domain, SAFE_DGA_SUFFIXES)) {
+    if (!domain || !domain.includes('.') || matchesAnySuffix(domain, SAFE_BEACONING_SUFFIXES)) {
       return null;
     }
     if (whitelistSet && whitelistSet.size > 0) {
