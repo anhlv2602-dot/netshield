@@ -159,7 +159,8 @@ class BlocklistEngine {
 
     for (const list of store.config.blocklists) {
       if (!list.enabled) continue;
-      const meta = inferBlocklistMeta(list);
+      const isMixedAdList = /stevenblack|oisd|abpvn|adguard/i.test(`${list.id || ''} ${list.name || ''}`);
+      const meta = isMixedAdList ? { category: 'ads', severity: 'info' } : inferBlocklistMeta(list);
       const cacheFile = path.join(CACHE_DIR, `${list.id}.txt`);
       try {
         const content = await fs.readFile(cacheFile, 'utf8');

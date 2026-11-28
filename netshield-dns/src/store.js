@@ -3,6 +3,7 @@ import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import { deviceDiscovery, normalizeMac } from './discovery.js';
+import { normalizeUpstreamStrategy, normalizeLocalRecord } from './load-balancer.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT_DIR = path.resolve(__dirname, '..');
@@ -271,6 +272,7 @@ export const DEFAULT_CONFIG = {
     'https://9.9.9.9/dns-query',
     '203.113.131.1',
   ],
+  upstreamStrategy: 'failover', // 'failover' | 'round_robin' | 'lowest_latency' | 'parallel'
   blockResponseMode: 'zero', // 'zero' (0.0.0.0 / ::) hoặc 'nxdomain'
   security: { ...DEFAULT_SECURITY_CONFIG },
   alerts: { ...DEFAULT_ALERTS_CONFIG },
@@ -469,22 +471,17 @@ class Store extends EventEmitter {
           ...DEFAULT_STORAGE_CONFIG,
           ...(parsed.storage && typeof parsed.storage === 'object' ? parsed.storage : {}),
         },
+        upstreamStrategy: normalizeUpstreamStrategy(parsed.upstreamStrategy),
         localRecords: Array.isArray(parsed.localRecords)
           ? parsed.localRecords
-              .filter((r) => r && r.domain && (r.ip || (Array.isArray(r.ips) && r.ips.length)))
               .map((r) => {
-                const domain = normalizeDomain(r.domain);
-                const ips = Array.isArray(r.ips) && r.ips.length
-                  ? r.ips.map((s) => String(s || '').trim()).filter(Boolean)
-                  : [String(r.ip || '').trim()].filter(Boolean);
-                return {
-                  domain,
-                  ip: ips[0] || '',
-                  ips,
-                  ttl: Number.isFinite(Number(r.ttl)) ? Math.max(10, Math.min(86400, Number(r.ttl))) : 60,
-                };
+                try {
+                  return normalizeLocalRecord(r);
+                } catch {
+                  return null;
+                }
               })
-              .filter((r) => r.domain && r.ips.length > 0)
+              .filter(Boolean)
           : [],
       };
     } catch {
