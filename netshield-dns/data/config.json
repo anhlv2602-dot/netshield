@@ -5,6 +5,7 @@
     "https://9.9.9.9/dns-query",
     "203.113.131.1"
   ],
+  "upstreamStrategy": "failover",
   "blockResponseMode": "zero",
   "security": {
     "dnsRebindingGuard": true,
@@ -37,7 +38,17 @@
       "ips": [
         "192.168.1.210"
       ],
-      "ttl": 60
+      "ttl": 60,
+      "strategy": "round_robin",
+      "singleAnswer": false,
+      "enabled": true,
+      "targets": [
+        {
+          "ip": "192.168.1.210",
+          "weight": 1,
+          "healthPort": null
+        }
+      ]
     },
     {
       "domain": "server.lan",
@@ -45,7 +56,17 @@
       "ips": [
         "192.168.1.209"
       ],
-      "ttl": 60
+      "ttl": 60,
+      "strategy": "round_robin",
+      "singleAnswer": false,
+      "enabled": true,
+      "targets": [
+        {
+          "ip": "192.168.1.209",
+          "weight": 1,
+          "healthPort": null
+        }
+      ]
     },
     {
       "domain": "router.lan",
@@ -53,7 +74,17 @@
       "ips": [
         "192.168.1.1"
       ],
-      "ttl": 60
+      "ttl": 60,
+      "strategy": "round_robin",
+      "singleAnswer": false,
+      "enabled": true,
+      "targets": [
+        {
+          "ip": "192.168.1.1",
+          "weight": 1,
+          "healthPort": null
+        }
+      ]
     }
   ],
   "blocklists": [
@@ -586,7 +617,7 @@
       "id": "mac:F2:D5:6A:7D:E3:BE",
       "ip": "192.168.1.208",
       "name": "Thiết bị Apple",
-      "groupId": "",
+      "groupId": "mobile",
       "mac": "F2:D5:6A:7D:E3:BE"
     },
     {
