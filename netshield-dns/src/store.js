@@ -682,7 +682,7 @@ class Store extends EventEmitter {
 
       await fs.mkdir(DATA_DIR, { recursive: true });
       const tmpPath = `${STATS_PATH}.tmp`;
-      await fs.writeFile(tmpPath, JSON.stringify(payload), 'utf8');
+      await fs.writeFile(tmpPath, JSON.stringify(payload), { encoding: 'utf8', mode: 0o600 });
       await fs.rename(tmpPath, STATS_PATH);
       this._statsDirty = false;
     } catch (err) {

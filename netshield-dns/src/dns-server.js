@@ -828,11 +828,20 @@ export function startDnsServer({ host = '0.0.0.0', port = 5335 } = {}) {
   return new Promise((resolve, reject) => {
     const udpServer = dgram.createSocket('udp4');
     const tcpServer = net.createServer((socket) => {
+      socket.setTimeout(15_000, () => socket.destroy());
       let buffer = Buffer.alloc(0);
       socket.on('data', async (chunk) => {
         buffer = Buffer.concat([buffer, chunk]);
+        if (buffer.length > 16_384) {
+          socket.destroy();
+          return;
+        }
         while (buffer.length >= 2) {
           const msgLen = buffer.readUInt16BE(0);
+          if (msgLen < 12 || msgLen > 4096) {
+            socket.destroy();
+            return;
+          }
           if (buffer.length < msgLen + 2) break;
           const rawQuery = buffer.subarray(2, 2 + msgLen);
           buffer = buffer.subarray(2 + msgLen);
@@ -847,6 +856,7 @@ export function startDnsServer({ host = '0.0.0.0', port = 5335 } = {}) {
       });
       socket.on('error', () => {});
     });
+    tcpServer.maxConnections = 128;
 
     udpServer.on('message', async (msg, rinfo) => {
       try {

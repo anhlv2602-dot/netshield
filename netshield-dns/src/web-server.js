@@ -44,13 +44,53 @@ function getLanIps() {
   return ips;
 }
 
+const BASE_SECURITY_HEADERS = {
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'no-referrer',
+};
+
+const HTML_SECURITY_HEADERS = {
+  ...BASE_SECURITY_HEADERS,
+  'Content-Security-Policy':
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'",
+};
+
 function sendJson(res, status, data) {
   const body = JSON.stringify(data);
   res.writeHead(status, {
+    ...BASE_SECURITY_HEADERS,
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
   });
   res.end(body);
+}
+
+const LOCAL_HOST_RE = /^(?:127\.0\.0\.1|localhost|\[::1\])(?::\d{1,5})?$/i;
+
+function isAllowedLocalHost(hostHeader) {
+  if (!hostHeader || typeof hostHeader !== 'string') return false;
+  return LOCAL_HOST_RE.test(hostHeader.trim());
+}
+
+function isCsrfBlocked(req) {
+  const method = (req.method || 'GET').toUpperCase();
+  if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return false;
+
+  const fetchSite = String(req.headers['sec-fetch-site'] || '').trim().toLowerCase();
+  if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'none') {
+    return true;
+  }
+
+  const origin = String(req.headers.origin || '').trim().toLowerCase();
+  if (origin) {
+    const reqHost = String(req.headers.host || '').trim().toLowerCase();
+    if (!reqHost || origin !== `http://${reqHost}`) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 async function readJsonBody(req) {
@@ -92,8 +132,16 @@ export function startWebServer({
   store.on('query', onQuery);
 
   const server = http.createServer(async (req, res) => {
-    if (host === '127.0.0.1' && !isLocalClient(req)) {
-      return sendJson(res, 403, { error: 'Chỉ cho phép truy cập trang quản trị từ máy Mac Mini (localhost)' });
+    if (host === '127.0.0.1') {
+      if (!isLocalClient(req)) {
+        return sendJson(res, 403, { error: 'Chỉ cho phép truy cập trang quản trị từ máy Mac Mini (localhost)' });
+      }
+      if (!isAllowedLocalHost(req.headers.host)) {
+        return sendJson(res, 403, { error: 'Từ chối Host header không hợp lệ (chống DNS Rebinding)' });
+      }
+    }
+    if (isCsrfBlocked(req)) {
+      return sendJson(res, 403, { error: 'Từ chối yêu cầu cross-site (chống CSRF)' });
     }
     try {
       const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
@@ -932,7 +980,10 @@ export function startWebServer({
       // 9. Static UI
       if (method === 'GET' && (pathname === '/' || pathname === '/index.html')) {
         const html = await fs.readFile(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.writeHead(200, {
+          ...HTML_SECURITY_HEADERS,
+          'Content-Type': 'text/html; charset=utf-8',
+        });
         res.end(html);
         return;
       }

@@ -173,6 +173,7 @@ export async function startDohServer({
     : http.createServer(handler);
 
   return new Promise((resolve, reject) => {
+    server.maxConnections = 128;
     server.once('error', reject);
     server.listen(port, host, () => {
       const addr = server.address();
@@ -247,6 +248,7 @@ export async function startDotServer({
   );
 
   return new Promise((resolve, reject) => {
+    server.maxConnections = 128;
     server.once('error', reject);
     server.listen(port, host, () => {
       const addr = server.address();

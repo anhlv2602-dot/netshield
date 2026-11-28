@@ -5,6 +5,15 @@ const HOST_SAFE_RE = /^[a-zA-Z0-9._:-]{1,128}$/;
 const USER_SAFE_RE = /^[a-zA-Z0-9._-]{1,64}$/;
 const DIR_SAFE_RE = /^[a-zA-Z0-9._~/-]{1,256}$/;
 
+function sanitizeSafePath(raw) {
+  const val = String(raw || '').trim();
+  if (!val) return '';
+  if (val.startsWith('-') || val.includes('..') || !DIR_SAFE_RE.test(val)) {
+    return '';
+  }
+  return val;
+}
+
 function runProcess(cmd, args, { stdinText = null, timeoutMs = 15_000 } = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(cmd, args, {
@@ -104,11 +113,17 @@ export function normalizeHaSyncConfig(raw = {}) {
     autoSyncOnSave: merged.autoSyncOnSave !== false,
     debounceSec: Math.max(2, Math.min(300, Number(merged.debounceSec) || 5)),
     healthCheckIntervalSec: Math.max(15, Math.min(3600, Number(merged.healthCheckIntervalSec) || 60)),
-    secondaryHost: HOST_SAFE_RE.test(secondaryHost) ? secondaryHost : DEFAULT_HA_SYNC_CONFIG.secondaryHost,
-    secondaryUser: USER_SAFE_RE.test(secondaryUser) ? secondaryUser : DEFAULT_HA_SYNC_CONFIG.secondaryUser,
-    secondaryAppDir: DIR_SAFE_RE.test(secondaryAppDir) ? secondaryAppDir : DEFAULT_HA_SYNC_CONFIG.secondaryAppDir,
-    sshKeyPath: String(merged.sshKeyPath || '').trim(),
-    sshKnownHostsPath: String(merged.sshKnownHostsPath || '').trim(),
+    secondaryHost:
+      HOST_SAFE_RE.test(secondaryHost) && !secondaryHost.startsWith('-')
+        ? secondaryHost
+        : DEFAULT_HA_SYNC_CONFIG.secondaryHost,
+    secondaryUser:
+      USER_SAFE_RE.test(secondaryUser) && !secondaryUser.startsWith('-')
+        ? secondaryUser
+        : DEFAULT_HA_SYNC_CONFIG.secondaryUser,
+    secondaryAppDir: sanitizeSafePath(secondaryAppDir) || DEFAULT_HA_SYNC_CONFIG.secondaryAppDir,
+    sshKeyPath: sanitizeSafePath(merged.sshKeyPath),
+    sshKnownHostsPath: sanitizeSafePath(merged.sshKnownHostsPath),
     alertOnOffline: merged.alertOnOffline !== false,
   };
 }
