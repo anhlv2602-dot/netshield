@@ -18,20 +18,20 @@
       color-scheme: light dark;
 
       /* Palette tokens */
-      --bg-light: #f5f7fb;
-      --bg-dark: #0a0e17;
+      --bg-light: #f6f8fb;
+      --bg-dark: #090d16;
       --surface-light: #ffffff;
-      --surface-dark: #111827;
+      --surface-dark: #111726;
       --surface-alt-light: #f1f5f9;
-      --surface-alt-dark: #1a2234;
-      --surface-hover-light: #e8eef6;
-      --surface-hover-dark: #222d43;
+      --surface-alt-dark: #182032;
+      --surface-hover-light: #e9eff7;
+      --surface-hover-dark: #1f2a40;
       --sidebar-light: #ffffff;
-      --sidebar-dark: #0d1320;
-      --border-light: #e2e8f0;
-      --border-dark: #1f2b3f;
+      --sidebar-dark: #0d121f;
+      --border-light: #e5e9f0;
+      --border-dark: #1e293b;
       --border-strong-light: #cbd5e1;
-      --border-strong-dark: #30405b;
+      --border-strong-dark: #334155;
 
       --text-light: #0f172a;
       --text-dark: #f1f5f9;
@@ -42,8 +42,6 @@
 
       --accent-light: #2563eb;
       --accent-dark: #3b82f6;
-      --accent-fg-light: #ffffff;
-      --accent-fg-dark: #ffffff;
       --accent-soft-light: #eff6ff;
       --accent-soft-dark: rgba(59, 130, 246, 0.14);
 
@@ -62,12 +60,11 @@
       --warn-soft-light: #fffbeb;
       --warn-soft-dark: rgba(251, 191, 36, 0.14);
 
-      --shadow-sm-light: 0 1px 2px rgba(15, 23, 42, 0.05);
+      --shadow-sm-light: 0 1px 2px rgba(15, 23, 42, 0.04);
       --shadow-sm-dark: 0 1px 2px rgba(0, 0, 0, 0.35);
-      --shadow-md-light: 0 8px 24px -4px rgba(15, 23, 42, 0.09), 0 2px 6px -1px rgba(15, 23, 42, 0.05);
+      --shadow-md-light: 0 10px 24px -6px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
       --shadow-md-dark: 0 12px 28px -4px rgba(0, 0, 0, 0.55), 0 2px 8px -1px rgba(0, 0, 0, 0.35);
 
-      /* Resolved defaults (fallback when light-dark() unsupported) */
       --bg: var(--bg-light);
       --surface: var(--surface-light);
       --surface-alt: var(--surface-alt-light);
@@ -79,7 +76,6 @@
       --text-secondary: var(--text-secondary-light);
       --muted: var(--muted-light);
       --accent: var(--accent-light);
-      --accent-fg: var(--accent-fg-light);
       --accent-soft: var(--accent-soft-light);
       --success: var(--success-light);
       --success-soft: var(--success-soft-light);
@@ -92,20 +88,16 @@
 
       --radius-sm: 8px;
       --radius-md: 12px;
-      --radius-lg: 16px;
-      --sidebar-w: 256px;
+      --radius-lg: 14px;
+      --sidebar-w: 248px;
 
       accent-color: var(--accent);
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
 
-    :root:has(> head > meta[name="color-scheme"][content="dark"]) {
-      color-scheme: dark;
-    }
-    :root:has(> head > meta[name="color-scheme"][content="light"]) {
-      color-scheme: light;
-    }
+    :root:has(> head > meta[name="color-scheme"][content="dark"]) { color-scheme: dark; }
+    :root:has(> head > meta[name="color-scheme"][content="light"]) { color-scheme: light; }
 
     @media (prefers-color-scheme: dark) {
       :root {
@@ -184,12 +176,10 @@
 
     code, .mono {
       font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 0.88em;
+      font-size: 0.86em;
     }
 
-    .tabular {
-      font-variant-numeric: tabular-nums;
-    }
+    .tabular { font-variant-numeric: tabular-nums; }
 
     /* ================= APP SHELL ================= */
     .app-shell {
@@ -198,7 +188,6 @@
       min-height: 100dvh;
     }
 
-    /* Sidebar */
     aside.sidebar {
       background: var(--sidebar);
       border-right: 1px solid var(--border);
@@ -207,7 +196,7 @@
       position: sticky;
       top: 0;
       height: 100dvh;
-      padding: 1.1rem 0.85rem;
+      padding: 1.05rem 0.8rem;
       gap: 1.1rem;
       z-index: 30;
     }
@@ -216,29 +205,29 @@
       display: flex;
       align-items: center;
       gap: 0.7rem;
-      padding: 0.25rem 0.45rem;
+      padding: 0.2rem 0.45rem;
     }
     .brand-logo {
-      width: 38px;
-      height: 38px;
+      width: 36px;
+      height: 36px;
       border-radius: 10px;
       background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
       color: #fff;
       display: grid;
       place-items: center;
       flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
     }
     .brand h1 {
       margin: 0;
-      font-size: 1rem;
+      font-size: 0.98rem;
       font-weight: 700;
       letter-spacing: -0.02em;
       line-height: 1.2;
     }
     .brand-sub {
       color: var(--muted);
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       font-weight: 500;
       margin-top: 2px;
     }
@@ -246,68 +235,75 @@
     nav.tabs {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.2rem;
       flex: 1;
     }
     .nav-section-label {
-      font-size: 0.69rem;
+      font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       color: var(--muted);
-      padding: 0.35rem 0.65rem 0.25rem;
+      padding: 0.35rem 0.65rem 0.2rem;
     }
     nav.tabs button {
+      position: relative;
       display: flex;
       align-items: center;
       gap: 0.65rem;
       width: 100%;
       background: transparent;
-      border: 1px solid transparent;
-      border-radius: 10px;
+      border: none;
+      border-radius: 9px;
       color: var(--text-secondary);
-      padding: 0.6rem 0.75rem;
-      font-size: 0.88rem;
+      padding: 0.58rem 0.75rem;
+      font-size: 0.87rem;
       font-weight: 500;
       cursor: pointer;
       text-align: left;
-      transition: background 150ms ease, color 150ms ease, border-color 150ms ease, scale 120ms ease;
+      transition: background 140ms ease, color 140ms ease, scale 120ms ease;
     }
     nav.tabs button svg {
-      width: 18px;
-      height: 18px;
+      width: 17px;
+      height: 17px;
       flex-shrink: 0;
-      opacity: 0.78;
-      transition: opacity 150ms ease;
+      opacity: 0.72;
+      transition: opacity 140ms ease;
     }
     nav.tabs button:hover {
       background: var(--surface-alt);
       color: var(--text);
     }
-    nav.tabs button:active {
-      scale: 0.985;
-    }
+    nav.tabs button:active { scale: 0.985; }
     nav.tabs button[aria-selected="true"] {
       background: var(--accent-soft);
       color: var(--accent);
       font-weight: 600;
-      border-color: color-mix(in srgb, var(--accent) 22%, transparent);
     }
-    nav.tabs button[aria-selected="true"] svg {
-      opacity: 1;
+    nav.tabs button[aria-selected="true"]::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 22%;
+      bottom: 22%;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: var(--accent);
     }
+    nav.tabs button[aria-selected="true"] svg { opacity: 1; }
+
     .nav-badge {
       margin-left: auto;
-      font-size: 0.72rem;
+      font-size: 0.71rem;
       font-weight: 600;
-      padding: 0.1rem 0.45rem;
+      padding: 0.08rem 0.44rem;
       border-radius: 999px;
       background: var(--surface-alt);
       color: var(--muted);
       font-variant-numeric: tabular-nums;
     }
     nav.tabs button[aria-selected="true"] .nav-badge {
-      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      background: color-mix(in srgb, var(--accent) 16%, transparent);
       color: var(--accent);
     }
     .live-dot {
@@ -319,24 +315,18 @@
       box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 55%, transparent);
       animation: pulse-dot 2s infinite;
     }
-    .live-dot.paused {
-      background: var(--warn);
-      animation: none;
-    }
+    .live-dot.paused { background: var(--warn); animation: none; }
     @keyframes pulse-dot {
       0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 50%, transparent); }
       70% { box-shadow: 0 0 0 6px transparent; }
       100% { box-shadow: 0 0 0 0 transparent; }
     }
-    @media (prefers-reduced-motion: reduce) {
-      .live-dot { animation: none; }
-    }
+    @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
 
-    /* Sidebar footer status card */
     .sidebar-footer {
       display: flex;
       flex-direction: column;
-      gap: 0.65rem;
+      gap: 0.6rem;
       padding-top: 0.75rem;
       border-top: 1px solid var(--border);
     }
@@ -344,8 +334,8 @@
       background: var(--surface-alt);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 0.65rem 0.75rem;
-      font-size: 0.76rem;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.75rem;
       color: var(--muted);
       line-height: 1.45;
     }
@@ -355,21 +345,20 @@
       justify-content: space-between;
       color: var(--text);
       font-weight: 600;
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.2rem;
     }
     .server-mini code {
       color: var(--text-secondary);
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       display: block;
       white-space: pre-line;
       overflow-wrap: break-word;
     }
-
     .theme-quick-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.4rem;
+      gap: 0.42rem;
       width: 100%;
       padding: 0.45rem 0.7rem;
       border-radius: 9px;
@@ -379,13 +368,9 @@
       font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background 150ms ease, border-color 150ms ease, scale 120ms ease;
+      transition: background 140ms ease, border-color 140ms ease, scale 120ms ease;
     }
-    .theme-quick-btn:hover {
-      background: var(--surface-alt);
-      border-color: var(--border-strong);
-      color: var(--text);
-    }
+    .theme-quick-btn:hover { background: var(--surface-alt); border-color: var(--border-strong); color: var(--text); }
     .theme-quick-btn:active { scale: 0.98; }
 
     /* Main Workspace */
@@ -396,11 +381,9 @@
     }
 
     header.topbar {
-      background: color-mix(in srgb, var(--surface) 88%, transparent);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 0.85rem 1.75rem;
+      padding: 0.85rem 2rem;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
@@ -410,28 +393,16 @@
       top: 0;
       z-index: 20;
     }
-    .page-heading {
-      display: flex;
-      flex-direction: column;
-      gap: 0.1rem;
-    }
-    .page-heading h2 {
-      margin: 0;
-      font-size: 1.12rem;
-      font-weight: 700;
-      letter-spacing: -0.015em;
-    }
-    .page-heading p {
-      margin: 0;
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
+    .page-heading { display: flex; flex-direction: column; gap: 0.08rem; min-width: 0; }
+    .page-heading h2 { margin: 0; font-size: 1.1rem; font-weight: 700; letter-spacing: -0.015em; }
+    .page-heading p { margin: 0; font-size: 0.79rem; color: var(--muted); }
 
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 0.55rem;
       flex-wrap: wrap;
+      flex-shrink: 0;
     }
 
     .pill {
@@ -444,6 +415,7 @@
       font-weight: 600;
       border: 1px solid var(--border);
       background: var(--surface-alt);
+      white-space: nowrap;
     }
     .pill::before {
       content: "";
@@ -455,33 +427,31 @@
     .pill.ok {
       color: var(--success);
       background: var(--success-soft);
-      border-color: color-mix(in srgb, var(--success) 32%, transparent);
+      border-color: color-mix(in srgb, var(--success) 28%, transparent);
     }
     .pill.off {
       color: var(--danger);
       background: var(--danger-soft);
-      border-color: color-mix(in srgb, var(--danger) 32%, transparent);
+      border-color: color-mix(in srgb, var(--danger) 28%, transparent);
     }
 
     main {
       width: 100%;
-      max-width: 1320px;
+      max-width: 1560px;
       margin: 0 auto;
-      padding: 1.4rem 1.75rem 2.5rem;
+      padding: 1.45rem 2rem 3rem;
     }
 
     .panel { display: none; }
     .panel.active {
       display: block;
-      animation: panel-in 180ms ease-out;
+      animation: panel-in 160ms ease-out;
     }
     @keyframes panel-in {
-      from { opacity: 0; translate: 0 4px; }
+      from { opacity: 0; translate: 0 3px; }
       to { opacity: 1; translate: 0 0; }
     }
-    @media (prefers-reduced-motion: reduce) {
-      .panel.active { animation: none; }
-    }
+    @media (prefers-reduced-motion: reduce) { .panel.active { animation: none; } }
 
     /* ================= CARDS & GRIDS ================= */
     .kpi-grid {
@@ -490,20 +460,26 @@
       gap: 0.9rem;
       margin-bottom: 1.25rem;
     }
+    .kpi-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 1.15rem;
+    }
     @media (max-width: 1220px) {
       .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     @media (max-width: 680px) {
-      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .kpi-grid, .kpi-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
     .grid-2 {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 1.1rem;
+      gap: 1.15rem;
       margin-bottom: 1.25rem;
     }
-    @media (max-width: 980px) {
+    @media (max-width: 1020px) {
       .grid-2 { grid-template-columns: 1fr; }
     }
 
@@ -524,7 +500,7 @@
     }
     .card h2, .card h3 {
       margin: 0;
-      font-size: 0.98rem;
+      font-size: 0.97rem;
       font-weight: 700;
       letter-spacing: -0.01em;
       display: flex;
@@ -532,8 +508,8 @@
       gap: 0.45rem;
     }
     .card-desc {
-      margin: 0.2rem 0 0;
-      font-size: 0.8rem;
+      margin: 0.18rem 0 0;
+      font-size: 0.79rem;
       color: var(--muted);
     }
 
@@ -542,27 +518,19 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      padding: 1rem 1.1rem;
+      padding: 0.95rem 1.1rem;
       box-shadow: var(--shadow-sm);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      gap: 0.45rem;
-      transition: border-color 150ms ease, box-shadow 150ms ease;
+      gap: 0.4rem;
+      transition: border-color 140ms ease, box-shadow 140ms ease;
     }
-    .kpi-card:hover {
-      border-color: var(--border-strong);
-      box-shadow: var(--shadow-md);
-    }
-    .kpi-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-    }
+    .kpi-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
+    .kpi-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
     .kpi-icon {
-      width: 30px;
-      height: 30px;
+      width: 28px;
+      height: 28px;
       border-radius: 8px;
       display: grid;
       place-items: center;
@@ -573,20 +541,11 @@
     .kpi-icon.accent { background: var(--accent-soft); color: var(--accent); }
     .kpi-icon.danger { background: var(--danger-soft); color: var(--danger); }
     .kpi-icon.success { background: var(--success-soft); color: var(--success); }
-    .kpi-icon.warn { background: var(--warn-soft); color: var(--warn); }
 
-    .stat-label {
-      color: var(--muted);
-      font-size: 0.79rem;
-      font-weight: 500;
-    }
-    .stat-sub {
-      color: var(--muted);
-      font-size: 0.74rem;
-      line-height: 1.35;
-    }
+    .stat-label { color: var(--muted); font-size: 0.79rem; font-weight: 500; }
+    .stat-sub { color: var(--muted); font-size: 0.74rem; line-height: 1.35; }
     .stat-value {
-      font-size: 1.65rem;
+      font-size: 1.62rem;
       font-weight: 750;
       letter-spacing: -0.03em;
       line-height: 1.15;
@@ -596,24 +555,23 @@
     .stat-value.danger { color: var(--danger); }
     .stat-value.success { color: var(--success); }
     .stat-value.accent { color: var(--accent); }
-    .stat-value.warn { color: var(--warn); }
 
     /* ================= BUTTONS & INPUTS ================= */
     button.btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.4rem;
-      padding: 0.5rem 0.9rem;
+      gap: 0.38rem;
+      padding: 0.48rem 0.88rem;
       border-radius: 9px;
       border: 1px solid var(--border);
       background: var(--surface);
       color: var(--text);
       font-weight: 600;
-      font-size: 0.83rem;
+      font-size: 0.82rem;
       cursor: pointer;
       white-space: nowrap;
-      transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, scale 120ms ease;
+      transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease, scale 120ms ease;
     }
     button.btn svg { width: 15px; height: 15px; flex-shrink: 0; }
     button.btn:hover:not(:disabled) {
@@ -623,62 +581,57 @@
     }
     button.btn:active:not(:disabled) { scale: 0.97; }
 
-    button.btn.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
+    button.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
     button.btn.primary:hover:not(:disabled) {
-      filter: brightness(1.08);
-      box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 32%, transparent);
+      filter: brightness(1.07);
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 28%, transparent);
     }
 
     button.btn.danger {
       color: var(--danger);
-      border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+      border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
       background: transparent;
     }
-    button.btn.danger:hover:not(:disabled) {
-      background: var(--danger-soft);
-      border-color: var(--danger);
-    }
+    button.btn.danger:hover:not(:disabled) { background: var(--danger-soft); border-color: var(--danger); }
 
     button.btn.success {
       color: var(--success);
-      border-color: color-mix(in srgb, var(--success) 35%, var(--border));
+      border-color: color-mix(in srgb, var(--success) 32%, var(--border));
       background: transparent;
     }
-    button.btn.success:hover:not(:disabled) {
-      background: var(--success-soft);
-      border-color: var(--success);
-    }
+    button.btn.success:hover:not(:disabled) { background: var(--success-soft); border-color: var(--success); }
 
-    button.btn.ghost {
-      background: transparent;
+    button.btn.icon-btn {
+      padding: 0.36rem;
+      width: 30px;
+      height: 30px;
       border-color: transparent;
+      background: transparent;
       color: var(--muted);
     }
-    button.btn.ghost:hover:not(:disabled) {
+    button.btn.icon-btn:hover:not(:disabled) {
       background: var(--surface-alt);
       color: var(--text);
+      border-color: var(--border);
       box-shadow: none;
     }
-
-    button.btn.sm {
-      padding: 0.3rem 0.62rem;
-      font-size: 0.77rem;
-      border-radius: 7px;
+    button.btn.icon-btn.danger-hover:hover:not(:disabled) {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border-color: color-mix(in srgb, var(--danger) 25%, transparent);
     }
-    button.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    button.btn.sm { padding: 0.28rem 0.62rem; font-size: 0.77rem; border-radius: 7px; }
+    button.btn:disabled { opacity: 0.48; cursor: not-allowed; }
 
     input[type="text"], input[type="url"], input[type="time"], select, textarea {
       width: 100%;
-      padding: 0.52rem 0.75rem;
+      padding: 0.5rem 0.72rem;
       border-radius: 9px;
       border: 1px solid var(--border);
       background: var(--surface-alt);
       color: var(--text);
-      font-size: 0.86rem;
+      font-size: 0.85rem;
       font-family: inherit;
       transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
     }
@@ -688,37 +641,46 @@
     input[type="text"]:focus, input[type="url"]:focus, input[type="time"]:focus, select:focus {
       background: var(--surface);
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
       outline: none;
     }
 
-    .row {
-      display: flex;
-      gap: 0.55rem;
-      align-items: center;
-      flex-wrap: wrap;
+    /* Ghost inline inputs inside tables */
+    .ghost-input {
+      background: transparent !important;
+      border-color: transparent !important;
+      padding: 0.36rem 0.55rem !important;
+      border-radius: 7px !important;
     }
+    .ghost-input:hover {
+      background: var(--surface-alt) !important;
+      border-color: var(--border) !important;
+    }
+    .ghost-input:focus {
+      background: var(--surface) !important;
+      border-color: var(--accent) !important;
+    }
+
+    .row { display: flex; gap: 0.55rem; align-items: center; flex-wrap: wrap; }
     .row > input { flex: 1; min-width: 180px; }
 
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 0.32rem;
+    .field { display: flex; flex-direction: column; gap: 0.32rem; }
+    .field label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
+
+    /* Collapsible inline drawer */
+    .inline-drawer {
+      display: none;
+      margin-bottom: 1rem;
+      padding: 0.9rem 1rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
     }
-    .field label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-    }
+    .inline-drawer.open { display: block; }
+    .inline-drawer input, .inline-drawer select { background: var(--surface); }
 
     /* Accessible Toggle Switch */
-    .switch-wrap {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.55rem;
-      cursor: pointer;
-      user-select: none;
-    }
+    .switch-wrap { display: inline-flex; align-items: center; gap: 0.55rem; cursor: pointer; user-select: none; }
     input.switch {
       appearance: none;
       -webkit-appearance: none;
@@ -729,7 +691,7 @@
       position: relative;
       cursor: pointer;
       flex-shrink: 0;
-      transition: background 160ms ease;
+      transition: background 150ms ease;
       margin: 0;
     }
     input.switch::after {
@@ -742,14 +704,10 @@
       border-radius: 50%;
       background: #fff;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-      transition: translate 160ms ease;
+      transition: translate 150ms ease;
     }
-    input.switch:checked {
-      background: var(--accent);
-    }
-    input.switch:checked::after {
-      translate: 16px 0;
-    }
+    input.switch:checked { background: var(--accent); }
+    input.switch:checked::after { translate: 16px 0; }
 
     /* Segmented Control */
     .segmented {
@@ -757,16 +715,23 @@
       background: var(--surface-alt);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 0.22rem;
-      gap: 0.2rem;
+      padding: 0.2rem;
+      gap: 0.18rem;
+      width: fit-content;
+    }
+    .segmented.equal-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      width: 100%;
+      max-width: 360px;
     }
     .segmented button {
       border: none;
       background: transparent;
       color: var(--muted);
-      padding: 0.34rem 0.72rem;
+      padding: 0.36rem 0.78rem;
       border-radius: 7px;
-      font-size: 0.79rem;
+      font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
       transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
@@ -789,46 +754,15 @@
       gap: 0.75rem;
       margin-bottom: 1rem;
     }
-    .chart-stage {
-      position: relative;
-      width: 100%;
-    }
-    .chart-svg {
-      display: block;
-      width: 100%;
-      height: auto;
-      max-height: 270px;
-      overflow: visible;
-    }
-    .chart-grid-line {
-      stroke: var(--border);
-      stroke-dasharray: 3 4;
-      stroke-width: 1;
-    }
-    .chart-axis-text {
-      fill: var(--muted);
-      font-size: 11px;
-      font-family: inherit;
-      font-variant-numeric: tabular-nums;
-    }
-    .chart-bar {
-      transition: opacity 150ms ease, filter 150ms ease;
-    }
-    .chart-hit {
-      cursor: pointer;
-      outline: none;
-    }
-    .chart-hit:hover {
-      fill: color-mix(in srgb, var(--accent) 7%, transparent);
-    }
-    .chart-hit:hover + .chart-bar,
-    .chart-hit:focus-visible + .chart-bar {
-      filter: brightness(1.12);
-    }
-    .chart-hit:focus-visible {
-      stroke: var(--accent);
-      stroke-width: 1.5;
-    }
+    .chart-stage { position: relative; width: 100%; }
+    .chart-svg { display: block; width: 100%; height: auto; max-height: 265px; overflow: visible; }
+    .chart-grid-line { stroke: var(--border); stroke-dasharray: 3 4; stroke-width: 1; }
+    .chart-axis-text { fill: var(--muted); font-size: 11px; font-family: inherit; font-variant-numeric: tabular-nums; }
+    .chart-bar { transition: opacity 150ms ease, filter 150ms ease; }
+    .chart-hit { cursor: pointer; outline: none; }
+    .chart-hit:hover { fill: color-mix(in srgb, var(--accent) 6%, transparent); }
+    .chart-hit:hover + .chart-bar, .chart-hit:focus-visible + .chart-bar { filter: brightness(1.12); }
+    .chart-hit:focus-visible { stroke: var(--accent); stroke-width: 1.5; }
     .chart-tooltip {
       position: absolute;
       top: 0.2rem;
@@ -849,18 +783,14 @@
 
     .cat-bar {
       display: flex;
-      height: 8px;
+      height: 7px;
       border-radius: 999px;
       overflow: hidden;
       background: var(--surface-alt);
       margin: 1rem 0 0.7rem;
       gap: 2px;
     }
-    .cat-seg {
-      height: 100%;
-      min-width: 4px;
-      transition: width 250ms ease;
-    }
+    .cat-seg { height: 100%; min-width: 4px; transition: width 250ms ease; }
     .cat-legend {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -877,71 +807,48 @@
       background: var(--surface-alt);
       border: 1px solid var(--border);
     }
-    .cat-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .chart-note {
-      margin: 0.8rem 0 0;
-      color: var(--muted);
-      font-size: 0.75rem;
-      line-height: 1.45;
-    }
+    .cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .chart-note { margin: 0.75rem 0 0; color: var(--muted); font-size: 0.75rem; line-height: 1.45; }
 
-    /* ================= RANKING LISTS (TOP BLOCKED & TOP CLIENTS) ================= */
+    /* ================= CLEAN RANKING LISTS (NO BLEEDING BARS) ================= */
     .rank-list {
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
       max-height: 430px;
       overflow-y: auto;
-      padding-right: 0.2rem;
     }
     .rank-row {
-      position: relative;
-      display: flex;
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr) auto;
       align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      padding: 0.52rem 0.7rem;
-      border-radius: 9px;
-      border: 1px solid transparent;
-      overflow: hidden;
+      gap: 0.7rem;
+      padding: 0.62rem 0.55rem;
+      border-bottom: 1px solid var(--border);
+      border-radius: 8px;
       cursor: pointer;
-      transition: border-color 140ms ease, background 140ms ease;
+      transition: background 130ms ease;
     }
-    .rank-row:hover {
-      border-color: var(--border);
-      background: var(--surface-alt);
-    }
-    .rank-bar {
-      position: absolute;
-      inset: 0 auto 0 0;
-      background: var(--accent-soft);
-      pointer-events: none;
-      z-index: 0;
-      border-radius: 9px;
-    }
-    .rank-bar.danger { background: var(--danger-soft); }
-    .rank-main, .rank-stats {
-      position: relative;
-      z-index: 1;
+    .rank-row:last-child { border-bottom: none; }
+    .rank-row:hover { background: var(--surface-alt); }
+    .rank-idx {
+      font-size: 0.73rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: center;
+      font-variant-numeric: tabular-nums;
     }
     .rank-main {
       min-width: 0;
-      flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 0.12rem;
+      gap: 0.25rem;
     }
     .rank-primary {
       display: flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.45rem;
       font-weight: 600;
-      font-size: 0.85rem;
+      font-size: 0.84rem;
       color: var(--text);
       min-width: 0;
     }
@@ -951,15 +858,26 @@
       white-space: nowrap;
     }
     .rank-sub {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       color: var(--muted);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .rank-meter {
+      height: 4px;
+      width: 100%;
+      max-width: 240px;
+      background: var(--surface-alt);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .rank-meter-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+    .rank-meter-fill.danger { background: var(--danger); }
     .rank-stats {
       text-align: right;
       flex-shrink: 0;
@@ -969,15 +887,8 @@
       align-items: flex-end;
       gap: 0.08rem;
     }
-    .rank-count {
-      font-weight: 700;
-      font-size: 0.85rem;
-      color: var(--text);
-    }
-    .rank-meta {
-      font-size: 0.74rem;
-      color: var(--muted);
-    }
+    .rank-count { font-weight: 700; font-size: 0.84rem; color: var(--text); }
+    .rank-meta { font-size: 0.73rem; color: var(--muted); }
 
     /* ================= BADGES & CHIPS ================= */
     .badge {
@@ -986,7 +897,7 @@
       gap: 0.3rem;
       padding: 0.16rem 0.52rem;
       border-radius: 999px;
-      font-size: 0.73rem;
+      font-size: 0.72rem;
       font-weight: 600;
       white-space: nowrap;
     }
@@ -1002,7 +913,7 @@
       gap: 0.25rem;
       padding: 0.1rem 0.46rem;
       border-radius: 6px;
-      font-size: 0.72rem;
+      font-size: 0.71rem;
       font-weight: 600;
       background: var(--surface-alt);
       border: 1px solid var(--border);
@@ -1013,8 +924,8 @@
     .chip-list {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.4rem;
-      margin-top: 0.75rem;
+      gap: 0.38rem;
+      margin-top: 0.7rem;
       max-height: 240px;
       overflow-y: auto;
     }
@@ -1022,12 +933,18 @@
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      padding: 0.26rem 0.58rem;
-      border-radius: 8px;
+      padding: 0.22rem 0.54rem;
+      border-radius: 7px;
       background: var(--surface-alt);
       border: 1px solid var(--border);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-secondary);
+      max-width: 100%;
+    }
+    .chip-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .chip button {
       border: none;
@@ -1038,19 +955,12 @@
       padding: 0 0.15rem;
       border-radius: 4px;
       line-height: 1;
-      transition: color 120ms ease, background 120ms ease;
+      flex-shrink: 0;
     }
-    .chip button:hover {
-      color: var(--danger);
-      background: var(--danger-soft);
-    }
+    .chip button:hover { color: var(--danger); background: var(--danger-soft); }
 
-    /* ================= RESPONSIVE TABLE (LOGS) ================= */
-    .search-wrap {
-      position: relative;
-      flex: 1;
-      min-width: 220px;
-    }
+    /* ================= TABLES (LOGS, BLOCKLISTS, DEVICES) ================= */
+    .search-wrap { position: relative; flex: 1; min-width: 220px; }
     .search-wrap svg {
       position: absolute;
       left: 0.72rem;
@@ -1061,14 +971,12 @@
       color: var(--muted);
       pointer-events: none;
     }
-    .search-wrap input {
-      padding-left: 2.2rem;
-    }
+    .search-wrap input { padding-left: 2.2rem; }
 
     .table-wrapper {
       overflow: auto;
       max-inline-size: 100%;
-      max-block-size: min(620px, 72vh);
+      max-block-size: min(640px, 72vh);
       container-type: inline-size;
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
@@ -1082,29 +990,25 @@
     }
     caption {
       text-align: left;
-      padding: 0.6rem 0.9rem;
-      font-size: 0.78rem;
+      padding: 0.58rem 0.9rem;
+      font-size: 0.77rem;
       font-weight: 600;
       color: var(--muted);
       background: var(--surface-alt);
       border-bottom: 1px solid var(--border);
     }
-    thead {
-      position: sticky;
-      inset-block-start: 0;
-      z-index: 2;
-      background: var(--surface-alt);
-    }
+    thead { position: sticky; inset-block-start: 0; z-index: 2; background: var(--surface-alt); }
     thead th {
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.04em;
       color: var(--muted);
       padding: 0.62rem 0.85rem;
+      border-bottom: 1px solid var(--border);
     }
     th, td {
-      padding: 0.58rem 0.85rem;
+      padding: 0.6rem 0.85rem;
       text-align: left;
       border-bottom: 1px solid var(--border);
       vertical-align: middle;
@@ -1119,21 +1023,210 @@
     tbody tr:last-child th, tbody tr:last-child td { border-bottom: none; }
     tbody tr:hover td, tbody tr:hover th { background: var(--surface-alt); }
 
+    /* Data list header bar (used for Blocklists & Devices) */
+    .list-table-head {
+      display: grid;
+      padding: 0.5rem 0.75rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 9px 9px 0 0;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      gap: 0.75rem;
+    }
+    .list-table-body {
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 9px 9px;
+      overflow: hidden;
+    }
+
+    /* Blocklists structured rows */
+    .bl-grid { grid-template-columns: 44px minmax(220px, 1.8fr) 125px 155px 68px; align-items: center; }
+    .bl-row {
+      display: grid;
+      padding: 0.75rem;
+      gap: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      transition: background 120ms ease;
+    }
+    .bl-row:last-child { border-bottom: none; }
+    .bl-row:hover { background: var(--surface-alt); }
+    .bl-name { font-weight: 600; font-size: 0.86rem; color: var(--text); }
+    .bl-host {
+      font-size: 0.74rem;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-top: 2px;
+    }
+    @media (max-width: 900px) {
+      .list-table-head.bl-grid { display: none; }
+      .list-table-body { border-top: 1px solid var(--border); border-radius: 9px; }
+      .bl-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Devices structured rows */
+    .dev-grid {
+      grid-template-columns: 190px minmax(180px, 0.95fr) minmax(260px, 1.4fr) 210px 68px;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .list-table-head.dev-grid { padding: 0.58rem 1rem; }
+    .device-row {
+      display: grid;
+      padding: 0.78rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      transition: background 120ms ease;
+    }
+    .device-row:last-child { border-bottom: none; }
+    .device-row:hover { background: color-mix(in srgb, var(--surface-alt) 55%, var(--surface)); }
+    .dev-group-select {
+      padding: 0.38rem 0.62rem !important;
+      font-size: 0.82rem !important;
+      background: var(--surface-alt) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 8px !important;
+    }
+    .dev-group-select:hover { border-color: var(--border-strong) !important; }
+    .action-cell {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .menu-trigger[aria-expanded="true"] {
+      background: var(--surface-alt);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    /* Popup Action Menu (modern-web-guidance: menu) */
+    [popover].action-menu-popover {
+      padding: 0.32rem;
+      min-width: 185px;
+      border-radius: 11px;
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow-md);
+    }
+    @supports (position-area: block-end) {
+      [popover].action-menu-popover {
+        position-area: block-end span-inline-start;
+        position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+        inset: auto;
+        margin: 4px 0 0 0;
+      }
+    }
+    @supports not (position-area: block-end) {
+      [popover].action-menu-popover {
+        position: fixed;
+        inset: auto;
+        margin: 0;
+      }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      [popover].action-menu-popover {
+        opacity: 0;
+        transition: opacity 140ms ease, translate 140ms ease, display 140ms ease, overlay 140ms ease;
+        transition-behavior: allow-discrete;
+      }
+      @supports selector(:popover-open) {
+        [popover].action-menu-popover { translate: 0 -4px; }
+      }
+      [popover].action-menu-popover:is(:popover-open, .\:popover-open) {
+        opacity: 1;
+        translate: 0 0;
+        transition-duration: 100ms;
+      }
+      @starting-style {
+        [popover].action-menu-popover:is(:popover-open, .\:popover-open) {
+          opacity: 0;
+          translate: 0 -4px;
+        }
+      }
+    }
+    [popover].action-menu-popover [focusgroup~="menu"] {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    [popover].action-menu-popover [focusgroup~="menu"] > button {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      width: 100%;
+      padding: 0.48rem 0.65rem;
+      border: none;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: background 120ms ease, color 120ms ease;
+    }
+    [popover].action-menu-popover [focusgroup~="menu"] > button svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+      opacity: 0.78;
+    }
+    [popover].action-menu-popover [focusgroup~="menu"] > button:hover {
+      background: var(--surface-alt);
+    }
+    [popover].action-menu-popover [focusgroup~="menu"] > button.menu-danger {
+      color: var(--danger);
+    }
+    [popover].action-menu-popover [focusgroup~="menu"] > button.menu-danger:hover {
+      background: var(--danger-soft);
+    }
+    [popover].action-menu-popover [focusgroup~="menu"] > hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0.25rem 0.2rem;
+    }
+    .disc-suggest-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.28rem;
+      padding-left: 0.55rem;
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+    .btn-inline-apply {
+      border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
+      background: var(--success-soft);
+      color: var(--success);
+      font-size: 0.71rem;
+      font-weight: 600;
+      padding: 0.1rem 0.48rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: filter 130ms ease, scale 120ms ease;
+    }
+    .btn-inline-apply:hover { filter: brightness(0.95); }
+    .btn-inline-apply:active { scale: 0.96; }
+    @media (max-width: 1080px) {
+      .list-table-head.dev-grid { display: none; }
+      .dev-grid { grid-template-columns: 1fr; gap: 0.65rem; }
+      .dev-actions { justify-content: start; }
+    }
+
     @container (width < 620px) {
       table, thead, tbody, tr, th, td { display: block; }
       thead { display: none; }
-      tr {
-        margin: 0.65rem;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        overflow: hidden;
-      }
-      tbody th {
-        position: sticky;
-        inset-block-start: 0;
-        z-index: 1;
-        background: var(--surface-alt);
-      }
+      tr { margin: 0.65rem; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+      tbody th { position: sticky; inset-block-start: 0; z-index: 1; background: var(--surface-alt); }
       .logs-table {
         --label-2: "Thiết bị";
         --label-3: "Loại";
@@ -1148,53 +1241,21 @@
       .logs-table td:nth-child(6)::before { content: var(--label-6) ": "; font-weight: 600; color: var(--muted); }
     }
 
-    /* ================= BLOCKLISTS & TESTER ================= */
-    .blocklist-item {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.85rem;
-      padding: 0.85rem 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .blocklist-item:last-child { border-bottom: none; padding-bottom: 0; }
-    .blocklist-item:first-child { padding-top: 0; }
-    .blocklist-meta {
-      flex: 1;
-      min-width: 240px;
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-    .blocklist-url {
-      font-size: 0.76rem;
-      color: var(--muted);
-      word-break: break-all;
-    }
-
+    /* Verdict Box */
     .verdict-box {
-      margin-top: 0.85rem;
+      margin-top: 0.8rem;
       display: none;
-      padding: 0.75rem 1rem;
+      padding: 0.72rem 0.95rem;
       border-radius: 10px;
       border: 1px solid var(--border);
       background: var(--surface-alt);
-      font-size: 0.86rem;
+      font-size: 0.85rem;
     }
-    .verdict-box.blocked {
-      background: var(--danger-soft);
-      border-color: color-mix(in srgb, var(--danger) 30%, transparent);
-    }
-    .verdict-box.allowed {
-      background: var(--success-soft);
-      border-color: color-mix(in srgb, var(--success) 30%, transparent);
-    }
+    .verdict-box.blocked { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
+    .verdict-box.allowed { background: var(--success-soft); border-color: color-mix(in srgb, var(--success) 30%, transparent); }
 
-    /* ================= DEVICE GROUPS & CLIENTS ================= */
-    .sub-tabs {
-      margin-bottom: 1.15rem;
-    }
+    /* ================= GROUPS & CLIENTS ================= */
+    .sub-tabs { margin-bottom: 1.1rem; }
     .sub-panel { display: none; }
     .sub-panel.active { display: block; }
 
@@ -1202,7 +1263,6 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 0.85rem;
-      margin-bottom: 1rem;
     }
     .group-card {
       background: var(--surface-alt);
@@ -1211,85 +1271,52 @@
       padding: 0.9rem 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.6rem;
       transition: border-color 140ms ease;
     }
     .group-card:hover { border-color: var(--border-strong); }
-    .group-card-head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 0.5rem;
-    }
-    .group-title {
-      font-weight: 700;
-      font-size: 0.94rem;
-      display: flex;
-      align-items: center;
-      gap: 0.45rem;
-    }
-
-    .device-row {
+    .group-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+    .group-title { font-weight: 700; font-size: 0.92rem; display: flex; align-items: center; gap: 0.45rem; }
+    .group-metrics {
       display: grid;
-      grid-template-columns: minmax(210px, 270px) minmax(170px, 1fr) minmax(175px, 210px) auto;
-      gap: 0.65rem;
-      align-items: center;
-      padding: 0.78rem 0;
-      border-bottom: 1px solid var(--border);
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.4rem;
+      padding: 0.5rem 0.6rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-variant-numeric: tabular-nums;
     }
-    .device-row:last-child { border-bottom: none; }
-    .disc-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.25rem;
-      margin-top: 0.32rem;
-    }
+    .group-metric-item { display: flex; flex-direction: column; }
+    .group-metric-val { font-size: 0.84rem; font-weight: 700; color: var(--text); }
+    .group-metric-lbl { font-size: 0.69rem; color: var(--muted); }
+
+    .disc-tags { display: flex; flex-wrap: wrap; gap: 0.25rem; }
     .disc-tag {
       display: inline-flex;
       align-items: center;
-      gap: 0.2rem;
       font-size: 0.7rem;
       font-weight: 600;
-      padding: 0.1rem 0.45rem;
+      padding: 0.1rem 0.46rem;
       border-radius: 999px;
       border: 1px solid var(--border);
       background: var(--surface-alt);
       color: var(--muted);
-      max-width: 230px;
+      max-width: 200px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .disc-tag.info {
-      color: var(--accent);
-      background: var(--accent-soft);
-      border-color: color-mix(in srgb, var(--accent) 28%, transparent);
-    }
-    .disc-tag.warn {
-      color: var(--warn);
-      background: var(--warn-soft);
-      border-color: color-mix(in srgb, var(--warn) 32%, transparent);
-    }
-    .disc-suggest {
-      font-size: 0.74rem;
-      color: var(--muted);
-      margin-top: 0.28rem;
-    }
-    @media (max-width: 820px) {
-      .device-row { grid-template-columns: 1fr; }
-    }
+    .disc-tag.info { color: var(--accent); background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 26%, transparent); }
+    .disc-tag.warn { color: var(--warn); background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+    .disc-suggest { font-size: 0.73rem; color: var(--muted); margin-top: 0.2rem; padding-left: 0.55rem; }
 
-    .checkbox-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.45rem;
-      margin: 0.45rem 0;
-    }
+    .checkbox-grid { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.4rem 0; }
     .checkbox-grid label {
       display: inline-flex;
       align-items: center;
-      gap: 0.38rem;
-      padding: 0.38rem 0.68rem;
+      gap: 0.36rem;
+      padding: 0.36rem 0.68rem;
       border-radius: 8px;
       border: 1px solid var(--border);
       background: var(--surface-alt);
@@ -1311,7 +1338,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
-      padding: 0.8rem 0.9rem;
+      padding: 0.8rem 0.95rem;
       border-radius: 10px;
       border: 1px solid var(--border);
       background: var(--surface-alt);
@@ -1319,34 +1346,54 @@
     }
     .rule-item:last-child { margin-bottom: 0; }
 
-    /* ================= SETUP & STEPS ================= */
-    .code-box {
+    /* ================= SETUP & INTERFACE LIST ================= */
+    .iface-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin-bottom: 1rem;
+    }
+    .iface-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
+      padding: 0.6rem 0.85rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+    }
+    .iface-row.primary-iface {
+      background: var(--accent-soft);
+      border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+    .cmd-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.16rem 0.48rem;
+      border-radius: 6px;
       background: var(--surface-alt);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.8rem 1rem;
-      font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 0.85rem;
-      overflow-x: auto;
+      font-family: "SF Mono", ui-monospace, Menlo, monospace;
+      font-size: 0.8rem;
+      color: var(--text);
     }
     .step-list {
       list-style: none;
       padding: 0;
-      margin: 1rem 0 0;
+      margin: 0.5rem 0 0;
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 0.8rem;
     }
     .step-list li {
       display: flex;
       gap: 0.75rem;
       align-items: flex-start;
-      font-size: 0.86rem;
+      font-size: 0.85rem;
       color: var(--text-secondary);
+      line-height: 1.55;
     }
     .step-num {
       width: 24px;
@@ -1354,18 +1401,14 @@
       border-radius: 999px;
       background: var(--accent-soft);
       color: var(--accent);
-      font-size: 0.76rem;
+      font-size: 0.75rem;
       font-weight: 700;
       display: grid;
       place-items: center;
       flex-shrink: 0;
       margin-top: 1px;
     }
-    .divider {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 1.05rem 0;
-    }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 1.1rem 0; }
 
     /* ================= POPOVER TOAST (modern-web-guidance) ================= */
     .toast-region {
@@ -1401,22 +1444,14 @@
       transition: opacity 180ms ease, translate 180ms ease, overlay 180ms ease, display 180ms ease;
       transition-behavior: allow-discrete;
     }
-    [popover].toast-item:is(:popover-open, .\:popover-open) {
-      opacity: 1;
-      translate: 0 0;
-    }
+    [popover].toast-item:is(:popover-open, .\:popover-open) { opacity: 1; translate: 0 0; }
     @starting-style {
-      [popover].toast-item:is(:popover-open, .\:popover-open) {
-        opacity: 0;
-        translate: 0 8px;
-      }
+      [popover].toast-item:is(:popover-open, .\:popover-open) { opacity: 0; translate: 0 8px; }
     }
     @supports not selector(:popover-open) {
       [popover].toast-item:not(.\:popover-open) { display: none; }
     }
-    @media (prefers-reduced-motion: reduce) {
-      [popover].toast-item { transition: none; translate: 0 0; }
-    }
+    @media (prefers-reduced-motion: reduce) { [popover].toast-item { transition: none; translate: 0 0; } }
     .toast-close {
       margin-left: auto;
       background: transparent;
@@ -1430,32 +1465,21 @@
     }
     .toast-close:hover { background: var(--surface-alt); color: var(--text); }
 
-    /* ================= RESPONSIVE MOBILE SHELL ================= */
+    /* ================= MOBILE SHELL ================= */
     @media (max-width: 900px) {
-      .app-shell {
-        grid-template-columns: 1fr;
-      }
+      .app-shell { grid-template-columns: 1fr; }
       aside.sidebar {
         position: static;
         height: auto;
         border-right: none;
         border-bottom: 1px solid var(--border);
         padding: 0.75rem 1rem;
-        gap: 0.65rem;
+        gap: 0.6rem;
       }
       .nav-section-label, .sidebar-footer { display: none; }
-      nav.tabs {
-        flex-direction: row;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        padding-bottom: 0.15rem;
-      }
-      nav.tabs button {
-        width: auto;
-        white-space: nowrap;
-        scroll-snap-align: start;
-        padding: 0.48rem 0.75rem;
-      }
+      nav.tabs { flex-direction: row; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 0.15rem; }
+      nav.tabs button { width: auto; white-space: nowrap; scroll-snap-align: start; padding: 0.48rem 0.75rem; }
+      nav.tabs button[aria-selected="true"]::before { display: none; }
       header.topbar { padding: 0.75rem 1rem; }
       main { padding: 1rem 1rem 2rem; }
     }
@@ -1467,7 +1491,7 @@
     <aside class="sidebar" aria-label="Thanh điều hướng NetShield">
       <div class="brand">
         <div class="brand-logo" aria-hidden="true">
-          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             <path d="m9 12 2 2 4-4"/>
           </svg>
@@ -1547,7 +1571,7 @@
               <div class="kpi-top">
                 <span class="stat-label">Tổng truy vấn DNS</span>
                 <span class="kpi-icon accent" aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 </span>
               </div>
               <div id="statTotal" class="stat-value accent">0</div>
@@ -1558,7 +1582,7 @@
               <div class="kpi-top">
                 <span class="stat-label">Đã chặn quảng cáo</span>
                 <span class="kpi-icon danger" aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
                 </span>
               </div>
               <div id="statBlocked" class="stat-value danger">0</div>
@@ -1569,7 +1593,7 @@
               <div class="kpi-top">
                 <span class="stat-label">Tỷ lệ chặn</span>
                 <span class="kpi-icon success" aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
                 </span>
               </div>
               <div id="statRate" class="stat-value success">0%</div>
@@ -1580,7 +1604,7 @@
               <div class="kpi-top">
                 <span class="stat-label">Băng thông tiết kiệm</span>
                 <span class="kpi-icon success" aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                 </span>
               </div>
               <div id="statSavedBandwidth" class="stat-value success">0 KB</div>
@@ -1591,7 +1615,7 @@
               <div class="kpi-top">
                 <span class="stat-label">Tên miền trong bộ lọc</span>
                 <span class="kpi-icon" aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
                 </span>
               </div>
               <div id="statRules" class="stat-value">0</div>
@@ -1626,7 +1650,7 @@
               <div class="card-head">
                 <div>
                   <h2>Top tên miền bị chặn</h2>
-                  <p class="card-desc">Bấm vào tên miền để lọc nhanh trong Nhật ký</p>
+                  <p class="card-desc">Bấm vào một tên miền để lọc nhanh trong Nhật ký</p>
                 </div>
               </div>
               <div id="topBlockedList" class="rank-list stat-label">Chưa có dữ liệu.</div>
@@ -1685,11 +1709,50 @@
 
         <!-- TAB 3: BỘ LỌC & DANH SÁCH -->
         <section id="tab-lists" class="panel" role="tabpanel">
+          <div class="kpi-grid-3">
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="stat-label">Nguồn bộ lọc đang bật</span>
+                <span class="kpi-icon accent" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                </span>
+              </div>
+              <div id="listsActiveCount" class="stat-value accent">0 / 0</div>
+              <div class="stat-sub">Tự động cập nhật từ nguồn mở</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="stat-label">Tổng tên miền chặn</span>
+                <span class="kpi-icon danger" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </span>
+              </div>
+              <div id="listsTotalDomains" class="stat-value">0</div>
+              <div class="stat-sub">Đã loại trùng lặp trong bộ nhớ</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="stat-label">Quy tắc thủ công</span>
+                <span class="kpi-icon success" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </span>
+              </div>
+              <div id="listsCustomCount" class="stat-value success">0</div>
+              <div class="stat-sub">Whitelist &amp; Blacklist riêng</div>
+            </div>
+          </div>
+
           <div class="card" style="margin-bottom: 1.15rem;">
             <div class="card-head" style="margin-bottom: 0.7rem;">
               <div>
                 <h2>Kiểm tra nhanh tác dụng bộ lọc</h2>
-                <p class="card-desc">Thử nghiệm xem một tên miền có đang bị chặn bởi danh sách hay quy tắc nào không</p>
+                <p class="card-desc">Tra cứu xem một tên miền đang được cho phép hay bị chặn bởi nguồn nào</p>
+              </div>
+              <div class="row" style="gap: 0.35rem;">
+                <span class="stat-label">Thử nhanh:</span>
+                <button type="button" class="btn sm" onclick="quickCheckDomain('admicro.vn')">admicro.vn</button>
+                <button type="button" class="btn sm" onclick="quickCheckDomain('doubleclick.net')">doubleclick.net</button>
+                <button type="button" class="btn sm" onclick="quickCheckDomain('thuedientu.gdt.gov.vn')">thuedientu.gdt.gov.vn</button>
               </div>
             </div>
             <div class="row">
@@ -1699,12 +1762,6 @@
               </div>
               <button id="testDomainBtn" type="button" class="btn primary">Kiểm tra</button>
             </div>
-            <div class="row" style="margin-top: 0.6rem;">
-              <span class="stat-label">Thử nhanh:</span>
-              <button type="button" class="btn sm" onclick="quickCheckDomain('admicro.vn')">admicro.vn</button>
-              <button type="button" class="btn sm" onclick="quickCheckDomain('doubleclick.net')">doubleclick.net</button>
-              <button type="button" class="btn sm" onclick="quickCheckDomain('thuedientu.gdt.gov.vn')">thuedientu.gdt.gov.vn</button>
-            </div>
             <div id="testDomainResult" class="verdict-box"></div>
           </div>
 
@@ -1712,17 +1769,28 @@
             <div class="card-head">
               <div>
                 <h2>Danh sách chặn tự động (Blocklists)</h2>
-                <p class="card-desc">Bật/tắt hoặc thêm nguồn danh sách chặn định dạng hosts / AdGuard / domain</p>
+                <p class="card-desc">Bật/tắt nguồn lọc theo định dạng hosts, AdGuard hoặc danh sách tên miền</p>
+              </div>
+              <button id="toggleAddBlocklistBtn" type="button" class="btn primary sm">+ Thêm nguồn mới</button>
+            </div>
+
+            <div id="addBlocklistDrawer" class="inline-drawer">
+              <div class="stat-label" style="margin-bottom: 0.5rem; font-weight: 600;">Thêm nguồn Blocklist mới</div>
+              <div class="row">
+                <input id="newListName" type="text" aria-label="Tên danh sách chặn mới" placeholder="Tên danh sách (vd: URLHaus Malware)" />
+                <input id="newListUrl" type="url" aria-label="Đường dẫn URL danh sách chặn mới" placeholder="Đường dẫn URL (https://...)" />
+                <button id="addBlocklistBtn" type="button" class="btn primary">Thêm &amp; Tải ngay</button>
               </div>
             </div>
-            <div id="blocklistsContainer"></div>
-            <hr class="divider" />
-            <div class="stat-label" style="margin-bottom: 0.5rem; font-weight: 600;">Thêm nguồn Blocklist mới</div>
-            <div class="row">
-              <input id="newListName" type="text" aria-label="Tên danh sách chặn mới" placeholder="Tên danh sách (vd: URLHaus Malware)" />
-              <input id="newListUrl" type="url" aria-label="Đường dẫn URL danh sách chặn mới" placeholder="Đường dẫn URL (https://...)" />
-              <button id="addBlocklistBtn" type="button" class="btn primary">Thêm &amp; Tải ngay</button>
+
+            <div class="list-table-head bl-grid">
+              <span>Bật</span>
+              <span>Nguồn danh sách</span>
+              <span>Số tên miền</span>
+              <span>Cập nhật</span>
+              <span style="text-align:right;">Thao tác</span>
             </div>
+            <div id="blocklistsContainer" class="list-table-body"></div>
           </div>
 
           <div class="grid-2">
@@ -1730,7 +1798,7 @@
               <div class="card-head">
                 <div>
                   <h2>Whitelist (Luôn cho phép)</h2>
-                  <p class="card-desc">Ưu tiên cao nhất — không bao giờ bị chặn</p>
+                  <p class="card-desc">Ưu tiên cao nhất — bỏ qua mọi danh sách chặn</p>
                 </div>
                 <span id="whitelistCountBadge" class="badge allowed">0</span>
               </div>
@@ -1773,47 +1841,64 @@
                   <h2>Nhóm thiết bị trong mạng LAN</h2>
                   <p class="card-desc">Phân loại thiết bị để áp dụng quy tắc chặn đồng loạt theo nhóm</p>
                 </div>
+                <button id="toggleAddGroupBtn" type="button" class="btn primary sm">+ Tạo nhóm mới</button>
               </div>
+
+              <div id="addGroupDrawer" class="inline-drawer">
+                <div class="stat-label" style="margin-bottom: 0.45rem; font-weight: 600;">Tạo nhóm thiết bị mới</div>
+                <div class="row">
+                  <select id="newGroupIcon" aria-label="Biểu tượng nhóm" style="width: auto; min-width: 74px;">
+                    <option value="📷">📷</option>
+                    <option value="💻">💻</option>
+                    <option value="📱">📱</option>
+                    <option value="🔌">🔌</option>
+                    <option value="📺">📺</option>
+                    <option value="🎮">🎮</option>
+                    <option value="🖨️">🖨️</option>
+                    <option value="👶">👶</option>
+                    <option value="🏢">🏢</option>
+                    <option value="📁">📁</option>
+                  </select>
+                  <input id="newGroupName" type="text" aria-label="Tên nhóm thiết bị" placeholder="Tên nhóm (vd: Phòng họp, Máy trẻ em, TV phòng khách)" />
+                  <input id="newGroupDesc" type="text" aria-label="Mô tả nhóm" placeholder="Mô tả ngắn (không bắt buộc)" />
+                  <button id="addGroupBtn" type="button" class="btn primary">Thêm nhóm</button>
+                </div>
+              </div>
+
               <div id="deviceGroupsGrid" class="group-grid"></div>
-              <hr class="divider" />
-              <div class="stat-label" style="margin-bottom: 0.45rem; font-weight: 600;">Tạo nhóm thiết bị mới</div>
-              <div class="row">
-                <select id="newGroupIcon" aria-label="Biểu tượng nhóm" style="width: auto; min-width: 78px;">
-                  <option value="📷">📷</option>
-                  <option value="💻">💻</option>
-                  <option value="📱">📱</option>
-                  <option value="🔌">🔌</option>
-                  <option value="📺">📺</option>
-                  <option value="🎮">🎮</option>
-                  <option value="🖨️">🖨️</option>
-                  <option value="👶">👶</option>
-                  <option value="🏢">🏢</option>
-                  <option value="📁">📁</option>
-                </select>
-                <input id="newGroupName" type="text" aria-label="Tên nhóm thiết bị" placeholder="Tên nhóm (vd: Phòng họp, Máy trẻ em, TV phòng khách)" />
-                <input id="newGroupDesc" type="text" aria-label="Mô tả nhóm" placeholder="Mô tả ngắn (không bắt buộc)" />
-                <button id="addGroupBtn" type="button" class="btn primary">Thêm nhóm</button>
-              </div>
             </div>
 
             <div class="card">
               <div class="card-head">
                 <div>
-                  <h2>Gán thiết bị LAN vào nhóm</h2>
-                  <p class="card-desc">Tự dò tên máy (mDNS/PTR), hãng (ARP/MAC) &amp; hành vi DNS để gợi ý — không tự áp luật chặn khi chưa xác nhận. <span id="discoveryMeta"></span></p>
+                  <h2>Danh sách thiết bị mạng LAN</h2>
+                  <p class="card-desc">Tự nhận diện tên máy (mDNS/PTR), hãng (ARP/MAC) &amp; hành vi DNS — không tự áp luật chặn khi chưa xác nhận. <span id="discoveryMeta"></span></p>
                 </div>
                 <div class="row" style="gap: 0.45rem;">
+                  <button id="toggleManualDeviceBtn" type="button" class="btn sm">+ Thêm IP thủ công</button>
                   <button id="scanDevicesBtn" type="button" class="btn sm">Quét nhận diện LAN</button>
                   <button id="applySuggestionsBtn" type="button" class="btn success sm" style="display: none;">Áp dụng gợi ý</button>
                 </div>
               </div>
-              <div class="row" style="margin-bottom: 0.9rem; padding: 0.75rem; background: var(--surface-alt); border-radius: 10px; border: 1px solid var(--border);">
-                <input id="manualDeviceIp" type="text" aria-label="Địa chỉ IP thiết bị mới" placeholder="Nhập IP (vd: 192.168.1.50)" style="max-width: 190px; background: var(--surface);" />
-                <input id="manualDeviceName" type="text" aria-label="Tên thiết bị mới" placeholder="Tên gợi nhớ (vd: Camera cổng chính)" style="background: var(--surface);" />
-                <select id="manualDeviceGroup" aria-label="Chọn nhóm cho thiết bị mới" style="width: auto; min-width: 190px; background: var(--surface);"></select>
-                <button id="addManualDeviceBtn" type="button" class="btn primary">Gán vào nhóm</button>
+
+              <div id="manualDeviceDrawer" class="inline-drawer">
+                <div class="stat-label" style="margin-bottom: 0.45rem; font-weight: 600;">Gán địa chỉ IP thủ công</div>
+                <div class="row">
+                  <input id="manualDeviceIp" type="text" aria-label="Địa chỉ IP thiết bị mới" placeholder="Nhập IP (vd: 192.168.1.50)" style="max-width: 190px;" />
+                  <input id="manualDeviceName" type="text" aria-label="Tên thiết bị mới" placeholder="Tên gợi nhớ (vd: Camera cổng chính)" />
+                  <select id="manualDeviceGroup" aria-label="Chọn nhóm cho thiết bị mới" style="width: auto; min-width: 190px;"></select>
+                  <button id="addManualDeviceBtn" type="button" class="btn primary">Gán vào nhóm</button>
+                </div>
               </div>
-              <div id="deviceAssignList" class="stat-label">Chưa phát hiện thiết bị nào trong mạng LAN.</div>
+
+              <div class="list-table-head dev-grid">
+                <span>IP &amp; Lưu lượng</span>
+                <span>Nhận diện LAN</span>
+                <span>Tên gợi nhớ</span>
+                <span>Nhóm thiết bị</span>
+                <span style="text-align:right;">Thao tác</span>
+              </div>
+              <div id="deviceAssignList" class="list-table-body stat-label">Chưa phát hiện thiết bị nào trong mạng LAN.</div>
             </div>
           </div>
 
@@ -1914,23 +1999,20 @@
                   <p class="card-desc">Cấu hình một lần trên Router để bảo vệ mọi thiết bị không cần cài app</p>
                 </div>
               </div>
-              <div class="stat-label" style="margin-bottom: 0.35rem;">Địa chỉ IP máy chủ DNS hiện tại:</div>
-              <div class="code-box">
-                <div id="lanIpBox">Đang kiểm tra...</div>
-                <button id="copyPrimaryIpBtn" type="button" class="btn sm">Sao chép IP</button>
-              </div>
+              <div class="stat-label" style="margin-bottom: 0.45rem; font-weight: 600;">Giao diện mạng &amp; IP máy chủ DNS</div>
+              <div id="lanIpBox" class="iface-list">Đang kiểm tra...</div>
               <ol class="step-list">
                 <li>
                   <span class="step-num">1</span>
-                  <div><strong>Cố định IP cho Mac Mini</strong> trên Router/Modem (DHCP Reservation) để IP không bị đổi sau khi mất điện.</div>
+                  <div><strong>Cố định IP cho Mac Mini</strong> trên Router/Modem (DHCP Reservation) để IP không đổi sau khi mất điện.</div>
                 </li>
                 <li>
                   <span class="step-num">2</span>
-                  <div>Chạy NetShield DNS ở cổng chuẩn <code>53</code> bằng lệnh <code>sudo ./scripts/run-lan.sh</code> (hoặc cài tự chạy 24/7: <code>sudo ./scripts/install-launchd.sh</code>).</div>
+                  <div>Chạy NetShield DNS ở cổng chuẩn <code>53</code>: <span class="cmd-chip">sudo ./scripts/run-lan.sh</span> hoặc cài tự chạy 24/7: <span class="cmd-chip">sudo ./scripts/install-launchd.sh</span></div>
                 </li>
                 <li>
                   <span class="step-num">3</span>
-                  <div>Vào <strong>DHCP Settings</strong> trên Router/Modem nhà mạng → đổi <strong>Primary DNS</strong> thành IP ở trên (xóa trống Secondary DNS hoặc điền cùng IP).</div>
+                  <div>Vào <strong>DHCP Settings</strong> trên Router/Modem nhà mạng → đổi <strong>Primary DNS</strong> thành IP mạng LAN được đánh dấu <strong>Khuyên dùng</strong> ở trên (xóa trống Secondary DNS hoặc điền cùng IP).</div>
                 </li>
                 <li>
                   <span class="step-num">4</span>
@@ -1969,7 +2051,7 @@
 
               <div class="field">
                 <label>Giao diện hiển thị (Theme)</label>
-                <div class="segmented" role="group" aria-label="Chọn giao diện" id="themeSegmented">
+                <div class="segmented equal-3" role="group" aria-label="Chọn giao diện" id="themeSegmented">
                   <button type="button" data-theme-val="system" aria-pressed="true">Theo hệ thống</button>
                   <button type="button" data-theme-val="light" aria-pressed="false">Sáng</button>
                   <button type="button" data-theme-val="dark" aria-pressed="false">Tối</button>
@@ -2031,6 +2113,14 @@
     const FALLBACK_VIDEO_RE =
       /(imasdk|vungle|unityads|applovin|adcolony|pangle|mintegral|googlevideo|tiktokcdn|taboola|outbrain|mgid|videoad|video-ad|admedia|vast|vpaid|ytimg|mopub|fyber|ironsrc|supersonicads)/i;
 
+    const SVG_REFRESH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>';
+    const SVG_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+    const SVG_MORE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>';
+    const SVG_SAVE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
+    const SVG_COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    const SVG_LOGS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>';
+    const SVG_SPARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>';
+
     function esc(str) {
       return String(str ?? '')
         .replace(/&/g, '&amp;')
@@ -2045,6 +2135,31 @@
       if (n < 1024 * 1024) return `${(n / 1024).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} KB`;
       if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} MB`;
       return `${(n / (1024 * 1024 * 1024)).toLocaleString('vi-VN', { maximumFractionDigits: 2 })} GB`;
+    }
+
+    function pickPrimaryLanIp(lanIps) {
+      if (!Array.isArray(lanIps) || lanIps.length === 0) return null;
+      const score = (item) => {
+        const ip = item.ip || '';
+        const iface = item.iface || '';
+        if (ip.startsWith('169.254.')) return 1;
+        if (iface.startsWith('bridge') || iface.startsWith('utun') || iface.startsWith('awdl')) return 2;
+        if (ip.startsWith('192.168.')) return 10;
+        if (ip.startsWith('10.')) return 8;
+        if (/^172\.(1[6-9]|2\d|3[01])\./.test(ip)) return 7;
+        return 5;
+      };
+      return [...lanIps].sort((a, b) => score(b) - score(a))[0];
+    }
+
+    function shortUrlHost(urlStr) {
+      try {
+        const u = new URL(urlStr);
+        const pathTail = u.pathname.length > 36 ? '…' + u.pathname.slice(-34) : u.pathname;
+        return `${u.hostname}${pathTail}`;
+      } catch {
+        return urlStr;
+      }
     }
 
     function niceMaxScale(rawMax, isBytes) {
@@ -2090,13 +2205,11 @@
         return 'system';
       }
     }
-
     function getResolvedTheme() {
       const stored = getStoredTheme();
       if (stored === 'light' || stored === 'dark') return stored;
       return darkMql.matches ? 'dark' : 'light';
     }
-
     function applyTheme(val) {
       try {
         if (val === 'light' || val === 'dark') localStorage.setItem('color-scheme', val);
@@ -2105,7 +2218,6 @@
       metaScheme.content = val === 'light' || val === 'dark' ? val : 'light dark';
       syncThemeControls();
     }
-
     function syncThemeControls() {
       const stored = getStoredTheme();
       const resolved = getResolvedTheme();
@@ -2121,13 +2233,11 @@
     document.querySelectorAll('#themeSegmented button').forEach((btn) => {
       btn.addEventListener('click', () => applyTheme(btn.dataset.themeVal));
     });
-
     document.getElementById('quickThemeBtn').addEventListener('click', () => {
       const target = getResolvedTheme() === 'dark' ? 'light' : 'dark';
       const sys = darkMql.matches ? 'dark' : 'light';
       applyTheme(target === sys ? 'system' : target);
     });
-
     window.addEventListener('storage', (e) => {
       if (e.key === 'color-scheme') {
         const stored = getStoredTheme();
@@ -2145,9 +2255,7 @@
       const prevTrigger = document.activeElement;
 
       if (activeToastEl) {
-        try {
-          if (typeof activeToastEl.hidePopover === 'function') activeToastEl.hidePopover();
-        } catch {}
+        try { if (typeof activeToastEl.hidePopover === 'function') activeToastEl.hidePopover(); } catch {}
         clearTimeout(activeToastEl._timer);
         activeToastEl.remove();
         activeToastEl = null;
@@ -2172,15 +2280,11 @@
       const dismiss = () => {
         clearTimeout(toast._timer);
         const wasFocused = toast.contains(document.activeElement);
-        try {
-          if (typeof toast.hidePopover === 'function') toast.hidePopover();
-        } catch {}
+        try { if (typeof toast.hidePopover === 'function') toast.hidePopover(); } catch {}
         toast.classList.remove(':popover-open');
         toast.remove();
         if (activeToastEl === toast) activeToastEl = null;
-        if (wasFocused && prevTrigger && typeof prevTrigger.focus === 'function') {
-          prevTrigger.focus();
-        }
+        if (wasFocused && prevTrigger && typeof prevTrigger.focus === 'function') prevTrigger.focus();
       };
       closeBtn.addEventListener('click', dismiss);
 
@@ -2205,14 +2309,121 @@
       const scheduleHide = () => {
         clearTimeout(toast._timer);
         toast._timer = setTimeout(() => {
-          if (toast.contains(document.activeElement)) {
-            scheduleHide();
-            return;
-          }
+          if (toast.contains(document.activeElement)) { scheduleHide(); return; }
           dismiss();
         }, 3400);
       };
       scheduleHide();
+    }
+
+    // ================= INLINE DRAWER TOGGLES =================
+    function bindDrawer(btnId, drawerId) {
+      const btn = document.getElementById(btnId);
+      const drawer = document.getElementById(drawerId);
+      if (!btn || !drawer) return;
+      btn.addEventListener('click', () => {
+        const isOpen = drawer.classList.toggle('open');
+        if (isOpen) {
+          const firstInput = drawer.querySelector('input');
+          if (firstInput) firstInput.focus();
+        }
+      });
+    }
+    bindDrawer('toggleAddBlocklistBtn', 'addBlocklistDrawer');
+    bindDrawer('toggleAddGroupBtn', 'addGroupDrawer');
+    bindDrawer('toggleManualDeviceBtn', 'manualDeviceDrawer');
+
+    // ================= POPUP ACTION MENUS (modern-web-guidance: menu) =================
+    const SUPPORTS_INVOKER = 'commandForElement' in HTMLButtonElement.prototype;
+    const SUPPORTS_ANCHOR = CSS.supports('position-area: block-end');
+    const SUPPORTS_FOCUSGROUP = 'focusGroup' in HTMLElement.prototype;
+
+    window.closeActionMenu = (menuId) => {
+      const m = document.getElementById(menuId);
+      if (m && typeof m.hidePopover === 'function') {
+        try { m.hidePopover(); } catch {}
+      }
+    };
+
+    function positionMenuFallback(menu, trigger) {
+      const rect = trigger.getBoundingClientRect();
+      const mw = menu.offsetWidth || 190;
+      const mh = menu.offsetHeight || 130;
+      const left = Math.max(8, Math.min(rect.right - mw, window.innerWidth - mw - 8));
+      const top =
+        rect.bottom + 4 + mh <= window.innerHeight - 8
+          ? rect.bottom + 4
+          : Math.max(8, rect.top - mh - 4);
+      menu.style.left = `${left}px`;
+      menu.style.top = `${top}px`;
+    }
+
+    function initActionMenus(root) {
+      root.querySelectorAll('.menu-trigger').forEach((trigger) => {
+        const menuId = trigger.getAttribute('commandfor');
+        const menu = menuId ? document.getElementById(menuId) : null;
+        if (!menu || menu.dataset.menuBound) return;
+        menu.dataset.menuBound = '1';
+
+        const group = menu.querySelector('[focusgroup~="menu"]');
+        let enterOnOpen = false;
+
+        if (!SUPPORTS_INVOKER) {
+          trigger.setAttribute('popovertarget', menuId);
+        }
+
+        trigger.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+            enterOnOpen = true;
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              if (!menu.matches(':popover-open')) trigger.click();
+              else group?.querySelector('button:not(:disabled)')?.focus();
+            }
+          }
+        });
+
+        menu.addEventListener('toggle', (e) => {
+          const isOpen = e.newState === 'open';
+          trigger.setAttribute('aria-expanded', String(isOpen));
+          if (isOpen) {
+            if (!SUPPORTS_ANCHOR) positionMenuFallback(menu, trigger);
+            if (enterOnOpen) {
+              enterOnOpen = false;
+              group?.querySelector('button:not(:disabled)')?.focus();
+            }
+          } else {
+            enterOnOpen = false;
+          }
+        });
+
+        if (group) {
+          group.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+              try { menu.hidePopover(); } catch {}
+              return;
+            }
+            if (!SUPPORTS_FOCUSGROUP && ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
+              const items = [...group.querySelectorAll('button:not(:disabled)')];
+              const cur = items.indexOf(document.activeElement);
+              if (cur < 0 || !items.length) return;
+              const next =
+                e.key === 'Home'
+                  ? 0
+                  : e.key === 'End'
+                  ? items.length - 1
+                  : (cur + (e.key === 'ArrowUp' ? -1 : 1) + items.length) % items.length;
+              e.preventDefault();
+              items[next].focus({ preventScroll: true });
+            }
+          });
+
+          if (!SUPPORTS_FOCUSGROUP) {
+            group.setAttribute('role', 'menu');
+            group.querySelectorAll('button:not([role])').forEach((item) => item.setAttribute('role', 'menuitem'));
+          }
+        }
+      });
     }
 
     // ================= BANDWIDTH & CHART =================
@@ -2322,8 +2533,8 @@
         document.getElementById('bandwidthMethodology').textContent = `* Lưu ý: ${bw.methodology}`;
       }
 
-      const W = 900;
-      const H = 230;
+      const W = 940;
+      const H = 228;
       const padL = 66;
       const padR = 14;
       const padT = 16;
@@ -2339,10 +2550,7 @@
         const ratio = i / yTicks;
         const y = padT + plotH - ratio * plotH;
         const tickVal = maxVal * ratio;
-        const label =
-          mode === 'blocked'
-            ? Math.round(tickVal).toLocaleString('vi-VN')
-            : formatBytes(tickVal);
+        const label = mode === 'blocked' ? Math.round(tickVal).toLocaleString('vi-VN') : formatBytes(tickVal);
         gridHtml += `<line class="chart-grid-line" x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" />`;
         gridHtml += `<text class="chart-axis-text" x="${padL - 10}" y="${(y + 4).toFixed(1)}" text-anchor="end">${esc(label)}</text>`;
       }
@@ -2370,7 +2578,7 @@
         dataHtml += `
           <defs>
             <linearGradient id="bwAreaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="var(--success)" stop-opacity="0.32" />
+              <stop offset="0%" stop-color="var(--success)" stop-opacity="0.3" />
               <stop offset="100%" stop-color="var(--success)" stop-opacity="0.02" />
             </linearGradient>
           </defs>
@@ -2388,7 +2596,7 @@
       } else {
         const barColor = mode === 'blocked' ? 'var(--danger)' : 'var(--success)';
         const barColorNow = 'var(--accent)';
-        const barW = Math.max(10, slotW * 0.56);
+        const barW = Math.max(10, slotW * 0.54);
         const barOffset = (slotW - barW) / 2;
 
         dataHtml += `
@@ -2528,10 +2736,12 @@
     }
 
     document.querySelectorAll('nav.tabs button').forEach((btn) => {
-      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      btn.addEventListener('click', () => {
+        switchTab(btn.dataset.tab);
+        btn.blur();
+      });
     });
 
-    // Sub-tabs inside Clients
     document.querySelectorAll('[data-subtab]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const target = btn.dataset.subtab;
@@ -2551,16 +2761,22 @@
       switchTab('logs');
     };
 
-    // Chart mode toggle
+    window.copyText = async (text, label = text) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast(`Đã sao chép ${label}`);
+      } catch {
+        showToast(label);
+      }
+    };
+
     document.querySelectorAll('[data-chart-mode]').forEach((btn) => {
       btn.addEventListener('click', () => {
         state.chartMode = btn.dataset.chartMode;
         document.querySelectorAll('[data-chart-mode]').forEach((b) =>
           b.setAttribute('aria-pressed', String(b === btn))
         );
-        if (state.status?.summary) {
-          renderBandwidthChart(state.status.summary);
-        }
+        if (state.status?.summary) renderBandwidthChart(state.status.summary);
       });
     });
 
@@ -2569,7 +2785,8 @@
       const s = state.status;
       if (!s) return;
 
-      const lanIp = s.lanIps?.[0]?.ip || '127.0.0.1';
+      const primaryIface = pickPrimaryLanIp(s.lanIps);
+      const lanIp = primaryIface?.ip || '127.0.0.1';
       document.getElementById('serverInfo').textContent =
         `${lanIp}:${s.dnsPort}\nWeb :${s.webPort} • Cache ${s.cacheSize}`;
 
@@ -2591,31 +2808,37 @@
       document.getElementById('statRules').textContent = s.totalBlockedDomains.toLocaleString('vi-VN');
       document.getElementById('cacheCount').textContent = s.cacheSize;
 
-      // Sidebar badges
-      const enabledLists = (s.config.blocklists || []).filter((b) => b.enabled).length;
+      // Badges & Lists KPI strip
+      const allLists = s.config.blocklists || [];
+      const enabledLists = allLists.filter((b) => b.enabled).length;
+      const customTotal = (s.config.whitelist || []).length + (s.config.blacklist || []).length;
       document.getElementById('navBadgeLists').textContent = enabledLists;
       document.getElementById('navBadgeRules').textContent = (s.config.clientRules || []).length;
       document.getElementById('whitelistCountBadge').textContent = (s.config.whitelist || []).length;
       document.getElementById('blacklistCountBadge').textContent = (s.config.blacklist || []).length;
+      document.getElementById('listsActiveCount').textContent = `${enabledLists} / ${allLists.length}`;
+      document.getElementById('listsTotalDomains').textContent = s.totalBlockedDomains.toLocaleString('vi-VN');
+      document.getElementById('listsCustomCount').textContent = customTotal.toLocaleString('vi-VN');
 
       renderBandwidthChart(s.summary);
 
-      // Top blocked domains (with proportional bars)
+      // Top blocked domains (clean slim progress meter, zero background bleed)
       const tb = s.summary.topBlockedDomains || [];
       const maxBlockedCount = tb.length ? Math.max(...tb.map((i) => i.count), 1) : 1;
       document.getElementById('topBlockedList').innerHTML = tb.length
         ? tb
-            .map((i) => {
+            .map((i, idx) => {
               const saved =
                 typeof i.savedBytes === 'number'
                   ? i.savedBytes
                   : estimateDomainBytesClient(i.domain).bytes * i.count;
-              const pct = Math.max(3, Math.round((i.count / maxBlockedCount) * 100));
+              const pct = Math.max(4, Math.round((i.count / maxBlockedCount) * 100));
               return `
                 <div class="rank-row" role="button" tabindex="0" onclick="filterLogsBy('${esc(i.domain)}', true)" onkeydown="if(event.key==='Enter')filterLogsBy('${esc(i.domain)}', true)" title="Bấm để xem nhật ký của ${esc(i.domain)}">
-                  <div class="rank-bar danger" style="width:${pct}%;"></div>
+                  <span class="rank-idx">${idx + 1}</span>
                   <div class="rank-main">
                     <div class="rank-primary"><span class="rank-domain mono">${esc(i.domain)}</span></div>
+                    <div class="rank-meter"><div class="rank-meter-fill danger" style="width:${pct}%;"></div></div>
                   </div>
                   <div class="rank-stats">
                     <span class="rank-count" style="color:var(--danger);">${i.count.toLocaleString('vi-VN')}</span>
@@ -2627,31 +2850,32 @@
             .join('')
         : '<div class="stat-label" style="padding:1rem 0;">Chưa có truy vấn nào bị chặn.</div>';
 
-      // Top LAN clients (with clean 2-line layout + proportional bars)
+      // Top LAN clients (clean slim progress meter + 2-line info)
       const discoveredMap = s.discoveredDevices || {};
       const tc = s.summary.topClients || [];
       const maxClientTotal = tc.length ? Math.max(...tc.map((c) => c.total), 1) : 1;
       const bwData = resolveBandwidthData(s.summary);
       document.getElementById('topClientsList').innerHTML = tc.length
         ? tc
-            .map((c) => {
+            .map((c, idx) => {
               const saved =
                 typeof c.savedBytes === 'number'
                   ? c.savedBytes
                   : c.blocked * (bwData.avgSavedBytesPerBlocked || 120 * 1024);
-              const pct = Math.max(3, Math.round((c.total / maxClientTotal) * 100));
+              const pct = Math.max(4, Math.round((c.total / maxClientTotal) * 100));
               const grpBadge = c.groupName ? `<span class="group-badge">${esc(c.groupIcon || '📁')} ${esc(c.groupName)}</span>` : '';
               const disc = discoveredMap[c.ip];
               const friendlyName = c.name || disc?.suggestedName || '';
               return `
                 <div class="rank-row" role="button" tabindex="0" onclick="filterLogsBy('${esc(c.ip)}', false)" onkeydown="if(event.key==='Enter')filterLogsBy('${esc(c.ip)}', false)" title="Bấm để xem nhật ký của ${esc(c.ip)}">
-                  <div class="rank-bar" style="width:${pct}%;"></div>
+                  <span class="rank-idx">${idx + 1}</span>
                   <div class="rank-main">
                     <div class="rank-primary">
                       <span class="mono">${esc(c.ip)}</span>
                       ${grpBadge}
                     </div>
                     ${friendlyName ? `<div class="rank-sub">${esc(friendlyName)}</div>` : ''}
+                    <div class="rank-meter"><div class="rank-meter-fill" style="width:${pct}%;"></div></div>
                   </div>
                   <div class="rank-stats">
                     <span class="rank-count">${c.total.toLocaleString('vi-VN')} <span class="stat-label" style="font-weight:500;">truy vấn</span></span>
@@ -2666,50 +2890,62 @@
             .join('')
         : '<div class="stat-label" style="padding:1rem 0;">Chưa có thiết bị nào truy vấn.</div>';
 
-      // Blocklists with toggle switches
-      document.getElementById('blocklistsContainer').innerHTML = s.config.blocklists
-        .map((b) => {
-          let badge = '';
-          if (!b.enabled) {
-            badge = '<span class="badge muted">Đang tắt</span>';
-          } else if (b.lastError) {
-            badge = `<span class="badge blocked">Lỗi tải: ${esc(b.lastError)}</span>`;
-          } else if (b.count > 0) {
-            badge = `<span class="badge allowed">${b.count.toLocaleString('vi-VN')} tên miền</span>`;
-          } else {
-            badge = '<span class="badge warn">Chưa tải dữ liệu</span>';
-          }
-          const updatedText = b.lastUpdated ? 'Cập nhật: ' + new Date(b.lastUpdated).toLocaleString('vi-VN') : 'Chưa tải';
-          return `
-          <div class="blocklist-item">
-            <div class="blocklist-meta">
-              <div class="row" style="gap:0.55rem;">
-                <label class="switch-wrap" style="font-weight:600;">
-                  <input type="checkbox" class="switch" role="switch" ${b.enabled ? 'checked' : ''} onchange="toggleBlocklist('${esc(b.id)}', this.checked)" />
-                  <span>${esc(b.name)}</span>
-                </label>
-                ${badge}
-              </div>
-              <div class="blocklist-url mono">${esc(b.url)} <span style="font-family:inherit;">• ${updatedText}</span></div>
-            </div>
-            <div class="row" style="gap:0.4rem;">
-              <button type="button" class="btn sm" onclick="refreshOneBlocklist('${esc(b.id)}', this)">Tải lại</button>
-              <button type="button" class="btn danger sm" onclick="deleteBlocklist('${esc(b.id)}')">Xóa</button>
-            </div>
-          </div>`;
-        })
-        .join('');
+      // Blocklists structured table (skip re-render while an action menu inside is open)
+      const blContainer = document.getElementById('blocklistsContainer');
+      if (!blContainer.querySelector('.action-menu-popover:popover-open')) {
+        blContainer.innerHTML = allLists
+          .map((b, idx) => {
+            let countHtml = '';
+            if (!b.enabled) {
+              countHtml = '<span class="badge muted">Đang tắt</span>';
+            } else if (b.lastError) {
+              countHtml = `<span class="badge blocked" title="${esc(b.lastError)}">Lỗi tải</span>`;
+            } else if (b.count > 0) {
+              countHtml = `<span class="badge allowed tabular">${b.count.toLocaleString('vi-VN')}</span>`;
+            } else {
+              countHtml = '<span class="badge warn">Chưa tải</span>';
+            }
+            const updatedText = b.lastUpdated ? new Date(b.lastUpdated).toLocaleString('vi-VN') : 'Chưa tải';
+            const trigId = `bl-trig-${idx}`;
+            const menuId = `bl-menu-${idx}`;
+            return `
+              <div class="bl-row bl-grid">
+                <div>
+                  <input type="checkbox" class="switch" role="switch" aria-label="Bật/tắt ${esc(b.name)}" ${b.enabled ? 'checked' : ''} onchange="toggleBlocklist('${esc(b.id)}', this.checked)" />
+                </div>
+                <div style="min-width:0;">
+                  <div class="bl-name">${esc(b.name)}</div>
+                  <div class="bl-host mono" title="${esc(b.url)}">${esc(shortUrlHost(b.url))}</div>
+                </div>
+                <div>${countHtml}</div>
+                <div class="stat-sub tabular">${esc(updatedText)}</div>
+                <div class="action-cell">
+                  <button id="${trigId}" type="button" class="btn icon-btn menu-trigger" aria-haspopup="menu" aria-expanded="false" aria-label="Thao tác cho ${esc(b.name)}" commandfor="${menuId}" command="toggle-popover">${SVG_MORE}</button>
+                  <div id="${menuId}" class="action-menu-popover" popover="auto">
+                    <div focusgroup="menu nomemory" aria-labelledby="${trigId}">
+                      <button type="button" onclick="closeActionMenu('${menuId}');refreshOneBlocklist('${esc(b.id)}')">${SVG_REFRESH}<span>Tải lại nguồn</span></button>
+                      <button type="button" onclick="closeActionMenu('${menuId}');copyText('${esc(b.url)}', 'URL nguồn')">${SVG_COPY}<span>Sao chép URL</span></button>
+                      <hr />
+                      <button type="button" class="menu-danger" onclick="closeActionMenu('${menuId}');deleteBlocklist('${esc(b.id)}')">${SVG_TRASH}<span>Xóa danh sách</span></button>
+                    </div>
+                  </div>
+                </div>
+              </div>`;
+          })
+          .join('');
+        initActionMenus(blContainer);
+      }
 
       // Whitelist / Blacklist chips
       document.getElementById('whitelistChips').innerHTML = s.config.whitelist.length
         ? s.config.whitelist
-            .map((d) => `<span class="chip mono">${esc(d)} <button type="button" onclick="removeListItem('whitelist','${esc(d)}')" title="Xóa" aria-label="Xóa ${esc(d)}">×</button></span>`)
+            .map((d) => `<span class="chip mono"><span class="chip-text">${esc(d)}</span><button type="button" onclick="removeListItem('whitelist','${esc(d)}')" title="Xóa" aria-label="Xóa ${esc(d)}">×</button></span>`)
             .join('')
         : '<span class="stat-label">Chưa có tên miền nào trong Whitelist.</span>';
 
       document.getElementById('blacklistChips').innerHTML = s.config.blacklist.length
         ? s.config.blacklist
-            .map((d) => `<span class="chip mono">${esc(d)} <button type="button" onclick="removeListItem('blacklist','${esc(d)}')" title="Xóa" aria-label="Xóa ${esc(d)}">×</button></span>`)
+            .map((d) => `<span class="chip mono"><span class="chip-text">${esc(d)}</span><button type="button" onclick="removeListItem('blacklist','${esc(d)}')" title="Xóa" aria-label="Xóa ${esc(d)}">×</button></span>`)
             .join('')
         : '<span class="stat-label">Chưa có tên miền nào trong Blacklist.</span>';
 
@@ -2740,28 +2976,30 @@
             .map((g) => {
               const members = devices.filter((d) => d.groupId === g.id);
               const gs = groupStatsById.get(g.id);
-              const statsLine =
-                gs && gs.total > 0
-                  ? `${gs.total.toLocaleString('vi-VN')} truy vấn • <span style="color:var(--danger)">${gs.blocked.toLocaleString('vi-VN')} chặn</span> • <span style="color:var(--success)">~${formatBytes(gs.savedBytes)}</span>`
-                  : 'Chưa có lưu lượng DNS';
+              const totalQ = gs?.total || 0;
+              const blockedQ = gs?.blocked || 0;
               const memberChips = members.length
-                ? `<div class="chip-list" style="margin-top:0.3rem;max-height:105px;">${members
-                    .map(
-                      (m) =>
-                        `<span class="chip">${esc(m.name ? `${m.name} (${m.ip})` : m.ip)} <button type="button" onclick="removeDevice('${esc(m.ip)}')" title="Gỡ khỏi nhóm">×</button></span>`
-                    )
+                ? `<div class="chip-list" style="margin-top:0;max-height:92px;">${members
+                    .map((m) => {
+                      const label = m.name ? `${m.name} • ${m.ip}` : m.ip;
+                      return `<span class="chip" title="${esc(label)}"><span class="chip-text">${esc(label)}</span><button type="button" onclick="removeDevice('${esc(m.ip)}')" title="Gỡ khỏi nhóm" aria-label="Gỡ ${esc(m.ip)}">×</button></span>`;
+                    })
                     .join('')}</div>`
-                : '<div class="stat-sub" style="margin-top:0.15rem;">Chưa có thiết bị nào trong nhóm</div>';
+                : '<div class="stat-sub">Chưa có thiết bị nào trong nhóm</div>';
               return `
                 <div class="group-card">
                   <div class="group-card-head">
-                    <div>
+                    <div style="min-width:0;">
                       <div class="group-title"><span>${esc(g.icon || '📁')}</span><span>${esc(g.name)}</span></div>
-                      ${g.description ? `<div class="stat-sub">${esc(g.description)}</div>` : ''}
+                      ${g.description ? `<div class="stat-sub" style="margin-top:2px;">${esc(g.description)}</div>` : ''}
                     </div>
-                    <button type="button" class="btn danger sm" onclick="deleteDeviceGroup('${esc(g.id)}')" title="Xóa nhóm">Xóa</button>
+                    <button type="button" class="btn icon-btn danger-hover" onclick="deleteDeviceGroup('${esc(g.id)}')" title="Xóa nhóm ${esc(g.name)}" aria-label="Xóa nhóm ${esc(g.name)}">${SVG_TRASH}</button>
                   </div>
-                  <div class="stat-label tabular"><strong>${members.length}</strong> thiết bị • ${statsLine}</div>
+                  <div class="group-metrics">
+                    <div class="group-metric-item"><span class="group-metric-val">${members.length}</span><span class="group-metric-lbl">Thiết bị</span></div>
+                    <div class="group-metric-item"><span class="group-metric-val">${totalQ.toLocaleString('vi-VN')}</span><span class="group-metric-lbl">Truy vấn</span></div>
+                    <div class="group-metric-item"><span class="group-metric-val" style="color:${blockedQ > 0 ? 'var(--danger)' : 'var(--text)'};">${blockedQ.toLocaleString('vi-VN')}</span><span class="group-metric-lbl">Đã chặn</span></div>
+                  </div>
                   ${memberChips}
                 </div>
               `;
@@ -2789,7 +3027,7 @@
         if (prev && groupById.has(prev)) ruleGroupSel.value = prev;
       }
 
-      // Discovery meta & device rows
+      // Discovery meta & device table rows
       const discoveryMetaEl = document.getElementById('discoveryMeta');
       if (discoveryMetaEl) {
         discoveryMetaEl.textContent = s.lastDiscoveryScanAt
@@ -2799,7 +3037,11 @@
 
       const assignContainer = document.getElementById('deviceAssignList');
       const applyAllBtn = document.getElementById('applySuggestionsBtn');
-      if (!assignContainer.contains(document.activeElement)) {
+      const activeInAssign = assignContainer.contains(document.activeElement);
+      const isEditingDevice =
+        activeInAssign && (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'SELECT');
+      const hasOpenDeviceMenu = Boolean(assignContainer.querySelector('.action-menu-popover:popover-open'));
+      if (!isEditingDevice && !hasOpenDeviceMenu) {
         const merged = new Map();
         for (const d of devices) {
           merged.set(d.ip, { ip: d.ip, name: d.name || '', groupId: d.groupId || '', mac: d.mac || '', saved: true, total: 0, blocked: 0 });
@@ -2872,11 +3114,11 @@
                   tags.push('<span class="disc-tag warn" title="Cùng 1 MAC cho nhiều IP (sau Wi-Fi Repeater/Mesh)">Sau Repeater</span>');
                 }
 
-                const tagsHtml = tags.length ? `<div class="disc-tags">${tags.join('')}</div>` : '';
+                const tagsHtml = tags.length ? `<div class="disc-tags">${tags.join('')}</div>` : '<span class="stat-sub">—</span>';
                 const macTitle = disc?.mac || d.mac ? `MAC: ${disc?.mac || d.mac}` : '';
                 const suggestLine =
                   canSuggest && disc
-                    ? `<div class="disc-suggest" title="${esc((disc.reasons || []).join(' • '))}">Gợi ý: <strong>${esc(disc.suggestedName || 'Chưa rõ tên')}</strong>${sugGroup ? ` → ${esc(sugGroup.icon || '📁')} ${esc(sugGroup.name)}` : ''}${disc.confidence ? ` (${disc.confidence}%)` : ''}</div>`
+                    ? `<div class="disc-suggest-row" title="${esc((disc.reasons || []).join(' • '))}"><span>Gợi ý: <strong>${esc(disc.suggestedName || 'Chưa rõ')}</strong>${sugGroup ? ` → ${esc(sugGroup.icon || '📁')} ${esc(sugGroup.name)}` : ''}${disc.confidence ? ` (${disc.confidence}%)` : ''}</span><button type="button" class="btn-inline-apply" onclick="applySingleSuggestion('${esc(d.ip)}')" title="Áp dụng tên & nhóm gợi ý">Dùng gợi ý</button></div>`
                     : '';
 
                 const opts =
@@ -2887,31 +3129,38 @@
                         `<option value="${esc(g.id)}" ${d.groupId === g.id ? 'selected' : ''}>${esc(g.icon || '📁')} ${esc(g.name)}</option>`
                     )
                     .join('');
-                const namePlaceholder = disc?.suggestedName
-                  ? `Gợi ý: ${disc.suggestedName}`
-                  : 'Đặt tên (vd: Cam sân trước, iPhone...)';
+                const namePlaceholder = disc?.suggestedName ? `Gợi ý: ${disc.suggestedName}` : 'Nhấn để đặt tên (Enter để lưu)...';
+                const trigId = `dev-trig-${idx}`;
+                const menuId = `dev-menu-${idx}`;
                 return `
-                  <div class="device-row">
+                  <div class="device-row dev-grid">
                     <div>
                       <strong title="${esc(macTitle)}" class="mono">${esc(d.ip)}</strong>
-                      <div class="stat-sub tabular">${d.total ? `${d.total.toLocaleString('vi-VN')} truy vấn / ${d.blocked.toLocaleString('vi-VN')} chặn` : 'Đã lưu thủ công'}</div>
-                      ${tagsHtml}
+                      <div class="stat-sub tabular">${d.total ? `${d.total.toLocaleString('vi-VN')} truy vấn • ${d.blocked.toLocaleString('vi-VN')} chặn` : 'Đã lưu thủ công'}</div>
                     </div>
+                    <div>${tagsHtml}</div>
                     <div>
-                      <input type="text" id="devName-${idx}" aria-label="Tên thiết bị ${esc(d.ip)}" value="${esc(d.name)}" placeholder="${esc(namePlaceholder)}" />
+                      <input type="text" class="ghost-input" id="devName-${idx}" aria-label="Tên thiết bị ${esc(d.ip)}" value="${esc(d.name)}" placeholder="${esc(namePlaceholder)}" onkeydown="if(event.key==='Enter'){event.preventDefault();saveDeviceRow('${esc(d.ip)}', ${idx});}" />
                       ${suggestLine}
                     </div>
-                    <select id="devGroup-${idx}" aria-label="Nhóm cho ${esc(d.ip)}">${opts}</select>
-                    <div class="row" style="gap:0.35rem;flex-wrap:nowrap;">
-                      ${canSuggest ? `<button type="button" class="btn success sm" onclick="applySingleSuggestion('${esc(d.ip)}')" title="Áp dụng tên & nhóm gợi ý">Dùng gợi ý</button>` : ''}
-                      <button type="button" class="btn primary sm" onclick="saveDeviceRow('${esc(d.ip)}', ${idx})">Lưu</button>
-                      ${d.saved ? `<button type="button" class="btn danger sm" onclick="removeDevice('${esc(d.ip)}')" title="Xóa khỏi danh sách đã lưu">Gỡ</button>` : ''}
+                    <select class="dev-group-select" id="devGroup-${idx}" aria-label="Nhóm cho ${esc(d.ip)}" onchange="saveDeviceRow('${esc(d.ip)}', ${idx})">${opts}</select>
+                    <div class="action-cell">
+                      <button id="${trigId}" type="button" class="btn icon-btn menu-trigger" aria-haspopup="menu" aria-expanded="false" aria-label="Thao tác cho ${esc(d.ip)}" commandfor="${menuId}" command="toggle-popover">${SVG_MORE}</button>
+                      <div id="${menuId}" class="action-menu-popover" popover="auto">
+                        <div focusgroup="menu nomemory" aria-labelledby="${trigId}">
+                          <button type="button" onclick="closeActionMenu('${menuId}');saveDeviceRow('${esc(d.ip)}', ${idx})">${SVG_SAVE}<span>Lưu thay đổi</span></button>
+                          <button type="button" onclick="closeActionMenu('${menuId}');filterLogsBy('${esc(d.ip)}', false)">${SVG_LOGS}<span>Xem nhật ký DNS</span></button>
+                          ${canSuggest ? `<button type="button" onclick="closeActionMenu('${menuId}');applySingleSuggestion('${esc(d.ip)}')">${SVG_SPARK}<span>Dùng gợi ý</span></button>` : ''}
+                          ${d.saved ? `<hr /><button type="button" class="menu-danger" onclick="closeActionMenu('${menuId}');removeDevice('${esc(d.ip)}')">${SVG_TRASH}<span>Gỡ khỏi danh sách</span></button>` : ''}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 `;
               })
               .join('')
-          : 'Chưa phát hiện thiết bị nào trong mạng LAN. Bạn có thể nhập IP thủ công ở ô phía trên.';
+          : '<div style="padding:1rem;">Chưa phát hiện thiết bị nào trong mạng LAN. Bạn có thể thêm IP thủ công ở nút phía trên.</div>';
+        initActionMenus(assignContainer);
       }
 
       // Client Rules
@@ -2943,16 +3192,37 @@
                     </div>
                     <div class="row" style="gap:0.35rem;">${details.join('')}</div>
                   </div>
-                  <button type="button" class="btn danger sm" onclick="deleteClientRule('${esc(r.id)}')">Xóa</button>
+                  <button type="button" class="btn icon-btn danger-hover" onclick="deleteClientRule('${esc(r.id)}')" title="Xóa quy tắc" aria-label="Xóa quy tắc ${esc(r.name)}">${SVG_TRASH}</button>
                 </div>`;
             })
             .join('')
         : 'Chưa có quy tắc thiết bị nào.';
 
-      // Setup info
-      document.getElementById('lanIpBox').innerHTML = (s.lanIps || [])
-        .map((i) => `${esc(i.iface)}: <strong>${esc(i.ip)}</strong> (Cổng DNS: ${s.dnsPort})`)
-        .join('<br/>') || 'Không tìm thấy IP LAN';
+      // Setup info (prioritize real LAN IP, show per-interface copy button)
+      const lanIps = s.lanIps || [];
+      const sortedIps = [...lanIps].sort((a, b) => {
+        if (primaryIface && a.ip === primaryIface.ip) return -1;
+        if (primaryIface && b.ip === primaryIface.ip) return 1;
+        return 0;
+      });
+      document.getElementById('lanIpBox').innerHTML = sortedIps.length
+        ? sortedIps
+            .map((i) => {
+              const isPrimary = primaryIface && i.ip === primaryIface.ip;
+              return `
+                <div class="iface-row ${isPrimary ? 'primary-iface' : ''}">
+                  <div class="row" style="gap:0.5rem;">
+                    <span class="badge ${isPrimary ? 'cached' : 'muted'} mono">${esc(i.iface)}</span>
+                    <strong class="mono" style="font-size:0.9rem;">${esc(i.ip)}</strong>
+                    <span class="stat-sub">Cổng ${s.dnsPort}</span>
+                    ${isPrimary ? '<span class="badge allowed">Khuyên dùng</span>' : ''}
+                  </div>
+                  <button type="button" class="btn sm" onclick="copyText('${esc(i.ip)}', 'IP ${esc(i.ip)}')">Sao chép</button>
+                </div>
+              `;
+            })
+            .join('')
+        : '<div class="stat-label">Không tìm thấy IP LAN</div>';
 
       document.getElementById('upstreamInput').value = (s.config.upstreamDns || []).join(', ');
       document.getElementById('blockModeSelect').value = s.config.blockResponseMode || 'zero';
@@ -3030,7 +3300,7 @@
     };
 
     window.refreshOneBlocklist = async (id, btnEl) => {
-      if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Đang tải...'; }
+      if (btnEl) btnEl.disabled = true;
       try {
         const res = await api(`/api/blocklists/${encodeURIComponent(id)}/refresh`, 'POST');
         await loadAll();
@@ -3040,7 +3310,7 @@
           showToast(`Lỗi tải nguồn: ${res.refreshResult?.error || 'Không xác định'}`);
         }
       } finally {
-        if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Tải lại'; }
+        if (btnEl) btnEl.disabled = false;
       }
     };
 
@@ -3126,6 +3396,7 @@
     window.removeDevice = async (ip) => {
       try {
         await api(`/api/devices/${encodeURIComponent(ip)}`, 'DELETE');
+        if (document.activeElement) document.activeElement.blur();
         await loadAll();
         showToast(`Đã gỡ thiết bị ${ip}`);
       } catch (err) {
@@ -3138,6 +3409,7 @@
       if (!item) return;
       try {
         await api('/api/devices/apply-suggestions', 'POST', { items: [item] });
+        if (document.activeElement) document.activeElement.blur();
         await loadAll();
         showToast(`Đã áp dụng gợi ý cho ${ip}`);
       } catch (err) {
@@ -3188,6 +3460,7 @@
         const res = await api('/api/blocklists', 'POST', { name, url });
         document.getElementById('newListName').value = '';
         document.getElementById('newListUrl').value = '';
+        document.getElementById('addBlocklistDrawer').classList.remove('open');
         await loadAll();
         if (res.refreshResult?.ok) {
           showToast(`Đã thêm & kích hoạt ${res.refreshResult.count.toLocaleString('vi-VN')} tên miền!`);
@@ -3236,6 +3509,7 @@
         await api('/api/groups', 'POST', { name, icon, description });
         document.getElementById('newGroupName').value = '';
         document.getElementById('newGroupDesc').value = '';
+        document.getElementById('addGroupDrawer').classList.remove('open');
         await loadAll();
         showToast(`Đã thêm nhóm "${name}"`);
       } catch (err) {
@@ -3288,6 +3562,7 @@
         await api('/api/devices', 'POST', { ip, name, groupId });
         document.getElementById('manualDeviceIp').value = '';
         document.getElementById('manualDeviceName').value = '';
+        document.getElementById('manualDeviceDrawer').classList.remove('open');
         await loadAll();
         showToast(`Đã gán ${ip} vào nhóm`);
       } catch (err) {
@@ -3343,17 +3618,6 @@
         showToast('Đã lưu quy tắc');
       } catch (err) {
         showToast(err.message);
-      }
-    });
-
-    document.getElementById('copyPrimaryIpBtn').addEventListener('click', async () => {
-      const ip = state.status?.lanIps?.[0]?.ip;
-      if (!ip) return;
-      try {
-        await navigator.clipboard.writeText(ip);
-        showToast(`Đã sao chép IP ${ip}`);
-      } catch {
-        showToast(`IP máy chủ: ${ip}`);
       }
     });
 

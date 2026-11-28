@@ -155,6 +155,9 @@ const OUI_TABLE = {
   'C4:2F:90': { vendor: 'Hikvision', hintGroup: 'camera' },
   'E0:CA:3C': { vendor: 'Ezviz / Hikvision', hintGroup: 'camera' },
   '68:6D:BC': { vendor: 'Ezviz', hintGroup: 'camera' },
+  '0C:A6:4C': { vendor: 'Ezviz', hintGroup: 'camera' },
+  '58:8F:CF': { vendor: 'Camera (Ezviz/Imou)', hintGroup: 'camera' },
+  '78:A6:A0': { vendor: 'Camera (Ezviz/Imou)', hintGroup: 'camera' },
   '14:A7:8B': { vendor: 'Dahua / Imou', hintGroup: 'camera' },
   '38:AF:29': { vendor: 'Dahua / Imou', hintGroup: 'camera' },
   '3C:EF:8C': { vendor: 'Dahua / Imou', hintGroup: 'camera' },
@@ -210,8 +213,8 @@ const OUI_TABLE = {
   'DC:A6:32': { vendor: 'Raspberry Pi', hintGroup: 'iot' },
   'E4:5F:01': { vendor: 'Raspberry Pi', hintGroup: 'iot' },
 
-  // Router / Mesh / Network (VNPT, Viettel, FPT, TP-Link, Asus, Ubiquiti, MikroTik)
-  '24:0B:2A': { vendor: 'VNPT Technology', hintGroup: 'network' },
+  // Router / Mesh / Network (Viettel, VNPT, FPT, TP-Link, Asus, Ubiquiti, MikroTik)
+  '24:0B:2A': { vendor: 'Viettel / ZTE Home Wi-Fi', hintGroup: 'network' },
   'A4:F4:C2': { vendor: 'VNPT Technology', hintGroup: 'network' },
   '00:1D:0F': { vendor: 'TP-Link', hintGroup: 'network' },
   '14:CC:20': { vendor: 'TP-Link', hintGroup: 'network' },
