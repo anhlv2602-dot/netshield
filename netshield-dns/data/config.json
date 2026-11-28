@@ -293,6 +293,13 @@
       "name": "Router VNPT Technology",
       "groupId": "iot",
       "mac": "24:0B:2A:DC:FA:50"
+    },
+    {
+      "id": "mac:24:0B:2A:D9:7C:A2",
+      "ip": "192.168.1.4",
+      "name": "VNPT Technology",
+      "groupId": "iot",
+      "mac": "24:0B:2A:D9:7C:A2"
     }
   ],
   "clientRules": []
