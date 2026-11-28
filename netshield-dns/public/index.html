@@ -2599,12 +2599,17 @@
 
     function resolveBandwidthData(summary) {
       if (summary.bandwidth && Array.isArray(summary.hourly) && typeof summary.hourly[0]?.savedBytes === 'number') {
+        const nowHour = new Date().getHours();
         return {
           totalSavedBytes: summary.bandwidth.totalSavedBytes || 0,
           avgSavedBytesPerBlocked: summary.bandwidth.avgSavedBytesPerBlocked || 0,
           byCategory: summary.bandwidth.byCategory || [],
-          hourly: summary.hourly.map((h, hour) => ({
-            hour,
+          hourly: summary.hourly.map((h, idx) => ({
+            hour: typeof h.hour === 'number' ? h.hour : idx,
+            hourEpoch: h.hourEpoch ?? null,
+            timestamp: h.timestamp || null,
+            dateKey: h.dateKey || null,
+            isCurrent: typeof h.isCurrent === 'boolean' ? h.isCurrent : idx === nowHour,
             total: h.total || 0,
             blocked: h.blocked || 0,
             savedBytes: h.savedBytes || 0,
@@ -2661,7 +2666,8 @@
     function renderBandwidthChart(summary) {
       const bw = resolveBandwidthData(summary);
       const mode = state.chartMode;
-      const nowHour = new Date().getHours();
+      const nowDate = new Date();
+      const todayKey = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}-${String(nowDate.getDate()).padStart(2, '0')}`;
 
       document.getElementById('statSavedBandwidth').textContent = formatBytes(bw.totalSavedBytes);
       document.getElementById('statSavedSub').textContent =
@@ -2670,26 +2676,31 @@
           : 'Chưa có lượt chặn';
 
       let running = 0;
-      const points = bw.hourly.map((h) => {
+      const points = bw.hourly.map((h, idx) => {
         running += h.savedBytes;
         return {
           ...h,
+          idx,
           cumulativeBytes: running,
           value: mode === 'hourly' ? h.savedBytes : mode === 'cumulative' ? running : h.blocked,
         };
       });
 
+      const nowIdx = points.findIndex((p) => p.isCurrent);
+      const activeNowIdx = nowIdx >= 0 ? nowIdx : points.length - 1;
+      const totalBlocked24h = points.reduce((acc, p) => acc + p.blocked, 0);
       const activeHours = points.filter((p) => p.blocked > 0).length;
       const peak = points.reduce((best, p) => (p.value > best.value ? p : best), points[0]);
+      const peakDayNote = peak.dateKey && peak.dateKey !== todayKey ? ' (hôm qua)' : '';
       const subtitleEl = document.getElementById('chartSubtitle');
-      if (summary.blockedQueries === 0) {
-        subtitleEl.textContent = 'Chưa có truy vấn quảng cáo nào bị chặn trong 24 giờ qua.';
+      if (totalBlocked24h === 0) {
+        subtitleEl.textContent = 'Chưa có truy vấn quảng cáo nào bị chặn trong 24 giờ gần nhất.';
       } else if (mode === 'cumulative') {
-        subtitleEl.textContent = `Tổng băng thông tiết kiệm tích lũy: ${formatBytes(running)} (${summary.blockedQueries.toLocaleString('vi-VN')} lượt chặn).`;
+        subtitleEl.textContent = `Tổng băng thông tiết kiệm tích lũy (24h qua): ${formatBytes(running)} (${totalBlocked24h.toLocaleString('vi-VN')} lượt chặn).`;
       } else if (mode === 'blocked') {
-        subtitleEl.textContent = `Cao điểm lúc ${String(peak.hour).padStart(2, '0')}:00 với ${peak.blocked.toLocaleString('vi-VN')} lượt chặn (${activeHours} khung giờ hoạt động).`;
+        subtitleEl.textContent = `Cao điểm lúc ${String(peak.hour).padStart(2, '0')}:00${peakDayNote} với ${peak.blocked.toLocaleString('vi-VN')} lượt chặn (${activeHours} khung giờ hoạt động).`;
       } else {
-        subtitleEl.textContent = `Cao điểm lúc ${String(peak.hour).padStart(2, '0')}:00 tiết kiệm ~${formatBytes(peak.savedBytes)} (${activeHours} khung giờ có chặn).`;
+        subtitleEl.textContent = `Cao điểm lúc ${String(peak.hour).padStart(2, '0')}:00${peakDayNote} tiết kiệm ~${formatBytes(peak.savedBytes)} (${activeHours} khung giờ có chặn).`;
       }
 
       if (bw.methodology) {
@@ -2718,13 +2729,14 @@
         gridHtml += `<text class="chart-axis-text" x="${padL - 10}" y="${(y + 4).toFixed(1)}" text-anchor="end">${esc(label)}</text>`;
       }
 
-      const slotW = plotW / 24;
+      const slotW = plotW / points.length;
       let xLabelsHtml = '';
-      for (let h = 0; h < 24; h++) {
-        if (h % 2 === 0 || h === nowHour) {
-          const cx = padL + h * slotW + slotW / 2;
-          const isNow = h === nowHour;
-          xLabelsHtml += `<text class="chart-axis-text" x="${cx.toFixed(1)}" y="${H - 8}" text-anchor="middle" ${isNow ? 'style="fill:var(--accent);font-weight:700;"' : ''}>${String(h).padStart(2, '0')}h</text>`;
+      for (let idx = 0; idx < points.length; idx++) {
+        const p = points[idx];
+        const isNow = idx === activeNowIdx;
+        if (idx % 2 === 1 || isNow) {
+          const cx = padL + idx * slotW + slotW / 2;
+          xLabelsHtml += `<text class="chart-axis-text" x="${cx.toFixed(1)}" y="${H - 8}" text-anchor="middle" ${isNow ? 'style="fill:var(--accent);font-weight:700;"' : ''}>${String(p.hour).padStart(2, '0')}h</text>`;
         }
       }
 
@@ -2733,7 +2745,7 @@
         const coords = points.map((p, idx) => {
           const x = padL + idx * slotW + slotW / 2;
           const y = padT + plotH - (p.value / maxVal) * plotH;
-          return { x, y, p };
+          return { x, y, p, idx };
         });
         const linePath = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
         const areaPath = `${linePath} L${coords[coords.length - 1].x.toFixed(1)},${(padT + plotH).toFixed(1)} L${coords[0].x.toFixed(1)},${(padT + plotH).toFixed(1)} Z`;
@@ -2749,11 +2761,13 @@
           <path d="${linePath}" fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
         `;
         for (const c of coords) {
-          const hitX = padL + c.p.hour * slotW;
-          const ariaLabel = `${String(c.p.hour).padStart(2, '0')} giờ: lũy kế ${formatBytes(c.p.cumulativeBytes)}, riêng giờ này ${formatBytes(c.p.savedBytes)}, ${c.p.blocked} lượt chặn`;
-          dataHtml += `<rect class="chart-hit" data-hour="${c.p.hour}" tabindex="0" role="button" aria-label="${esc(ariaLabel)}" x="${hitX.toFixed(1)}" y="${padT}" width="${slotW.toFixed(1)}" height="${plotH}" fill="transparent" />`;
-          if (c.p.blocked > 0 || c.p.hour === nowHour) {
-            dataHtml += `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${c.p.hour === nowHour ? 4.5 : 3}" fill="var(--success)" stroke="var(--surface)" stroke-width="1.8" pointer-events="none" />`;
+          const hitX = padL + c.idx * slotW;
+          const isNow = c.idx === activeNowIdx;
+          const dayPrefix = c.p.dateKey && c.p.dateKey !== todayKey ? 'Hôm qua ' : '';
+          const ariaLabel = `${dayPrefix}${String(c.p.hour).padStart(2, '0')} giờ: lũy kế ${formatBytes(c.p.cumulativeBytes)}, riêng giờ này ${formatBytes(c.p.savedBytes)}, ${c.p.blocked} lượt chặn`;
+          dataHtml += `<rect class="chart-hit" data-idx="${c.idx}" tabindex="0" role="button" aria-label="${esc(ariaLabel)}" x="${hitX.toFixed(1)}" y="${padT}" width="${slotW.toFixed(1)}" height="${plotH}" fill="transparent" />`;
+          if (c.p.blocked > 0 || isNow) {
+            dataHtml += `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${isNow ? 4.5 : 3}" fill="${isNow ? 'var(--accent)' : 'var(--success)'}" stroke="var(--surface)" stroke-width="1.8" pointer-events="none" />`;
           }
         }
       } else {
@@ -2776,13 +2790,14 @@
         `;
 
         for (const p of points) {
-          const hitX = padL + p.hour * slotW;
+          const hitX = padL + p.idx * slotW;
           const barX = hitX + barOffset;
           const barH = p.value > 0 ? Math.max(4, (p.value / maxVal) * plotH) : 0;
           const barY = padT + plotH - barH;
-          const isNow = p.hour === nowHour;
-          const ariaLabel = `${String(p.hour).padStart(2, '0')} giờ: tiết kiệm ${formatBytes(p.savedBytes)}, ${p.blocked} lượt chặn trên ${p.total} truy vấn`;
-          dataHtml += `<rect class="chart-hit" data-hour="${p.hour}" tabindex="0" role="button" aria-label="${esc(ariaLabel)}" x="${hitX.toFixed(1)}" y="${padT}" width="${slotW.toFixed(1)}" height="${plotH}" rx="4" fill="transparent" />`;
+          const isNow = p.idx === activeNowIdx;
+          const dayPrefix = p.dateKey && p.dateKey !== todayKey ? 'Hôm qua ' : '';
+          const ariaLabel = `${dayPrefix}${String(p.hour).padStart(2, '0')} giờ: tiết kiệm ${formatBytes(p.savedBytes)}, ${p.blocked} lượt chặn trên ${p.total} truy vấn`;
+          dataHtml += `<rect class="chart-hit" data-idx="${p.idx}" tabindex="0" role="button" aria-label="${esc(ariaLabel)}" x="${hitX.toFixed(1)}" y="${padT}" width="${slotW.toFixed(1)}" height="${plotH}" rx="4" fill="transparent" />`;
           if (barH > 0) {
             dataHtml += `<rect class="chart-bar" x="${barX.toFixed(1)}" y="${barY.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="5" fill="url(#${isNow ? 'barGradNow' : 'barGradMain'})" pointer-events="none" />`;
           } else {
@@ -2794,10 +2809,10 @@
       const container = document.getElementById('bandwidthChartContainer');
       const chartTitle =
         mode === 'cumulative'
-          ? 'Biểu đồ lũy kế băng thông tiết kiệm trong 24 giờ'
+          ? 'Biểu đồ lũy kế băng thông tiết kiệm trong 24 giờ gần nhất'
           : mode === 'blocked'
-          ? 'Biểu đồ số lượt chặn quảng cáo theo 24 giờ'
-          : 'Biểu đồ băng thông tiết kiệm theo 24 giờ';
+          ? 'Biểu đồ số lượt chặn quảng cáo theo 24 giờ gần nhất'
+          : 'Biểu đồ băng thông tiết kiệm theo 24 giờ gần nhất';
 
       container.innerHTML = `
         <svg class="chart-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(chartTitle)}">
@@ -2808,18 +2823,25 @@
       `;
 
       const tooltip = document.getElementById('bandwidthTooltip');
-      const showHourTip = (hour) => {
-        const p = points[hour];
+      const showHourTip = (idx) => {
+        const p = points[idx];
         if (!p) return;
         const rate = p.total > 0 ? ((p.blocked / p.total) * 100).toFixed(1) : '0.0';
         const hh = String(p.hour).padStart(2, '0');
+        const isNow = idx === activeNowIdx;
+        const isYesterday = Boolean(p.dateKey && p.dateKey !== todayKey);
+        const dayTag = isNow
+          ? '<span class="badge cached">Hiện tại</span>'
+          : isYesterday
+          ? '<span class="badge" style="background:var(--surface-2);color:var(--muted);">Hôm qua</span>'
+          : '';
         tooltip.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.2rem;">
             <strong>${hh}:00 – ${hh}:59</strong>
-            ${p.hour === nowHour ? '<span class="badge cached">Hiện tại</span>' : ''}
+            ${dayTag}
           </div>
           <div>Tiết kiệm: <strong style="color:var(--success)">${formatBytes(p.savedBytes)}</strong></div>
-          ${mode === 'cumulative' ? `<div>Lũy kế tới ${hh}h: <strong>${formatBytes(p.cumulativeBytes)}</strong></div>` : ''}
+          ${mode === 'cumulative' ? `<div>Lũy kế 24h tới ${hh}h: <strong>${formatBytes(p.cumulativeBytes)}</strong></div>` : ''}
           <div class="stat-sub" style="margin-top:0.15rem;">Chặn ${p.blocked.toLocaleString('vi-VN')} / ${p.total.toLocaleString('vi-VN')} truy vấn (${rate}%)</div>
         `;
         tooltip.classList.add('visible');
@@ -2827,9 +2849,9 @@
       const hideHourTip = () => tooltip.classList.remove('visible');
 
       container.querySelectorAll('.chart-hit').forEach((el) => {
-        const h = Number(el.dataset.hour);
-        el.addEventListener('mouseenter', () => showHourTip(h));
-        el.addEventListener('focus', () => showHourTip(h));
+        const idx = Number(el.dataset.idx);
+        el.addEventListener('mouseenter', () => showHourTip(idx));
+        el.addEventListener('focus', () => showHourTip(idx));
         el.addEventListener('mouseleave', hideHourTip);
         el.addEventListener('blur', hideHourTip);
       });

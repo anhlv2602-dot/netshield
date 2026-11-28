@@ -32,6 +32,9 @@ async function main() {
   // Hạ quyền khỏi root ngay sau khi mở xong cổng 53
   dropRootPrivileges();
 
+  // Tự động lưu snapshot thống kê 24h mỗi 60 giây (sau khi hạ quyền để file thuộc user thường)
+  store.startStatsAutosave(60_000);
+
   const webSrv = await startWebServer({ host: WEB_HOST, port: WEB_PORT, dnsPort: DNS_PORT });
   console.log(`🖥️  Giao diện quản trị (chỉ máy Mac Mini): http://${webSrv.host}:${webSrv.port}`);
 
@@ -56,8 +59,9 @@ async function main() {
   const shutdown = async () => {
     console.log('\n🛑 Đang dừng NetShield DNS...');
     clearInterval(refreshTimer);
+    store.stopStatsAutosave();
     deviceDiscovery.stop();
-    await Promise.allSettled([dnsSrv.close(), webSrv.close()]);
+    await Promise.allSettled([store.saveStats({ force: true }), dnsSrv.close(), webSrv.close()]);
     process.exit(0);
   };
 

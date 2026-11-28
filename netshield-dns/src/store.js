@@ -9,6 +9,9 @@ export const ROOT_DIR = path.resolve(__dirname, '..');
 export const DATA_DIR = path.join(ROOT_DIR, 'data');
 export const CACHE_DIR = path.join(DATA_DIR, 'blocklists-cache');
 const CONFIG_PATH = path.join(DATA_DIR, 'config.json');
+const STATS_PATH = path.join(DATA_DIR, 'stats.json');
+const HOUR_MS = 60 * 60 * 1000;
+const BANDWIDTH_DEDUPE_WINDOW_MS = 30 * 1000;
 
 export const SERVICE_PRESETS = {
   tiktok: {
@@ -323,6 +326,10 @@ class Store extends EventEmitter {
     this.config = structuredClone(DEFAULT_CONFIG);
     this.logs = [];
     this.maxLogs = 1500;
+    this.recentSavedDedupe = new Map();
+    this._statsDirty = false;
+    this._statsSaveTimer = null;
+    this._savingStats = false;
     this.stats = {
       startedAt: Date.now(),
       totalQueries: 0,
@@ -334,7 +341,7 @@ class Store extends EventEmitter {
       ),
       byDomainBlocked: new Map(),
       byClient: new Map(),
-      hourly: new Array(24).fill(0).map(() => ({ total: 0, blocked: 0, savedBytes: 0, dateKey: null })),
+      hourlyMap: new Map(),
     };
   }
 
@@ -371,7 +378,143 @@ class Store extends EventEmitter {
     } catch {
       await this.save();
     }
+    await this.loadStats();
     return this.config;
+  }
+
+  async loadStats() {
+    try {
+      const raw = await fs.readFile(STATS_PATH, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return;
+
+      const nowEpoch = Math.floor(Date.now() / HOUR_MS);
+      const minEpoch = nowEpoch - 23;
+
+      if (Number.isFinite(parsed.startedAt)) this.stats.startedAt = parsed.startedAt;
+      if (Number.isFinite(parsed.totalQueries)) this.stats.totalQueries = Math.max(0, parsed.totalQueries);
+      if (Number.isFinite(parsed.blockedQueries)) this.stats.blockedQueries = Math.max(0, parsed.blockedQueries);
+      if (Number.isFinite(parsed.cachedQueries)) this.stats.cachedQueries = Math.max(0, parsed.cachedQueries);
+      if (Number.isFinite(parsed.savedBytesTotal)) this.stats.savedBytesTotal = Math.max(0, parsed.savedBytesTotal);
+
+      if (parsed.savedByCategory && typeof parsed.savedByCategory === 'object') {
+        for (const key of Object.keys(BANDWIDTH_CATEGORIES)) {
+          const item = parsed.savedByCategory[key];
+          if (item && typeof item === 'object') {
+            this.stats.savedByCategory[key] = {
+              count: Number.isFinite(item.count) ? Math.max(0, item.count) : 0,
+              bytes: Number.isFinite(item.bytes) ? Math.max(0, item.bytes) : 0,
+            };
+          }
+        }
+      }
+
+      if (Array.isArray(parsed.byDomainBlocked)) {
+        this.stats.byDomainBlocked.clear();
+        for (const [domain, s] of parsed.byDomainBlocked) {
+          if (!domain || !s || typeof s !== 'object') continue;
+          this.stats.byDomainBlocked.set(domain, {
+            count: Number.isFinite(s.count) ? Math.max(0, s.count) : 0,
+            savedBytes: Number.isFinite(s.savedBytes) ? Math.max(0, s.savedBytes) : 0,
+            category: typeof s.category === 'string' ? s.category : 'display_ad',
+          });
+        }
+      }
+
+      if (Array.isArray(parsed.byClient)) {
+        this.stats.byClient.clear();
+        for (const [ip, s] of parsed.byClient) {
+          if (!ip || !s || typeof s !== 'object') continue;
+          this.stats.byClient.set(ip, {
+            total: Number.isFinite(s.total) ? Math.max(0, s.total) : 0,
+            blocked: Number.isFinite(s.blocked) ? Math.max(0, s.blocked) : 0,
+            savedBytes: Number.isFinite(s.savedBytes) ? Math.max(0, s.savedBytes) : 0,
+            lastSeen: typeof s.lastSeen === 'string' ? s.lastSeen : new Date().toISOString(),
+          });
+        }
+      }
+
+      if (Array.isArray(parsed.hourly)) {
+        this.stats.hourlyMap.clear();
+        for (const item of parsed.hourly) {
+          if (!item || !Number.isFinite(item.hourEpoch)) continue;
+          if (item.hourEpoch < minEpoch || item.hourEpoch > nowEpoch) continue;
+          this.stats.hourlyMap.set(item.hourEpoch, {
+            total: Number.isFinite(item.total) ? Math.max(0, item.total) : 0,
+            blocked: Number.isFinite(item.blocked) ? Math.max(0, item.blocked) : 0,
+            savedBytes: Number.isFinite(item.savedBytes) ? Math.max(0, item.savedBytes) : 0,
+          });
+        }
+      }
+    } catch {
+      // Chưa có stats.json hoặc file hỏng -> bắt đầu sạch, không ghi file trước khi dropRootPrivileges
+    }
+  }
+
+  async saveStats({ force = false } = {}) {
+    if ((!force && !this._statsDirty) || this._savingStats) return;
+    this._savingStats = true;
+    try {
+      const nowEpoch = Math.floor(Date.now() / HOUR_MS);
+      const minEpoch = nowEpoch - 23;
+      const hourly = [];
+      for (const [hourEpoch, bucket] of this.stats.hourlyMap.entries()) {
+        if (hourEpoch >= minEpoch && hourEpoch <= nowEpoch) {
+          hourly.push({
+            hourEpoch,
+            total: bucket.total,
+            blocked: bucket.blocked,
+            savedBytes: bucket.savedBytes,
+          });
+        }
+      }
+
+      const topDomains = [...this.stats.byDomainBlocked.entries()]
+        .sort((a, b) => b[1].count - a[1].count)
+        .slice(0, 200);
+      const topClients = [...this.stats.byClient.entries()]
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 200);
+
+      const payload = {
+        version: 1,
+        savedAt: new Date().toISOString(),
+        startedAt: this.stats.startedAt,
+        totalQueries: this.stats.totalQueries,
+        blockedQueries: this.stats.blockedQueries,
+        cachedQueries: this.stats.cachedQueries,
+        savedBytesTotal: this.stats.savedBytesTotal,
+        savedByCategory: this.stats.savedByCategory,
+        byDomainBlocked: topDomains,
+        byClient: topClients,
+        hourly,
+      };
+
+      await fs.mkdir(DATA_DIR, { recursive: true });
+      const tmpPath = `${STATS_PATH}.tmp`;
+      await fs.writeFile(tmpPath, JSON.stringify(payload), 'utf8');
+      await fs.rename(tmpPath, STATS_PATH);
+      this._statsDirty = false;
+    } catch (err) {
+      console.error('⚠️  Không thể lưu thống kê ra stats.json:', err.message);
+    } finally {
+      this._savingStats = false;
+    }
+  }
+
+  startStatsAutosave(intervalMs = 60_000) {
+    this.stopStatsAutosave();
+    this._statsSaveTimer = setInterval(() => {
+      this.saveStats().catch(() => {});
+    }, intervalMs);
+    this._statsSaveTimer.unref?.();
+  }
+
+  stopStatsAutosave() {
+    if (this._statsSaveTimer) {
+      clearInterval(this._statsSaveTimer);
+      this._statsSaveTimer = null;
+    }
   }
 
   async save() {
@@ -382,15 +525,42 @@ class Store extends EventEmitter {
   }
 
   recordQuery(entry) {
-    const now = new Date();
-    const hour = now.getHours();
-    const dateKey = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
-    const saved = entry.blocked ? estimateSavedBandwidth(entry.domain, entry.reason) : null;
+    const nowMs = Date.now();
+    const now = new Date(nowMs);
+    const hourEpoch = Math.floor(nowMs / HOUR_MS);
+
+    let saved = null;
+    let savedBytes = 0;
+    let bandwidthDeduplicated = false;
+    if (entry.blocked) {
+      saved = estimateSavedBandwidth(entry.domain, entry.reason);
+      const dedupeKey = `${entry.clientIp || ''}|${entry.domain || ''}`;
+      const lastSavedAt = this.recentSavedDedupe.get(dedupeKey) || 0;
+      if (nowMs - lastSavedAt >= BANDWIDTH_DEDUPE_WINDOW_MS) {
+        savedBytes = saved.bytes;
+        this.recentSavedDedupe.set(dedupeKey, nowMs);
+      } else {
+        bandwidthDeduplicated = true;
+      }
+      if (this.recentSavedDedupe.size > 4000) {
+        const cutoff = nowMs - BANDWIDTH_DEDUPE_WINDOW_MS;
+        for (const [k, ts] of this.recentSavedDedupe) {
+          if (ts < cutoff) this.recentSavedDedupe.delete(k);
+        }
+      }
+    }
+
     const record = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: `${nowMs}-${Math.random().toString(36).slice(2, 7)}`,
       timestamp: now.toISOString(),
       ...entry,
-      ...(saved ? { savedBytes: saved.bytes, category: saved.category } : {}),
+      ...(saved
+        ? {
+            savedBytes,
+            category: saved.category,
+            ...(bandwidthDeduplicated ? { bandwidthDeduplicated: true } : {}),
+          }
+        : {}),
     };
 
     this.logs.unshift(record);
@@ -398,12 +568,14 @@ class Store extends EventEmitter {
       this.logs.length = this.maxLogs;
     }
 
-    const hourBucket = this.stats.hourly[hour];
-    if (hourBucket.dateKey !== dateKey) {
-      hourBucket.total = 0;
-      hourBucket.blocked = 0;
-      hourBucket.savedBytes = 0;
-      hourBucket.dateKey = dateKey;
+    let hourBucket = this.stats.hourlyMap.get(hourEpoch);
+    if (!hourBucket) {
+      hourBucket = { total: 0, blocked: 0, savedBytes: 0 };
+      this.stats.hourlyMap.set(hourEpoch, hourBucket);
+      const minEpoch = hourEpoch - 23;
+      for (const ep of this.stats.hourlyMap.keys()) {
+        if (ep < minEpoch) this.stats.hourlyMap.delete(ep);
+      }
     }
 
     this.stats.totalQueries += 1;
@@ -413,14 +585,14 @@ class Store extends EventEmitter {
     }
     if (entry.blocked && saved) {
       this.stats.blockedQueries += 1;
-      this.stats.savedBytesTotal += saved.bytes;
+      this.stats.savedBytesTotal += savedBytes;
       hourBucket.blocked += 1;
-      hourBucket.savedBytes += saved.bytes;
+      hourBucket.savedBytes += savedBytes;
 
       const catStat = this.stats.savedByCategory[saved.category];
       if (catStat) {
         catStat.count += 1;
-        catStat.bytes += saved.bytes;
+        catStat.bytes += savedBytes;
       }
 
       const domStat = this.stats.byDomainBlocked.get(entry.domain) || {
@@ -429,7 +601,7 @@ class Store extends EventEmitter {
         category: saved.category,
       };
       domStat.count += 1;
-      domStat.savedBytes += saved.bytes;
+      domStat.savedBytes += savedBytes;
       this.stats.byDomainBlocked.set(entry.domain, domStat);
     }
 
@@ -442,11 +614,12 @@ class Store extends EventEmitter {
     clientStat.total += 1;
     if (entry.blocked && saved) {
       clientStat.blocked += 1;
-      clientStat.savedBytes += saved.bytes;
+      clientStat.savedBytes += savedBytes;
     }
     clientStat.lastSeen = record.timestamp;
     this.stats.byClient.set(entry.clientIp, clientStat);
 
+    this._statsDirty = true;
     this.emit('query', record);
   }
 
@@ -534,6 +707,24 @@ class Store extends EventEmitter {
     }
     const groupStats = [...groupStatsMap.values()];
 
+    const nowEpoch = Math.floor(Date.now() / HOUR_MS);
+    const hourly = [];
+    for (let i = 23; i >= 0; i--) {
+      const ep = nowEpoch - i;
+      const d = new Date(ep * HOUR_MS);
+      const bucket = this.stats.hourlyMap.get(ep);
+      hourly.push({
+        hour: d.getHours(),
+        hourEpoch: ep,
+        timestamp: d.toISOString(),
+        dateKey: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+        isCurrent: i === 0,
+        total: bucket ? bucket.total : 0,
+        blocked: bucket ? bucket.blocked : 0,
+        savedBytes: bucket ? bucket.savedBytes : 0,
+      });
+    }
+
     return {
       startedAt: this.stats.startedAt,
       totalQueries: this.stats.totalQueries,
@@ -557,12 +748,12 @@ class Store extends EventEmitter {
           bytes: this.stats.savedByCategory[key].bytes,
         })),
         methodology:
-          'Ước tính từ số truy vấn DNS bị chặn theo nhóm nội dung (Video/Rich Media ~750 KB, Quy tắc dịch vụ ~500 KB, Banner/Display ~180 KB, Tracker/Telemetry ~25 KB).',
+          'Ước tính từ truy vấn DNS bị chặn theo nhóm nội dung (Video/Rich Media ~750 KB, Quy tắc dịch vụ ~500 KB, Banner/Display ~180 KB, Tracker/Telemetry ~25 KB), có khử trùng lặp retry cùng thiết bị + tên miền trong 30 giây.',
       },
       topBlockedDomains,
       topClients,
       groupStats,
-      hourly: this.stats.hourly.map(({ total, blocked, savedBytes }) => ({ total, blocked, savedBytes })),
+      hourly,
     };
   }
 }
