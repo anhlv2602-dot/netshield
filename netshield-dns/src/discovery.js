@@ -209,6 +209,8 @@ const OUI_TABLE = {
   '18:0C:AC': { vendor: 'Canon Printer', hintGroup: 'iot' },
   '00:26:AB': { vendor: 'Epson Printer', hintGroup: 'iot' },
   '44:D2:44': { vendor: 'Epson Printer', hintGroup: 'iot' },
+  'C0:B5:D7': { vendor: 'Brother Printer', hintGroup: 'iot' },
+  '3C:2A:F4': { vendor: 'Brother Printer', hintGroup: 'iot' },
   'B8:27:EB': { vendor: 'Raspberry Pi', hintGroup: 'iot' },
   'DC:A6:32': { vendor: 'Raspberry Pi', hintGroup: 'iot' },
   'E4:5F:01': { vendor: 'Raspberry Pi', hintGroup: 'iot' },
