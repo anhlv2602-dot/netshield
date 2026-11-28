@@ -21,13 +21,14 @@ import java.io.FileOutputStream
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.HttpURLConnection
+import java.net.Inet6Address
 import java.net.InetAddress
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.ArrayDeque
 import java.util.Date
+import java.util.LinkedHashMap
 import java.util.Locale
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.RejectedExecutionException
@@ -43,6 +44,13 @@ data class DnsLogItem(
     val time: String
 )
 
+private data class RawDnsLog(
+    val domain: String,
+    val blocked: Boolean,
+    val reason: String,
+    val timestampMs: Long
+)
+
 data class CachedDns(
     val response: ByteArray,
     val expiresAtMs: Long
@@ -55,13 +63,19 @@ object VpnState {
     val blockedQueries = AtomicInteger(0)
 
     private val logLock = Any()
-    private val logs = ArrayDeque<DnsLogItem>(260)
+    private val logs = ArrayDeque<RawDnsLog>(260)
     private val timeFmt = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
     private val listeners = CopyOnWriteArrayList<() -> Unit>()
 
-    private const val CACHE_TTL_MS = 300_000L // 5 phút -> giảm 5 lần số lần đánh thức sóng 4G/Wi-Fi
-    private const val CACHE_MAX_SIZE = 2000
-    private val dnsCache = ConcurrentHashMap<String, CachedDns>()
+    private const val CACHE_TTL_MS = 600_000L // 10 phút -> giảm mạnh số lần đánh thức sóng 4G/Wi-Fi
+    private const val NXDOMAIN_TTL_MS = 120_000L // Cache NXDOMAIN 2 phút để tránh app retry liên tục
+    private const val CACHE_MAX_SIZE = 3000
+    private val cacheLock = Any()
+    private val dnsCache = object : LinkedHashMap<String, CachedDns>(256, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, CachedDns>?): Boolean {
+            return size > CACHE_MAX_SIZE
+        }
+    }
 
     fun addListener(cb: () -> Unit) {
         listeners.add(cb)
@@ -81,15 +95,19 @@ object VpnState {
     }
 
     fun getLogsSnapshot(): List<DnsLogItem> = synchronized(logLock) {
-        logs.toList()
+        val date = Date()
+        logs.map { raw ->
+            date.time = raw.timestampMs
+            DnsLogItem(raw.domain, raw.blocked, raw.reason, timeFmt.format(date))
+        }
     }
 
     fun record(domain: String, blocked: Boolean, reason: String) {
         totalQueries.incrementAndGet()
         if (blocked) blockedQueries.incrementAndGet()
+        val now = System.currentTimeMillis()
         synchronized(logLock) {
-            val nowStr = timeFmt.format(Date())
-            logs.addFirst(DnsLogItem(domain, blocked, reason, nowStr))
+            logs.addFirst(RawDnsLog(domain, blocked, reason, now))
             while (logs.size > 250) {
                 logs.removeLast()
             }
@@ -98,10 +116,13 @@ object VpnState {
     }
 
     fun getCachedDns(key: String, queryTxId0: Byte, queryTxId1: Byte): ByteArray? {
-        val entry = dnsCache[key] ?: return null
-        if (System.currentTimeMillis() > entry.expiresAtMs) {
-            dnsCache.remove(key)
-            return null
+        val entry = synchronized(cacheLock) {
+            val e = dnsCache[key] ?: return null
+            if (System.currentTimeMillis() > e.expiresAtMs) {
+                dnsCache.remove(key)
+                return null
+            }
+            e
         }
         val copy = entry.response.copyOf()
         if (copy.size >= 2) {
@@ -113,17 +134,23 @@ object VpnState {
 
     fun putCachedDns(key: String, response: ByteArray) {
         if (response.size < 12) return
-        // Chỉ cache phản hồi NOERROR (RCODE == 0)
+        // Cache NOERROR (0) trong 10 phút và NXDOMAIN (3) trong 2 phút
         val rcode = response[3].toInt() and 0x0F
-        if (rcode != 0) return
-        if (dnsCache.size >= CACHE_MAX_SIZE) {
-            dnsCache.clear()
+        val ttlMs = when (rcode) {
+            0 -> CACHE_TTL_MS
+            3 -> NXDOMAIN_TTL_MS
+            else -> return
         }
-        dnsCache[key] = CachedDns(response.copyOf(), System.currentTimeMillis() + CACHE_TTL_MS)
+        val entry = CachedDns(response.copyOf(), System.currentTimeMillis() + ttlMs)
+        synchronized(cacheLock) {
+            dnsCache[key] = entry
+        }
     }
 
     fun clearDnsCache() {
-        dnsCache.clear()
+        synchronized(cacheLock) {
+            dnsCache.clear()
+        }
     }
 }
 
@@ -168,6 +195,18 @@ class DnsVpnService : VpnService() {
 
     @Volatile
     private var systemDnsServers: List<InetAddress> = emptyList()
+
+    @Volatile
+    private var preferredUpstream: InetAddress? = null
+
+    @Volatile
+    private var hasIpv6Connectivity: Boolean = false
+
+    @Volatile
+    private var dohBackoffUntilMs: Long = 0L
+
+    @Volatile
+    private var lastNotifiedStandby: Boolean? = null
 
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
@@ -305,11 +344,11 @@ class DnsVpnService : VpnService() {
 
         vpnInterface = pfd
         val pool = ThreadPoolExecutor(
-            2,
-            32,
-            15L,
+            1,
+            16,
+            10L,
             TimeUnit.SECONDS,
-            LinkedBlockingQueue(256),
+            LinkedBlockingQueue(128),
             ThreadPoolExecutor.DiscardOldestPolicy()
         ).apply { allowCoreThreadTimeOut(true) }
         executor = pool
@@ -319,7 +358,7 @@ class DnsVpnService : VpnService() {
         val output = FileOutputStream(pfd.fileDescriptor)
 
         readerThread = Thread({
-            val buf = ByteArray(32767)
+            val buf = ByteArray(2048)
             var consecutiveErrors = 0
             try {
                 while (VpnState.isRunning.get() && !VpnState.isHomeLanStandby.get() && !Thread.currentThread().isInterrupted) {
@@ -340,11 +379,34 @@ class DnsVpnService : VpnService() {
                     }
                     if (len <= 0) continue
 
-                    val packetCopy = buf.copyOf(len)
+                    // Parse & xử lý trực tiếp gói chặn / trúng cache ngay trên readerThread
+                    // -> loại bỏ ~80% context-switch và cấp phát task cho ThreadPool
+                    val parsed = DnsPacketHelper.parseUdpDns(buf, len) ?: continue
+                    val (blocked, reason) = BlocklistManager.shouldBlock(parsed.domain)
+                    if (blocked) {
+                        val dnsResp = DnsPacketHelper.buildBlockedResponse(parsed.dnsPayload, parsed.qType)
+                        writeToTun(output, DnsPacketHelper.wrapUdpResponse(parsed, dnsResp))
+                        VpnState.record(parsed.domain, true, reason)
+                        continue
+                    }
+
+                    val cacheKey = "${parsed.domain}:${parsed.qType}"
+                    val cached = if (parsed.dnsPayload.size >= 2) {
+                        VpnState.getCachedDns(cacheKey, parsed.dnsPayload[0], parsed.dnsPayload[1])
+                    } else {
+                        null
+                    }
+                    if (cached != null) {
+                        writeToTun(output, DnsPacketHelper.wrapUdpResponse(parsed, cached))
+                        VpnState.record(parsed.domain, false, "Cho phép (Cache)")
+                        continue
+                    }
+
+                    // Chỉ đẩy truy vấn cần ra mạng (cache miss) vào ThreadPool
                     try {
                         pool.execute {
                             try {
-                                handlePacket(packetCopy, len, output)
+                                handleUpstreamQuery(parsed, cacheKey, reason, output)
                             } catch (_: Exception) {}
                         }
                     } catch (_: RejectedExecutionException) {
@@ -375,71 +437,65 @@ class DnsVpnService : VpnService() {
         VpnState.clearDnsCache()
     }
 
-    private fun handlePacket(packet: ByteArray, length: Int, output: FileOutputStream) {
-        val parsed = DnsPacketHelper.parseUdpDns(packet, length) ?: return
-        val (blocked, reason) = BlocklistManager.shouldBlock(parsed.domain)
-
-        val dnsResp: ByteArray
-        var finalReason = reason
-
-        if (blocked) {
-            dnsResp = DnsPacketHelper.buildBlockedResponse(parsed.dnsPayload, parsed.qType)
-        } else {
-            val cacheKey = "${parsed.domain}:${parsed.qType}"
-            val cached = if (parsed.dnsPayload.size >= 2) {
-                VpnState.getCachedDns(cacheKey, parsed.dnsPayload[0], parsed.dnsPayload[1])
-            } else {
-                null
-            }
-
-            if (cached != null) {
-                dnsResp = cached
-                finalReason = "Cho phép (Cache)"
-            } else {
-                val upstreamResp = forwardToUpstream(parsed.dnsPayload)
-                if (upstreamResp != null) {
-                    VpnState.putCachedDns(cacheKey, upstreamResp)
-                    dnsResp = upstreamResp
-                } else {
-                    // Trả SERVFAIL ngay thay vì nuốt gói -> ứng dụng không bị treo vô hạn
-                    dnsResp = DnsPacketHelper.buildServFailResponse(parsed.dnsPayload)
-                    finalReason = "Lỗi kết nối DNS"
-                }
-            }
-        }
-
-        VpnState.record(parsed.domain, blocked, finalReason)
-
-        val wrapped = DnsPacketHelper.wrapUdpResponse(parsed, dnsResp)
+    private fun writeToTun(output: FileOutputStream, packet: ByteArray) {
         synchronized(writeLock) {
             try {
-                output.write(wrapped)
+                output.write(packet)
             } catch (_: Exception) {}
         }
     }
 
+    private fun handleUpstreamQuery(
+        parsed: DnsPacketHelper.ParsedUdpDns,
+        cacheKey: String,
+        defaultReason: String,
+        output: FileOutputStream
+    ) {
+        val upstreamResp = forwardToUpstream(parsed.dnsPayload)
+        val dnsResp: ByteArray
+        val finalReason: String
+        if (upstreamResp != null) {
+            VpnState.putCachedDns(cacheKey, upstreamResp)
+            dnsResp = upstreamResp
+            finalReason = defaultReason
+        } else {
+            // Trả SERVFAIL ngay thay vì nuốt gói -> ứng dụng không bị treo vô hạn
+            dnsResp = DnsPacketHelper.buildServFailResponse(parsed.dnsPayload)
+            finalReason = "Lỗi kết nối DNS"
+        }
+
+        writeToTun(output, DnsPacketHelper.wrapUdpResponse(parsed, dnsResp))
+        VpnState.record(parsed.domain, false, finalReason)
+    }
+
     private fun forwardToUpstream(query: ByteArray): ByteArray? {
-        val candidates = ArrayList<Pair<InetAddress, Int>>(6)
-        val seen = HashSet<String>()
+        val net = activeUnderlyingNetwork ?: return null
+        val candidates = ArrayList<Pair<InetAddress, Int>>(3)
+        val seen = HashSet<String>(4)
 
-        // 1. Ưu tiên DNS của chính mạng Wi-Fi / 4G đang dùng (nhanh nhất, hỗ trợ cả NAT64/DNS64)
+        fun addCandidate(addr: InetAddress, timeoutMs: Int) {
+            if (candidates.size >= 3) return
+            if (addr is Inet6Address && !hasIpv6Connectivity) return
+            val host = addr.hostAddress ?: return
+            if (host == VIRTUAL_DNS_V4 || host == VIRTUAL_DNS_V6 || host == "127.0.0.1" || host == "::1") return
+            if (seen.add(host)) {
+                candidates.add(addr to timeoutMs)
+            }
+        }
+
+        // 1. Ưu tiên upstream phản hồi nhanh nhất gần đây (sticky)
+        preferredUpstream?.let { addCandidate(it, 750) }
+
+        // 2. DNS của chính mạng Wi-Fi / 4G đang dùng (hỗ trợ cả NAT64/DNS64)
         for (addr in systemDnsServers) {
-            val host = addr.hostAddress ?: continue
-            if (host == VIRTUAL_DNS_V4 || host == VIRTUAL_DNS_V6 || host == "127.0.0.1" || host == "::1") continue
-            if (seen.add(host)) {
-                candidates.add(addr to 900)
-            }
+            addCandidate(addr, 800)
         }
 
-        // 2. Fallback sang 1.1.1.1, 8.8.8.8 và 2606:4700:4700::1111
+        // 3. Fallback sang 1.1.1.1 / 8.8.8.8 (tối đa tổng 3 ứng viên để không giữ sóng 4G/5G lâu)
         for (addr in PUBLIC_UPSTREAMS) {
-            val host = addr.hostAddress ?: continue
-            if (seen.add(host)) {
-                candidates.add(addr to 1200)
-            }
+            addCandidate(addr, 900)
         }
 
-        val net = activeUnderlyingNetwork
         for ((addr, timeoutMs) in candidates) {
             var socket: DatagramSocket? = null
             try {
@@ -448,58 +504,63 @@ class DnsVpnService : VpnService() {
                     socket.close()
                     continue
                 }
-                if (net != null) {
-                    try {
-                        net.bindSocket(socket)
-                    } catch (_: Exception) {}
-                }
+                try {
+                    net.bindSocket(socket)
+                } catch (_: Exception) {}
                 socket.soTimeout = timeoutMs
 
                 val outPacket = DatagramPacket(query, query.size, addr, 53)
                 socket.send(outPacket)
 
-                val recvBuf = ByteArray(4096)
+                val recvBuf = ByteArray(2048)
                 val inPacket = DatagramPacket(recvBuf, recvBuf.size)
                 socket.receive(inPacket)
                 if (inPacket.length >= 12) {
+                    preferredUpstream = addr
                     return recvBuf.copyOf(inPacket.length)
                 }
             } catch (_: Exception) {
-                // Thử upstream tiếp theo
+                if (preferredUpstream == addr) {
+                    preferredUpstream = null
+                }
             } finally {
                 socket?.close()
             }
         }
 
-        // 3. Fallback cuối cùng: DNS-over-HTTPS (nếu nhà mạng 4G chặn cổng UDP 53)
-        return forwardViaDoh(query)
+        // 4. Fallback cuối cùng: DNS-over-HTTPS (có backoff 30s nếu đang mất sóng để không đốt pin)
+        if (System.currentTimeMillis() < dohBackoffUntilMs) return null
+        val dohResp = forwardViaDoh(query, net)
+        if (dohResp == null) {
+            dohBackoffUntilMs = System.currentTimeMillis() + 30_000L
+        }
+        return dohResp
     }
 
-    private fun forwardViaDoh(query: ByteArray): ByteArray? {
-        for (dohUrl in DOH_URLS) {
-            var conn: HttpURLConnection? = null
-            try {
-                val url = URL(dohUrl)
-                val net = activeUnderlyingNetwork
-                conn = (if (net != null) net.openConnection(url) else url.openConnection()) as HttpURLConnection
-                conn.requestMethod = "POST"
-                conn.connectTimeout = 2000
-                conn.readTimeout = 2500
-                conn.doOutput = true
-                conn.setRequestProperty("Content-Type", "application/dns-message")
-                conn.setRequestProperty("Accept", "application/dns-message")
-                conn.outputStream.use { it.write(query) }
-                if (conn.responseCode == 200) {
-                    val bytes = conn.inputStream.use { it.readBytes() }
-                    if (bytes.size >= 12) return bytes
-                }
-            } catch (_: Exception) {
-                // Thử DoH tiếp theo
-            } finally {
-                conn?.disconnect()
+    private fun forwardViaDoh(query: ByteArray, net: Network): ByteArray? {
+        val dohUrl = DOH_URLS.firstOrNull() ?: return null
+        var conn: HttpURLConnection? = null
+        return try {
+            val url = URL(dohUrl)
+            conn = net.openConnection(url) as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.connectTimeout = 1500
+            conn.readTimeout = 2000
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/dns-message")
+            conn.setRequestProperty("Accept", "application/dns-message")
+            conn.outputStream.use { it.write(query) }
+            if (conn.responseCode == 200) {
+                val bytes = conn.inputStream.use { it.readBytes() }
+                if (bytes.size >= 12) bytes else null
+            } else {
+                null
             }
+        } catch (_: Exception) {
+            null
+        } finally {
+            conn?.disconnect()
         }
-        return null
     }
 
     private fun refreshUnderlyingNetwork() {
@@ -525,16 +586,22 @@ class DnsVpnService : VpnService() {
         }
     }
 
-    private fun updateDnsFromLinkProperties(lp: LinkProperties?) {
-        if (lp == null) return
+    private fun updateDnsFromLinkProperties(lp: LinkProperties?): Boolean {
+        if (lp == null) return false
+        hasIpv6Connectivity = lp.linkAddresses.any {
+            val addr = it.address
+            addr is Inet6Address && !addr.isLinkLocalAddress && !addr.isLoopbackAddress
+        }
         val filtered = lp.dnsServers.filter { addr ->
             val host = addr.hostAddress ?: ""
             host.isNotEmpty() && host != VIRTUAL_DNS_V4 && host != VIRTUAL_DNS_V6 &&
                 host != "127.0.0.1" && host != "::1"
         }
-        if (filtered.isNotEmpty()) {
+        if (filtered.isNotEmpty() && filtered != systemDnsServers) {
             systemDnsServers = filtered
+            return true
         }
+        return false
     }
 
     private fun registerNetworkMonitor() {
@@ -548,26 +615,36 @@ class DnsVpnService : VpnService() {
 
         val cb = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
+                val prev = activeUnderlyingNetwork
                 activeUnderlyingNetwork = network
                 try {
                     updateDnsFromLinkProperties(cm.getLinkProperties(network))
                     if (vpnInterface != null) setUnderlyingNetworks(arrayOf(network))
                 } catch (_: Exception) {}
-                VpnState.clearDnsCache()
+                if (prev != network) {
+                    preferredUpstream = null
+                    dohBackoffUntilMs = 0L
+                    VpnState.clearDnsCache()
+                }
                 evaluateHomeLanState()
             }
 
             override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
+                var dnsChanged = false
                 if (activeUnderlyingNetwork == null || activeUnderlyingNetwork == network) {
                     activeUnderlyingNetwork = network
-                    updateDnsFromLinkProperties(linkProperties)
+                    dnsChanged = updateDnsFromLinkProperties(linkProperties)
                 }
-                evaluateHomeLanState()
+                if (dnsChanged) {
+                    evaluateHomeLanState()
+                }
             }
 
             override fun onLost(network: Network) {
                 if (activeUnderlyingNetwork == network) {
                     refreshUnderlyingNetwork()
+                    preferredUpstream = null
+                    dohBackoffUntilMs = 0L
                     val next = activeUnderlyingNetwork
                     try {
                         if (vpnInterface != null) {
@@ -596,6 +673,9 @@ class DnsVpnService : VpnService() {
     private fun stopVpn() {
         val wasRunning = VpnState.isRunning.getAndSet(false)
         VpnState.isHomeLanStandby.set(false)
+        lastNotifiedStandby = null
+        preferredUpstream = null
+        dohBackoffUntilMs = 0L
         unregisterNetworkMonitor()
         synchronized(tunLock) {
             closeTunOnly()
@@ -628,6 +708,9 @@ class DnsVpnService : VpnService() {
     }
 
     private fun updateNotification() {
+        val standby = VpnState.isHomeLanStandby.get()
+        if (lastNotifiedStandby == standby) return
+        lastNotifiedStandby = standby
         try {
             getSystemService(NotificationManager::class.java)?.notify(NOTIF_ID, buildNotification())
         } catch (_: Exception) {}

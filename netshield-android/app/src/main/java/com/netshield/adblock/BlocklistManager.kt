@@ -253,41 +253,54 @@ object BlocklistManager {
     }
 
     fun normalize(input: String): String {
-        return input.trim()
-            .lowercase()
-            .removePrefix("https://")
-            .removePrefix("http://")
-            .substringBefore("/")
-            .trim('.')
+        val trimmed = input.trim()
+        if (trimmed.isEmpty()) return ""
+        val lower = trimmed.lowercase()
+        val noScheme = when {
+            lower.startsWith("https://") -> lower.substring(8)
+            lower.startsWith("http://") -> lower.substring(7)
+            else -> lower
+        }
+        val slashIdx = noScheme.indexOf('/')
+        val host = if (slashIdx >= 0) noScheme.substring(0, slashIdx) else noScheme
+        return host.trim('.')
+    }
+
+    private fun matchesAnySuffix(domain: String, set: Set<String>): Boolean {
+        if (set.isEmpty()) return false
+        var start = 0
+        while (true) {
+            val dot = domain.indexOf('.', start)
+            if (dot < 0) break // Không kiểm tra TLD đơn lẻ
+            val candidate = if (start == 0) domain else domain.substring(start)
+            if (set.contains(candidate)) return true
+            start = dot + 1
+        }
+        return false
+    }
+
+    private fun isNormalizedDomain(s: String): Boolean {
+        if (s.isEmpty() || s[0] == '.' || s[s.length - 1] == '.') return false
+        for (i in 0 until s.length) {
+            val c = s[i]
+            if (c in 'A'..'Z' || c == '/' || c <= ' ') return false
+        }
+        return true
     }
 
     /**
      * Kiểm tra domain theo thứ tự ưu tiên: Whitelist -> Blacklist tùy chỉnh -> Blocklist tự động
+     * (Tối ưu không dùng split/ArrayList/joinToString để giảm cấp phát bộ nhớ & GC trên mỗi gói DNS)
      */
     fun shouldBlock(rawDomain: String): Pair<Boolean, String> {
-        val domain = normalize(rawDomain)
+        val domain = if (isNormalizedDomain(rawDomain)) rawDomain else normalize(rawDomain)
         if (domain.isEmpty()) return false to "invalid"
+        if (domain.indexOf('.') < 0) return false to "local"
 
-        val parts = domain.split('.')
-        if (parts.size < 2) return false to "local"
-
-        val suffixes = ArrayList<String>(parts.size - 1)
-        for (i in 0 until parts.size - 1) {
-            suffixes.add(parts.subList(i, parts.size).joinToString("."))
-        }
-
-        for (s in suffixes) {
-            if (PROTECTED_WHITELIST.contains(s)) return false to "Bảo vệ hệ thống"
-        }
-        for (s in suffixes) {
-            if (whitelist.contains(s)) return false to "Whitelist"
-        }
-        for (s in suffixes) {
-            if (blacklist.contains(s)) return true to "Chặn tay"
-        }
-        for (s in suffixes) {
-            if (remoteDomains.contains(s)) return true to "Bộ lọc QC"
-        }
+        if (matchesAnySuffix(domain, PROTECTED_WHITELIST)) return false to "Bảo vệ hệ thống"
+        if (matchesAnySuffix(domain, whitelist)) return false to "Whitelist"
+        if (matchesAnySuffix(domain, blacklist)) return true to "Chặn tay"
+        if (matchesAnySuffix(domain, remoteDomains)) return true to "Bộ lọc QC"
         return false to "Cho phép"
     }
 

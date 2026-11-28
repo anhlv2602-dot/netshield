@@ -105,10 +105,10 @@ object DnsPacketHelper {
     }
 
     /**
-     * Tạo gói phản hồi chặn chuẩn tiết kiệm pin (TTL = 300s để Android cache, tránh app retry liên tục):
-     * - A (IPv4): trả 0.0.0.0 (TTL 300s)
-     * - AAAA (IPv6): trả :: (TTL 300s)
-     * - Loại khác (HTTPS/SVCB/TXT...): trả NOERROR + SOA (TTL 300s) theo RFC 2308
+     * Tạo gói phản hồi chặn chuẩn tiết kiệm pin (TTL = 3600s để Android netd cache 1 giờ, tránh đánh thức VPN):
+     * - A (IPv4): trả 0.0.0.0 (TTL 3600s)
+     * - AAAA (IPv6): trả :: (TTL 3600s)
+     * - Loại khác (HTTPS/SVCB/TXT...): trả NOERROR + SOA (TTL 3600s) theo RFC 2308
      */
     fun buildBlockedResponse(query: ByteArray, qType: Int): ByteArray {
         if (query.size < 12) return query
@@ -133,14 +133,14 @@ object DnsPacketHelper {
             resp[p++] = 0xC0.toByte(); resp[p++] = 0x0C.toByte() // Pointer tới QNAME ở offset 12
             resp[p++] = ((qType ushr 8) and 0xFF).toByte(); resp[p++] = (qType and 0xFF).toByte()
             resp[p++] = 0x00; resp[p++] = 0x01 // Class IN
-            // TTL = 300 giây (0x0000012C)
-            resp[p++] = 0x00; resp[p++] = 0x00; resp[p++] = 0x01; resp[p++] = 0x2C.toByte()
+            // TTL = 3600 giây (0x00000E10)
+            resp[p++] = 0x00; resp[p++] = 0x00; resp[p++] = 0x0E; resp[p++] = 0x10
             // RDLENGTH = 4 hoặc 16 (RDATA mặc định toàn 0 = 0.0.0.0 hoặc ::)
             resp[p++] = 0x00; resp[p] = rdataLen.toByte()
             return resp
         }
 
-        // Các qType khác (HTTPS=65, SVCB=64...): NOERROR + SOA authority (33 bytes, TTL 300s)
+        // Các qType khác (HTTPS=65, SVCB=64...): NOERROR + SOA authority (33 bytes, TTL 3600s)
         val soaLen = 33
         val resp = ByteArray(questionEnd + soaLen)
         System.arraycopy(query, 0, resp, 0, questionEnd)
@@ -156,14 +156,14 @@ object DnsPacketHelper {
         resp[p++] = 0x00 // Root name "."
         resp[p++] = 0x00; resp[p++] = 0x06 // TYPE = SOA
         resp[p++] = 0x00; resp[p++] = 0x01 // CLASS = IN
-        resp[p++] = 0x00; resp[p++] = 0x00; resp[p++] = 0x01; resp[p++] = 0x2C.toByte() // TTL = 300
+        resp[p++] = 0x00; resp[p++] = 0x00; resp[p++] = 0x0E; resp[p++] = 0x10 // TTL = 3600
         resp[p++] = 0x00; resp[p++] = 0x16 // RDLENGTH = 22
         resp[p++] = 0x00 // MNAME = "."
         resp[p++] = 0x00 // RNAME = "."
         resp[p++] = 0x00; resp[p++] = 0x00; resp[p++] = 0x00; resp[p++] = 0x01 // SERIAL = 1
-        // REFRESH, RETRY, EXPIRE, MINIMUM = 300
+        // REFRESH, RETRY, EXPIRE, MINIMUM = 3600
         repeat(4) {
-            resp[p++] = 0x00; resp[p++] = 0x00; resp[p++] = 0x01; resp[p++] = 0x2C.toByte()
+            resp[p++] = 0x00; resp[p++] = 0x00; resp[p++] = 0x0E; resp[p++] = 0x10
         }
         return resp
     }

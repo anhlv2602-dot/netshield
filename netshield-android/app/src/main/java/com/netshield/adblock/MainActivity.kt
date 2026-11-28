@@ -85,7 +85,7 @@ class MainActivity : AppCompatActivity() {
         uiHandler.post {
             if (!refreshScheduled) {
                 refreshScheduled = true
-                uiHandler.postDelayed(refreshRunnable, 250L)
+                uiHandler.postDelayed(refreshRunnable, 500L)
             }
         }
     }
@@ -172,7 +172,6 @@ class MainActivity : AppCompatActivity() {
         btnBatteryOpt.setOnClickListener { requestBatteryOptimizationExemption() }
         statusPill.setOnClickListener { showHomeLanDialog() }
 
-        VpnState.addListener(stateListener)
         refreshUi()
         updateBatteryButtonVisibility()
 
@@ -181,15 +180,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        VpnState.addListener(stateListener)
+        refreshUi()
+    }
+
     override fun onResume() {
         super.onResume()
         updateBatteryButtonVisibility()
         refreshUi()
     }
 
-    override fun onDestroy() {
+    override fun onStop() {
         VpnState.removeListener(stateListener)
         uiHandler.removeCallbacks(refreshRunnable)
+        refreshScheduled = false
+        super.onStop()
+    }
+
+    override fun onDestroy() {
         scope.cancel()
         super.onDestroy()
     }
