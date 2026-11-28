@@ -269,7 +269,7 @@
     {
       "id": "mac:16:75:DF:04:3C:18",
       "ip": "192.168.1.86",
-      "name": "",
+      "name": "iPad (.86)",
       "groupId": "mobile",
       "mac": "16:75:DF:04:3C:18"
     },
@@ -290,23 +290,149 @@
     {
       "id": "mac:24:0B:2A:DC:FA:50",
       "ip": "192.168.1.1",
-      "name": "Router VNPT Technology",
+      "name": "Router Viettel Home Wi-Fi",
       "groupId": "iot",
       "mac": "24:0B:2A:DC:FA:50"
     },
     {
       "id": "mac:24:0B:2A:D9:7C:A2",
       "ip": "192.168.1.4",
-      "name": "VNPT Technology",
+      "name": "Viettel Home Wi-Fi 6 (vthomeap6 #1)",
       "groupId": "iot",
       "mac": "24:0B:2A:D9:7C:A2"
     },
     {
       "id": "mac:24:0B:2A:D9:B3:F4",
       "ip": "192.168.1.202",
-      "name": "VNPT Technology",
+      "name": "Viettel Home Wi-Fi 6 (vthomeap6 #2)",
       "groupId": "iot",
       "mac": "24:0B:2A:D9:B3:F4"
+    },
+    {
+      "id": "mac:62:98:B5:A4:50:23",
+      "ip": "192.168.1.5",
+      "name": "Galaxy A70",
+      "groupId": "mobile",
+      "mac": "62:98:B5:A4:50:23"
+    },
+    {
+      "id": "mac:FE:B9:7F:C0:5F:30",
+      "ip": "192.168.1.10",
+      "name": "iPad (.10)",
+      "groupId": "mobile",
+      "mac": "FE:B9:7F:C0:5F:30"
+    },
+    {
+      "id": "mac:10:A2:D3:62:F6:85",
+      "ip": "192.168.1.63",
+      "name": "iPhone của Việt Anh",
+      "groupId": "mobile",
+      "mac": "10:A2:D3:62:F6:85"
+    },
+    {
+      "id": "mac:52:78:D7:3D:B0:47",
+      "ip": "192.168.1.73",
+      "name": "iPhone (.73)",
+      "groupId": "mobile",
+      "mac": "52:78:D7:3D:B0:47"
+    },
+    {
+      "id": "mac:2A:F3:D1:B9:8C:F0",
+      "ip": "192.168.1.87",
+      "name": "HONOR Magic V5",
+      "groupId": "mobile",
+      "mac": "2A:F3:D1:B9:8C:F0"
+    },
+    {
+      "id": "mac:C6:70:2A:8A:CE:01",
+      "ip": "192.168.1.115",
+      "name": "Galaxy A12",
+      "groupId": "mobile",
+      "mac": "C6:70:2A:8A:CE:01"
+    },
+    {
+      "id": "mac:FE:B3:98:64:9E:5A",
+      "ip": "192.168.1.172",
+      "name": "iPad (.172)",
+      "groupId": "mobile",
+      "mac": "FE:B3:98:64:9E:5A"
+    },
+    {
+      "id": "mac:66:BE:2A:8C:CA:ED",
+      "ip": "192.168.1.175",
+      "name": "iQOO Z9 Turbo",
+      "groupId": "mobile",
+      "mac": "66:BE:2A:8C:CA:ED"
+    },
+    {
+      "id": "mac:98:60:CA:B1:42:C2",
+      "ip": "192.168.1.180",
+      "name": "iPhone (.180)",
+      "groupId": "mobile",
+      "mac": "98:60:CA:B1:42:C2"
+    },
+    {
+      "id": "mac:44:91:60:C6:B0:69",
+      "ip": "192.168.1.235",
+      "name": "Galaxy Note 9",
+      "groupId": "mobile",
+      "mac": "44:91:60:C6:B0:69"
+    },
+    {
+      "id": "mac:0C:A6:4C:32:77:C1",
+      "ip": "192.168.1.75",
+      "name": "Camera Ezviz H80x",
+      "groupId": "camera",
+      "mac": "0C:A6:4C:32:77:C1"
+    },
+    {
+      "id": "mac:78:A6:A0:11:60:AE",
+      "ip": "192.168.1.112",
+      "name": "Camera F40924452",
+      "groupId": "camera",
+      "mac": "78:A6:A0:11:60:AE"
+    },
+    {
+      "id": "mac:78:A6:A0:26:1F:53",
+      "ip": "192.168.1.113",
+      "name": "Camera F50093540",
+      "groupId": "camera",
+      "mac": "78:A6:A0:26:1F:53"
+    },
+    {
+      "id": "mac:58:8F:CF:8C:C7:67",
+      "ip": "192.168.1.158",
+      "name": "Camera K42516990",
+      "groupId": "camera",
+      "mac": "58:8F:CF:8C:C7:67"
+    },
+    {
+      "id": "mac:58:8F:CF:8C:C7:80",
+      "ip": "192.168.1.182",
+      "name": "Camera K42517015",
+      "groupId": "camera",
+      "mac": "58:8F:CF:8C:C7:80"
+    },
+    {
+      "id": "mac:50:02:91:4A:C3:B9",
+      "ip": "192.168.1.91",
+      "name": "ESP_4AC3B9 (SmartHome)",
+      "groupId": "iot",
+      "mac": "50:02:91:4A:C3:B9"
+    },
+    {
+      "id": "mac:48:3F:DA:9B:BF:A3",
+      "ip": "192.168.1.145",
+      "name": "ESP_9BBFA3 (SmartHome)",
+      "groupId": "iot",
+      "mac": "48:3F:DA:9B:BF:A3"
+    },
+    {
+      "id": "mac:4C:A0:3D:4B:42:87",
+      "ip": "192.168.1.157",
+      "name": "Công tắc Hunonic (IoT)",
+      "groupId": "iot",
+      "mac": "4C:A0:3D:4B:42:87"
     }
   ],
   "clientRules": []
