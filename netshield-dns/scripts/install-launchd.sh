@@ -13,6 +13,16 @@ fi
 TARGET_USER="${SUDO_USER:-anhlv2602}"
 TARGET_UID="$(id -u "$TARGET_USER")"
 TARGET_GID="$(id -g "$TARGET_USER")"
+NODE_BIN="$(command -v node 2>/dev/null || true)"
+if [[ -z "$NODE_BIN" ]]; then
+  for p in /opt/homebrew/bin/node /usr/local/bin/node; do
+    [[ -x "$p" ]] && NODE_BIN="$p" && break
+  done
+fi
+if [[ -z "$NODE_BIN" ]]; then
+  echo "❌ Không tìm thấy binary Node.js (/opt/homebrew/bin/node hoặc /usr/local/bin/node)."
+  exit 1
+fi
 
 mkdir -p "$APP_DIR/data/blocklists-cache"
 chown -R "$TARGET_UID:$TARGET_GID" "$APP_DIR/data"
@@ -30,7 +40,7 @@ cat > "$PLIST_PATH" <<EOF
   <string>com.local.netshield-dns</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/local/bin/node</string>
+    <string>$NODE_BIN</string>
     <string>$APP_DIR/src/index.js</string>
   </array>
   <key>WorkingDirectory</key>
