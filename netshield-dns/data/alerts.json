@@ -1,5 +1,18 @@
 [
   {
+    "id": "alt-1795847067148-a083",
+    "timestamp": "2026-11-28T06:24:27.148Z",
+    "type": "threat_hit",
+    "severity": "high",
+    "title": "Chặn tấn công DNS Rebinding",
+    "message": "Máy tính Windows (192.168.1.199) đã gọi tới dns.msftncsi.com (Chống DNS Rebinding (fd3e:4f5a:5b81::1))",
+    "clientIp": "192.168.1.199",
+    "mac": "22:48:4D:06:CB:A9",
+    "domain": "dns.msftncsi.com",
+    "reason": "Chống DNS Rebinding (fd3e:4f5a:5b81::1)",
+    "acknowledged": false
+  },
+  {
     "id": "alt-1795846112873-w7jd",
     "timestamp": "2026-11-28T06:08:32.873Z",
     "type": "threat_hit",
