@@ -12,6 +12,8 @@
     "cnameCloakingGuard": true,
     "antiBypass": true,
     "blockDnsTunneling": true,
+    "vnImpersonationMode": "block",
+    "dgaBeaconingGuard": true,
     "autoQuarantineOnAnomaly": true,
     "quarantineDurationMin": 15,
     "activeLanSweep": true,
@@ -681,6 +683,13 @@
       "name": "Máy tính Windows",
       "groupId": "computer",
       "mac": "28:F3:66:F4:AD:5A"
+    },
+    {
+      "id": "mac:8E:3B:29:69:E7:99",
+      "ip": "192.168.1.135",
+      "name": "iPhone / iPad",
+      "groupId": "mobile",
+      "mac": "8E:3B:29:69:E7:99"
     }
   ],
   "clientRules": [
