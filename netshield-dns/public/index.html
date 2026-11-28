@@ -4,240 +4,790 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
+  <script>
+    try {
+      const saved = localStorage.getItem('color-scheme');
+      if (saved === 'light' || saved === 'dark') {
+        document.querySelector('meta[name="color-scheme"]').content = saved;
+      }
+    } catch {}
+  </script>
   <title>NetShield DNS — Quản trị Chặn Quảng Cáo Mạng LAN</title>
   <style>
     :root {
-      --bg-light: #f4f6f9;
-      --bg-dark: #0f141c;
-      --surface-light: #ffffff;
-      --surface-dark: #18202c;
-      --surface-alt-light: #eef2f7;
-      --surface-alt-dark: #202a3a;
-      --border-light: #dce3ec;
-      --border-dark: #2b374a;
-      --text-light: #121826;
-      --text-dark: #edf2f7;
-      --muted-light: #5c687a;
-      --muted-dark: #94a3b8;
-      --accent-light: #1d4ed8;
-      --accent-dark: #60a5fa;
-      --success-light: #15803d;
-      --success-dark: #4ade80;
-      --danger-light: #b91c1c;
-      --danger-dark: #f87171;
-      --warn-light: #b45309;
-      --warn-dark: #fbbf24;
+      color-scheme: light dark;
 
+      /* Palette tokens */
+      --bg-light: #f5f7fb;
+      --bg-dark: #0a0e17;
+      --surface-light: #ffffff;
+      --surface-dark: #111827;
+      --surface-alt-light: #f1f5f9;
+      --surface-alt-dark: #1a2234;
+      --surface-hover-light: #e8eef6;
+      --surface-hover-dark: #222d43;
+      --sidebar-light: #ffffff;
+      --sidebar-dark: #0d1320;
+      --border-light: #e2e8f0;
+      --border-dark: #1f2b3f;
+      --border-strong-light: #cbd5e1;
+      --border-strong-dark: #30405b;
+
+      --text-light: #0f172a;
+      --text-dark: #f1f5f9;
+      --text-secondary-light: #334155;
+      --text-secondary-dark: #cbd5e1;
+      --muted-light: #64748b;
+      --muted-dark: #8b9bb4;
+
+      --accent-light: #2563eb;
+      --accent-dark: #3b82f6;
+      --accent-fg-light: #ffffff;
+      --accent-fg-dark: #ffffff;
+      --accent-soft-light: #eff6ff;
+      --accent-soft-dark: rgba(59, 130, 246, 0.14);
+
+      --success-light: #059669;
+      --success-dark: #34d399;
+      --success-soft-light: #ecfdf5;
+      --success-soft-dark: rgba(52, 211, 153, 0.14);
+
+      --danger-light: #dc2626;
+      --danger-dark: #fb7185;
+      --danger-soft-light: #fef2f2;
+      --danger-soft-dark: rgba(251, 113, 133, 0.14);
+
+      --warn-light: #d97706;
+      --warn-dark: #fbbf24;
+      --warn-soft-light: #fffbeb;
+      --warn-soft-dark: rgba(251, 191, 36, 0.14);
+
+      --shadow-sm-light: 0 1px 2px rgba(15, 23, 42, 0.05);
+      --shadow-sm-dark: 0 1px 2px rgba(0, 0, 0, 0.35);
+      --shadow-md-light: 0 8px 24px -4px rgba(15, 23, 42, 0.09), 0 2px 6px -1px rgba(15, 23, 42, 0.05);
+      --shadow-md-dark: 0 12px 28px -4px rgba(0, 0, 0, 0.55), 0 2px 8px -1px rgba(0, 0, 0, 0.35);
+
+      /* Resolved defaults (fallback when light-dark() unsupported) */
       --bg: var(--bg-light);
       --surface: var(--surface-light);
       --surface-alt: var(--surface-alt-light);
+      --surface-hover: var(--surface-hover-light);
+      --sidebar: var(--sidebar-light);
       --border: var(--border-light);
+      --border-strong: var(--border-strong-light);
       --text: var(--text-light);
+      --text-secondary: var(--text-secondary-light);
       --muted: var(--muted-light);
       --accent: var(--accent-light);
+      --accent-fg: var(--accent-fg-light);
+      --accent-soft: var(--accent-soft-light);
       --success: var(--success-light);
+      --success-soft: var(--success-soft-light);
       --danger: var(--danger-light);
+      --danger-soft: var(--danger-soft-light);
       --warn: var(--warn-light);
+      --warn-soft: var(--warn-soft-light);
+      --shadow-sm: var(--shadow-sm-light);
+      --shadow-md: var(--shadow-md-light);
 
-      @media (prefers-color-scheme: dark) {
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --sidebar-w: 256px;
+
+      accent-color: var(--accent);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    :root:has(> head > meta[name="color-scheme"][content="dark"]) {
+      color-scheme: dark;
+    }
+    :root:has(> head > meta[name="color-scheme"][content="light"]) {
+      color-scheme: light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
         --bg: var(--bg-dark);
         --surface: var(--surface-dark);
         --surface-alt: var(--surface-alt-dark);
+        --surface-hover: var(--surface-hover-dark);
+        --sidebar: var(--sidebar-dark);
         --border: var(--border-dark);
+        --border-strong: var(--border-strong-dark);
         --text: var(--text-dark);
+        --text-secondary: var(--text-secondary-dark);
         --muted: var(--muted-dark);
         --accent: var(--accent-dark);
+        --accent-soft: var(--accent-soft-dark);
         --success: var(--success-dark);
+        --success-soft: var(--success-soft-dark);
         --danger: var(--danger-dark);
+        --danger-soft: var(--danger-soft-dark);
         --warn: var(--warn-dark);
+        --warn-soft: var(--warn-soft-dark);
+        --shadow-sm: var(--shadow-sm-dark);
+        --shadow-md: var(--shadow-md-dark);
       }
+    }
 
-      @supports (color: light-dark(white, black)) {
+    @supports (color: light-dark(white, black)) {
+      :root {
         --bg: light-dark(var(--bg-light), var(--bg-dark));
         --surface: light-dark(var(--surface-light), var(--surface-dark));
         --surface-alt: light-dark(var(--surface-alt-light), var(--surface-alt-dark));
+        --surface-hover: light-dark(var(--surface-hover-light), var(--surface-hover-dark));
+        --sidebar: light-dark(var(--sidebar-light), var(--sidebar-dark));
         --border: light-dark(var(--border-light), var(--border-dark));
+        --border-strong: light-dark(var(--border-strong-light), var(--border-strong-dark));
         --text: light-dark(var(--text-light), var(--text-dark));
+        --text-secondary: light-dark(var(--text-secondary-light), var(--text-secondary-dark));
         --muted: light-dark(var(--muted-light), var(--muted-dark));
         --accent: light-dark(var(--accent-light), var(--accent-dark));
+        --accent-soft: light-dark(var(--accent-soft-light), var(--accent-soft-dark));
         --success: light-dark(var(--success-light), var(--success-dark));
+        --success-soft: light-dark(var(--success-soft-light), var(--success-soft-dark));
         --danger: light-dark(var(--danger-light), var(--danger-dark));
+        --danger-soft: light-dark(var(--danger-soft-light), var(--danger-soft-dark));
         --warn: light-dark(var(--warn-light), var(--warn-dark));
+        --warn-soft: light-dark(var(--warn-soft-light), var(--warn-soft-dark));
       }
-
-      color-scheme: light dark;
-      accent-color: var(--accent);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    * { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; }
+
     body {
       margin: 0;
       background: var(--bg);
       color: var(--text);
       line-height: 1.5;
+      font-size: 14px;
     }
 
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 1rem 1.5rem;
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    code, .mono {
+      font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.88em;
+    }
+
+    .tabular {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ================= APP SHELL ================= */
+    .app-shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+      min-height: 100dvh;
+    }
+
+    /* Sidebar */
+    aside.sidebar {
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
       display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
+      flex-direction: column;
       position: sticky;
       top: 0;
-      z-index: 20;
+      height: 100dvh;
+      padding: 1.1rem 0.85rem;
+      gap: 1.1rem;
+      z-index: 30;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.7rem;
+      padding: 0.25rem 0.45rem;
+    }
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
     }
     .brand h1 {
       margin: 0;
-      font-size: 1.15rem;
+      font-size: 1rem;
       font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
     }
-    .brand small {
+    .brand-sub {
       color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    nav.tabs {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      flex: 1;
+    }
+    .nav-section-label {
+      font-size: 0.69rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      padding: 0.35rem 0.65rem 0.25rem;
+    }
+    nav.tabs button {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      width: 100%;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      color: var(--text-secondary);
+      padding: 0.6rem 0.75rem;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      transition: background 150ms ease, color 150ms ease, border-color 150ms ease, scale 120ms ease;
+    }
+    nav.tabs button svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      opacity: 0.78;
+      transition: opacity 150ms ease;
+    }
+    nav.tabs button:hover {
+      background: var(--surface-alt);
+      color: var(--text);
+    }
+    nav.tabs button:active {
+      scale: 0.985;
+    }
+    nav.tabs button[aria-selected="true"] {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+      border-color: color-mix(in srgb, var(--accent) 22%, transparent);
+    }
+    nav.tabs button[aria-selected="true"] svg {
+      opacity: 1;
+    }
+    .nav-badge {
+      margin-left: auto;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      background: var(--surface-alt);
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    nav.tabs button[aria-selected="true"] .nav-badge {
+      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      color: var(--accent);
+    }
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      margin-left: auto;
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 55%, transparent);
+      animation: pulse-dot 2s infinite;
+    }
+    .live-dot.paused {
+      background: var(--warn);
+      animation: none;
+    }
+    @keyframes pulse-dot {
+      0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 50%, transparent); }
+      70% { box-shadow: 0 0 0 6px transparent; }
+      100% { box-shadow: 0 0 0 0 transparent; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .live-dot { animation: none; }
+    }
+
+    /* Sidebar footer status card */
+    .sidebar-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+    .server-mini {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.65rem 0.75rem;
+      font-size: 0.76rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .server-mini-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text);
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .server-mini code {
+      color: var(--text-secondary);
+      font-size: 0.75rem;
       display: block;
+      white-space: pre-line;
+      overflow-wrap: break-word;
+    }
+
+    .theme-quick-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      width: 100%;
+      padding: 0.45rem 0.7rem;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
       font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 150ms ease, border-color 150ms ease, scale 120ms ease;
+    }
+    .theme-quick-btn:hover {
+      background: var(--surface-alt);
+      border-color: var(--border-strong);
+      color: var(--text);
+    }
+    .theme-quick-btn:active { scale: 0.98; }
+
+    /* Main Workspace */
+    .workspace {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    header.topbar {
+      background: color-mix(in srgb, var(--surface) 88%, transparent);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.85rem 1.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.85rem;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .page-heading {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+    }
+    .page-heading h2 {
+      margin: 0;
+      font-size: 1.12rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+    }
+    .page-heading p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--muted);
     }
 
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.6rem;
       flex-wrap: wrap;
     }
 
     .pill {
-      padding: 0.3rem 0.7rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.34rem 0.75rem;
       border-radius: 999px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 600;
       border: 1px solid var(--border);
       background: var(--surface-alt);
     }
-    .pill.ok { color: var(--success); border-color: var(--success); }
-    .pill.off { color: var(--danger); border-color: var(--danger); }
-
-    nav.tabs {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 0 1.5rem;
-      display: flex;
-      gap: 0.25rem;
-      overflow-x: auto;
+    .pill::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
     }
-    nav.tabs button {
-      background: transparent;
-      border: none;
-      border-bottom: 2px solid transparent;
-      color: var(--muted);
-      padding: 0.8rem 1rem;
-      font-size: 0.92rem;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
+    .pill.ok {
+      color: var(--success);
+      background: var(--success-soft);
+      border-color: color-mix(in srgb, var(--success) 32%, transparent);
     }
-    nav.tabs button[aria-selected="true"] {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
+    .pill.off {
+      color: var(--danger);
+      background: var(--danger-soft);
+      border-color: color-mix(in srgb, var(--danger) 32%, transparent);
     }
 
     main {
-      max-width: 1200px;
+      width: 100%;
+      max-width: 1320px;
       margin: 0 auto;
-      padding: 1.25rem;
+      padding: 1.4rem 1.75rem 2.5rem;
     }
 
     .panel { display: none; }
-    .panel.active { display: block; }
+    .panel.active {
+      display: block;
+      animation: panel-in 180ms ease-out;
+    }
+    @keyframes panel-in {
+      from { opacity: 0; translate: 0 4px; }
+      to { opacity: 1; translate: 0 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .panel.active { animation: none; }
+    }
 
-    .grid-4 {
+    /* ================= CARDS & GRIDS ================= */
+    .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0.9rem;
       margin-bottom: 1.25rem;
     }
+    @media (max-width: 1220px) {
+      .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 680px) {
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
     .grid-2 {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.1rem;
       margin-bottom: 1.25rem;
+    }
+    @media (max-width: 980px) {
+      .grid-2 { grid-template-columns: 1fr; }
     }
 
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1rem 1.2rem;
+      border-radius: var(--radius-lg);
+      padding: 1.15rem 1.3rem;
+      box-shadow: var(--shadow-sm);
     }
-    .card h2 {
-      margin: 0 0 0.75rem;
-      font-size: 1rem;
+    .card-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.95rem;
     }
+    .card h2, .card h3 {
+      margin: 0;
+      font-size: 0.98rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .card-desc {
+      margin: 0.2rem 0 0;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    /* KPI Card */
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.1rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.45rem;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+    .kpi-card:hover {
+      border-color: var(--border-strong);
+      box-shadow: var(--shadow-md);
+    }
+    .kpi-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .kpi-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      background: var(--surface-alt);
+      color: var(--muted);
+    }
+    .kpi-icon.accent { background: var(--accent-soft); color: var(--accent); }
+    .kpi-icon.danger { background: var(--danger-soft); color: var(--danger); }
+    .kpi-icon.success { background: var(--success-soft); color: var(--success); }
+    .kpi-icon.warn { background: var(--warn-soft); color: var(--warn); }
+
     .stat-label {
       color: var(--muted);
-      font-size: 0.85rem;
+      font-size: 0.79rem;
+      font-weight: 500;
     }
     .stat-sub {
       color: var(--muted);
-      font-size: 0.76rem;
-      margin-top: 0.25rem;
+      font-size: 0.74rem;
+      line-height: 1.35;
     }
     .stat-value {
-      font-size: 1.85rem;
-      font-weight: 700;
-      margin-top: 0.25rem;
+      font-size: 1.65rem;
+      font-weight: 750;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
     }
     .stat-value.danger { color: var(--danger); }
     .stat-value.success { color: var(--success); }
     .stat-value.accent { color: var(--accent); }
     .stat-value.warn { color: var(--warn); }
 
-    /* Bandwidth Chart */
-    .chart-card {
-      margin-bottom: 1.25rem;
-    }
-    .chart-header {
-      display: flex;
-      flex-wrap: wrap;
+    /* ================= BUTTONS & INPUTS ================= */
+    button.btn {
+      display: inline-flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      margin-bottom: 0.85rem;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 0.83rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, scale 120ms ease;
     }
-    .chart-header h2 {
+    button.btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+    button.btn:hover:not(:disabled) {
+      background: var(--surface-alt);
+      border-color: var(--border-strong);
+      box-shadow: var(--shadow-sm);
+    }
+    button.btn:active:not(:disabled) { scale: 0.97; }
+
+    button.btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    button.btn.primary:hover:not(:disabled) {
+      filter: brightness(1.08);
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 32%, transparent);
+    }
+
+    button.btn.danger {
+      color: var(--danger);
+      border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+      background: transparent;
+    }
+    button.btn.danger:hover:not(:disabled) {
+      background: var(--danger-soft);
+      border-color: var(--danger);
+    }
+
+    button.btn.success {
+      color: var(--success);
+      border-color: color-mix(in srgb, var(--success) 35%, var(--border));
+      background: transparent;
+    }
+    button.btn.success:hover:not(:disabled) {
+      background: var(--success-soft);
+      border-color: var(--success);
+    }
+
+    button.btn.ghost {
+      background: transparent;
+      border-color: transparent;
+      color: var(--muted);
+    }
+    button.btn.ghost:hover:not(:disabled) {
+      background: var(--surface-alt);
+      color: var(--text);
+      box-shadow: none;
+    }
+
+    button.btn.sm {
+      padding: 0.3rem 0.62rem;
+      font-size: 0.77rem;
+      border-radius: 7px;
+    }
+    button.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    input[type="text"], input[type="url"], input[type="time"], select, textarea {
+      width: 100%;
+      padding: 0.52rem 0.75rem;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      color: var(--text);
+      font-size: 0.86rem;
+      font-family: inherit;
+      transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+    }
+    input[type="text"]:hover, input[type="url"]:hover, input[type="time"]:hover, select:hover {
+      border-color: var(--border-strong);
+    }
+    input[type="text"]:focus, input[type="url"]:focus, input[type="time"]:focus, select:focus {
+      background: var(--surface);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+      outline: none;
+    }
+
+    .row {
+      display: flex;
+      gap: 0.55rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .row > input { flex: 1; min-width: 180px; }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.32rem;
+    }
+    .field label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* Accessible Toggle Switch */
+    .switch-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    input.switch {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 36px;
+      height: 20px;
+      border-radius: 999px;
+      background: var(--border-strong);
+      position: relative;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 160ms ease;
       margin: 0;
     }
+    input.switch::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+      transition: translate 160ms ease;
+    }
+    input.switch:checked {
+      background: var(--accent);
+    }
+    input.switch:checked::after {
+      translate: 16px 0;
+    }
+
+    /* Segmented Control */
     .segmented {
       display: inline-flex;
       background: var(--surface-alt);
       border: 1px solid var(--border);
-      border-radius: 9px;
-      padding: 0.2rem;
+      border-radius: 10px;
+      padding: 0.22rem;
       gap: 0.2rem;
     }
     .segmented button {
       border: none;
       background: transparent;
       color: var(--muted);
-      padding: 0.32rem 0.65rem;
+      padding: 0.34rem 0.72rem;
       border-radius: 7px;
-      font-size: 0.8rem;
+      font-size: 0.79rem;
       font-weight: 600;
       cursor: pointer;
+      transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
     }
-    .segmented button[aria-pressed="true"] {
+    .segmented button:hover { color: var(--text); }
+    .segmented button[aria-pressed="true"],
+    .segmented button[aria-selected="true"] {
       background: var(--surface);
       color: var(--text);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ================= BANDWIDTH CHART ================= */
+    .chart-card { margin-bottom: 1.25rem; }
+    .chart-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
     }
     .chart-stage {
       position: relative;
@@ -247,29 +797,33 @@
       display: block;
       width: 100%;
       height: auto;
-      max-height: 280px;
+      max-height: 270px;
       overflow: visible;
     }
     .chart-grid-line {
       stroke: var(--border);
-      stroke-dasharray: 3 3;
+      stroke-dasharray: 3 4;
       stroke-width: 1;
     }
     .chart-axis-text {
       fill: var(--muted);
       font-size: 11px;
       font-family: inherit;
+      font-variant-numeric: tabular-nums;
     }
     .chart-bar {
-      transition: opacity 0.15s ease;
+      transition: opacity 150ms ease, filter 150ms ease;
     }
     .chart-hit {
       cursor: pointer;
       outline: none;
     }
+    .chart-hit:hover {
+      fill: color-mix(in srgb, var(--accent) 7%, transparent);
+    }
     .chart-hit:hover + .chart-bar,
     .chart-hit:focus-visible + .chart-bar {
-      filter: brightness(1.15);
+      filter: brightness(1.12);
     }
     .chart-hit:focus-visible {
       stroke: var(--accent);
@@ -277,224 +831,262 @@
     }
     .chart-tooltip {
       position: absolute;
-      top: 0.25rem;
+      top: 0.2rem;
       right: 0.5rem;
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.45rem 0.7rem;
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      padding: 0.55rem 0.8rem;
       font-size: 0.8rem;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+      box-shadow: var(--shadow-md);
       pointer-events: none;
       opacity: 0;
-      transition: opacity 0.15s ease;
+      transition: opacity 150ms ease;
       z-index: 5;
-      max-width: 260px;
+      min-width: 205px;
     }
-    .chart-tooltip.visible {
-      opacity: 1;
-    }
+    .chart-tooltip.visible { opacity: 1; }
+
     .cat-bar {
       display: flex;
-      height: 10px;
+      height: 8px;
       border-radius: 999px;
       overflow: hidden;
       background: var(--surface-alt);
-      margin: 0.9rem 0 0.65rem;
+      margin: 1rem 0 0.7rem;
       gap: 2px;
     }
     .cat-seg {
       height: 100%;
-      min-width: 3px;
-      transition: width 0.25s ease;
+      min-width: 4px;
+      transition: width 250ms ease;
     }
     .cat-legend {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 0.5rem 1rem;
-      font-size: 0.82rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.5rem;
+      font-size: 0.8rem;
     }
     .cat-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 0.5rem;
-      padding: 0.35rem 0.55rem;
+      padding: 0.42rem 0.65rem;
       border-radius: 8px;
       background: var(--surface-alt);
+      border: 1px solid var(--border);
     }
     .cat-dot {
-      width: 9px;
-      height: 9px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       flex-shrink: 0;
     }
     .chart-note {
-      margin: 0.75rem 0 0;
+      margin: 0.8rem 0 0;
       color: var(--muted);
-      font-size: 0.77rem;
+      font-size: 0.75rem;
+      line-height: 1.45;
     }
 
-    /* Device Groups */
-    .group-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 0.85rem;
-      margin-bottom: 1rem;
-    }
-    .group-card {
-      background: var(--surface-alt);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.85rem 1rem;
+    /* ================= RANKING LISTS (TOP BLOCKED & TOP CLIENTS) ================= */
+    .rank-list {
       display: flex;
       flex-direction: column;
-      gap: 0.45rem;
+      gap: 0.35rem;
+      max-height: 430px;
+      overflow-y: auto;
+      padding-right: 0.2rem;
     }
-    .group-card-head {
+    .rank-row {
+      position: relative;
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
-      gap: 0.5rem;
+      gap: 0.75rem;
+      padding: 0.52rem 0.7rem;
+      border-radius: 9px;
+      border: 1px solid transparent;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 140ms ease, background 140ms ease;
     }
-    .group-title {
-      font-weight: 700;
-      font-size: 0.96rem;
+    .rank-row:hover {
+      border-color: var(--border);
+      background: var(--surface-alt);
+    }
+    .rank-bar {
+      position: absolute;
+      inset: 0 auto 0 0;
+      background: var(--accent-soft);
+      pointer-events: none;
+      z-index: 0;
+      border-radius: 9px;
+    }
+    .rank-bar.danger { background: var(--danger-soft); }
+    .rank-main, .rank-stats {
+      position: relative;
+      z-index: 1;
+    }
+    .rank-main {
+      min-width: 0;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.12rem;
+    }
+    .rank-primary {
       display: flex;
       align-items: center;
       gap: 0.4rem;
-    }
-    .group-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0.12rem 0.45rem;
-      border-radius: 6px;
-      font-size: 0.75rem;
       font-weight: 600;
-      background: var(--surface-alt);
-      border: 1px solid var(--border);
+      font-size: 0.85rem;
       color: var(--text);
+      min-width: 0;
     }
-    .device-row {
-      display: grid;
-      grid-template-columns: minmax(190px, 250px) minmax(150px, 1fr) minmax(175px, 210px) auto;
-      gap: 0.5rem;
-      align-items: center;
-      padding: 0.65rem 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .disc-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.25rem;
-      margin-top: 0.3rem;
-    }
-    .disc-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.2rem;
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 0.1rem 0.42rem;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: var(--surface-alt);
-      color: var(--muted);
-      max-width: 230px;
+    .rank-domain {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .disc-tag.info {
-      color: var(--accent);
-      border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+    .rank-sub {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    .disc-tag.warn {
-      color: var(--warn);
-      border-color: color-mix(in srgb, var(--warn) 40%, var(--border));
+    .rank-stats {
+      text-align: right;
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.08rem;
     }
-    .disc-suggest {
+    .rank-count {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+    .rank-meta {
       font-size: 0.74rem;
       color: var(--muted);
-      margin-top: 0.25rem;
-    }
-    @media (max-width: 720px) {
-      .device-row {
-        grid-template-columns: 1fr;
-      }
     }
 
-    button.btn {
-      padding: 0.5rem 0.9rem;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--surface-alt);
-      color: var(--text);
-      font-weight: 600;
-      font-size: 0.85rem;
-      cursor: pointer;
-    }
-    button.btn.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
-    button.btn.danger {
-      color: var(--danger);
-      border-color: var(--danger);
-      background: transparent;
-    }
-    button.btn.success {
-      color: var(--success);
-      border-color: var(--success);
-      background: transparent;
-    }
-    button.btn.sm {
-      padding: 0.25rem 0.55rem;
-      font-size: 0.78rem;
-    }
-    button.btn:disabled { opacity: 0.55; cursor: not-allowed; }
-
-    input[type="text"], input[type="url"], input[type="time"], select, textarea {
-      width: 100%;
-      padding: 0.5rem 0.7rem;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--surface-alt);
-      color: var(--text);
-      font-size: 0.9rem;
-    }
-
-    .row {
-      display: flex;
-      gap: 0.5rem;
+    /* ================= BADGES & CHIPS ================= */
+    .badge {
+      display: inline-flex;
       align-items: center;
-      flex-wrap: wrap;
+      gap: 0.3rem;
+      padding: 0.16rem 0.52rem;
+      border-radius: 999px;
+      font-size: 0.73rem;
+      font-weight: 600;
+      white-space: nowrap;
     }
-    .row > input { flex: 1; min-width: 180px; }
+    .badge.blocked { background: var(--danger-soft); color: var(--danger); }
+    .badge.allowed { background: var(--success-soft); color: var(--success); }
+    .badge.cached { background: var(--accent-soft); color: var(--accent); }
+    .badge.warn { background: var(--warn-soft); color: var(--warn); }
+    .badge.muted { background: var(--surface-alt); color: var(--muted); border: 1px solid var(--border); }
 
-    /* Responsive Table (modern-web-guidance: responsive-table) */
+    .group-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.1rem 0.46rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.26rem 0.58rem;
+      border-radius: 8px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+    .chip button {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 700;
+      padding: 0 0.15rem;
+      border-radius: 4px;
+      line-height: 1;
+      transition: color 120ms ease, background 120ms ease;
+    }
+    .chip button:hover {
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    /* ================= RESPONSIVE TABLE (LOGS) ================= */
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 220px;
+    }
+    .search-wrap svg {
+      position: absolute;
+      left: 0.72rem;
+      top: 50%;
+      translate: 0 -50%;
+      width: 15px;
+      height: 15px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+    .search-wrap input {
+      padding-left: 2.2rem;
+    }
+
     .table-wrapper {
       overflow: auto;
       max-inline-size: 100%;
-      max-block-size: min(560px, 72vh);
+      max-block-size: min(620px, 72vh);
       container-type: inline-size;
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius-md);
+      background: var(--surface);
     }
     table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      font-size: 0.87rem;
+      font-size: 0.84rem;
     }
     caption {
       text-align: left;
-      padding: 0.65rem 0.85rem;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.78rem;
       font-weight: 600;
       color: var(--muted);
-      background: var(--surface);
+      background: var(--surface-alt);
       border-bottom: 1px solid var(--border);
     }
     thead {
@@ -503,8 +1095,16 @@
       z-index: 2;
       background: var(--surface-alt);
     }
+    thead th {
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      padding: 0.62rem 0.85rem;
+    }
     th, td {
-      padding: 0.55rem 0.75rem;
+      padding: 0.58rem 0.85rem;
       text-align: left;
       border-bottom: 1px solid var(--border);
       vertical-align: middle;
@@ -513,29 +1113,19 @@
       font-weight: 600;
       background: var(--surface);
       word-break: break-all;
+      font-family: "SF Mono", ui-monospace, Menlo, monospace;
+      font-size: 0.81rem;
     }
-    tbody tr:hover td, tbody tr:hover th {
-      background: var(--surface-alt);
-    }
+    tbody tr:last-child th, tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td, tbody tr:hover th { background: var(--surface-alt); }
 
-    .badge {
-      display: inline-block;
-      padding: 0.15rem 0.5rem;
-      border-radius: 6px;
-      font-size: 0.76rem;
-      font-weight: 600;
-    }
-    .badge.blocked { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); }
-    .badge.allowed { background: color-mix(in srgb, var(--success) 16%, transparent); color: var(--success); }
-    .badge.cached { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
-
-    @container (width < 600px) {
+    @container (width < 620px) {
       table, thead, tbody, tr, th, td { display: block; }
       thead { display: none; }
       tr {
         margin: 0.65rem;
         border: 1px solid var(--border);
-        border-radius: 8px;
+        border-radius: 10px;
         overflow: hidden;
       }
       tbody th {
@@ -558,398 +1148,876 @@
       .logs-table td:nth-child(6)::before { content: var(--label-6) ": "; font-weight: 600; color: var(--muted); }
     }
 
-    .chip-list {
+    /* ================= BLOCKLISTS & TESTER ================= */
+    .blocklist-item {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.45rem;
-      margin-top: 0.75rem;
-      max-height: 240px;
-      overflow-y: auto;
-    }
-    .chip {
-      display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      padding: 0.28rem 0.6rem;
-      border-radius: 8px;
+      justify-content: space-between;
+      gap: 0.85rem;
+      padding: 0.85rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .blocklist-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .blocklist-item:first-child { padding-top: 0; }
+    .blocklist-meta {
+      flex: 1;
+      min-width: 240px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .blocklist-url {
+      font-size: 0.76rem;
+      color: var(--muted);
+      word-break: break-all;
+    }
+
+    .verdict-box {
+      margin-top: 0.85rem;
+      display: none;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      font-size: 0.86rem;
+    }
+    .verdict-box.blocked {
+      background: var(--danger-soft);
+      border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+    }
+    .verdict-box.allowed {
+      background: var(--success-soft);
+      border-color: color-mix(in srgb, var(--success) 30%, transparent);
+    }
+
+    /* ================= DEVICE GROUPS & CLIENTS ================= */
+    .sub-tabs {
+      margin-bottom: 1.15rem;
+    }
+    .sub-panel { display: none; }
+    .sub-panel.active { display: block; }
+
+    .group-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 0.85rem;
+      margin-bottom: 1rem;
+    }
+    .group-card {
       background: var(--surface-alt);
       border: 1px solid var(--border);
-      font-size: 0.84rem;
+      border-radius: var(--radius-md);
+      padding: 0.9rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      transition: border-color 140ms ease;
     }
-    .chip button {
-      border: none;
-      background: transparent;
-      color: var(--danger);
-      cursor: pointer;
+    .group-card:hover { border-color: var(--border-strong); }
+    .group-card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .group-title {
       font-weight: 700;
-      padding: 0;
+      font-size: 0.94rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .device-row {
+      display: grid;
+      grid-template-columns: minmax(210px, 270px) minmax(170px, 1fr) minmax(175px, 210px) auto;
+      gap: 0.65rem;
+      align-items: center;
+      padding: 0.78rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .device-row:last-child { border-bottom: none; }
+    .disc-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      margin-top: 0.32rem;
+    }
+    .disc-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      color: var(--muted);
+      max-width: 230px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .disc-tag.info {
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+    }
+    .disc-tag.warn {
+      color: var(--warn);
+      background: var(--warn-soft);
+      border-color: color-mix(in srgb, var(--warn) 32%, transparent);
+    }
+    .disc-suggest {
+      font-size: 0.74rem;
+      color: var(--muted);
+      margin-top: 0.28rem;
+    }
+    @media (max-width: 820px) {
+      .device-row { grid-template-columns: 1fr; }
     }
 
     .checkbox-grid {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.65rem;
-      margin: 0.5rem 0;
+      gap: 0.45rem;
+      margin: 0.45rem 0;
     }
     .checkbox-grid label {
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
-      padding: 0.35rem 0.65rem;
+      gap: 0.38rem;
+      padding: 0.38rem 0.68rem;
       border-radius: 8px;
       border: 1px solid var(--border);
       background: var(--surface-alt);
-      font-size: 0.85rem;
+      font-size: 0.82rem;
+      font-weight: 500;
       cursor: pointer;
+      transition: border-color 140ms ease, background 140ms ease;
+    }
+    .checkbox-grid label:has(input:checked) {
+      background: var(--accent-soft);
+      border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+      color: var(--accent);
+      font-weight: 600;
     }
 
+    .rule-item {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.8rem 0.9rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      margin-bottom: 0.55rem;
+    }
+    .rule-item:last-child { margin-bottom: 0; }
+
+    /* ================= SETUP & STEPS ================= */
     .code-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
       background: var(--surface-alt);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
       padding: 0.8rem 1rem;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 0.86rem;
+      font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.85rem;
       overflow-x: auto;
     }
-
-    .toast {
-      position: fixed;
-      right: 1rem;
-      bottom: 1rem;
-      background: var(--surface);
-      border: 1px solid var(--accent);
-      color: var(--text);
-      padding: 0.7rem 1rem;
-      border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-      z-index: 50;
-      display: none;
+    .step-list {
+      list-style: none;
+      padding: 0;
+      margin: 1rem 0 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
     }
-    .toast.show { display: block; }
+    .step-list li {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      font-size: 0.86rem;
+      color: var(--text-secondary);
+    }
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.76rem;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.05rem 0;
+    }
+
+    /* ================= POPOVER TOAST (modern-web-guidance) ================= */
+    .toast-region {
+      position: fixed;
+      inset: auto 1.25rem 1.25rem auto;
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-width: min(360px, calc(100vw - 2rem));
+      pointer-events: none;
+    }
+    [popover].toast-item {
+      position: fixed;
+      inset: auto 1.25rem 1.25rem auto;
+      margin: 0;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-left: 3px solid var(--accent);
+      color: var(--text);
+      padding: 0.7rem 0.85rem;
+      border-radius: 10px;
+      box-shadow: var(--shadow-md);
+      font-size: 0.84rem;
+      font-weight: 500;
+      max-width: min(360px, calc(100vw - 2rem));
+      opacity: 0;
+      translate: 0 8px;
+      transition: opacity 180ms ease, translate 180ms ease, overlay 180ms ease, display 180ms ease;
+      transition-behavior: allow-discrete;
+    }
+    [popover].toast-item:is(:popover-open, .\:popover-open) {
+      opacity: 1;
+      translate: 0 0;
+    }
+    @starting-style {
+      [popover].toast-item:is(:popover-open, .\:popover-open) {
+        opacity: 0;
+        translate: 0 8px;
+      }
+    }
+    @supports not selector(:popover-open) {
+      [popover].toast-item:not(.\:popover-open) { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      [popover].toast-item { transition: none; translate: 0 0; }
+    }
+    .toast-close {
+      margin-left: auto;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0.15rem 0.35rem;
+      border-radius: 6px;
+      font-size: 1rem;
+      line-height: 1;
+    }
+    .toast-close:hover { background: var(--surface-alt); color: var(--text); }
+
+    /* ================= RESPONSIVE MOBILE SHELL ================= */
+    @media (max-width: 900px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+      aside.sidebar {
+        position: static;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 0.75rem 1rem;
+        gap: 0.65rem;
+      }
+      .nav-section-label, .sidebar-footer { display: none; }
+      nav.tabs {
+        flex-direction: row;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        padding-bottom: 0.15rem;
+      }
+      nav.tabs button {
+        width: auto;
+        white-space: nowrap;
+        scroll-snap-align: start;
+        padding: 0.48rem 0.75rem;
+      }
+      header.topbar { padding: 0.75rem 1rem; }
+      main { padding: 1rem 1rem 2rem; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <div class="brand">
-      <div style="font-size: 1.7rem;">🛡️</div>
-      <div>
-        <h1>NetShield DNS</h1>
-        <small id="serverInfo">Đang tải thông tin máy chủ...</small>
+  <div class="app-shell">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" aria-label="Thanh điều hướng NetShield">
+      <div class="brand">
+        <div class="brand-logo" aria-hidden="true">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div>
+          <h1>NetShield DNS</h1>
+          <div class="brand-sub">Bảo vệ mạng LAN</div>
+        </div>
       </div>
+
+      <nav class="tabs" role="tablist" aria-label="Điều hướng chính">
+        <div class="nav-section-label">Giám sát</div>
+        <button role="tab" aria-selected="true" data-tab="overview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          <span>Tổng quan</span>
+        </button>
+        <button role="tab" aria-selected="false" data-tab="logs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span>Nhật ký trực tiếp</span>
+          <span id="navLiveDot" class="live-dot" title="Đang nhận dữ liệu thời gian thực"></span>
+        </button>
+
+        <div class="nav-section-label" style="margin-top: 0.45rem;">Quản trị</div>
+        <button role="tab" aria-selected="false" data-tab="lists">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          <span>Bộ lọc &amp; Danh sách</span>
+          <span id="navBadgeLists" class="nav-badge">0</span>
+        </button>
+        <button role="tab" aria-selected="false" data-tab="clients">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <span>Nhóm &amp; Thiết bị</span>
+          <span id="navBadgeRules" class="nav-badge">0</span>
+        </button>
+        <button role="tab" aria-selected="false" data-tab="setup">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.85 1 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Cài đặt &amp; LAN</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="server-mini">
+          <div class="server-mini-title">
+            <span>Máy chủ DNS</span>
+            <span style="color:var(--success);font-size:0.7rem;">● Online</span>
+          </div>
+          <code id="serverInfo">Đang kết nối...</code>
+        </div>
+        <button id="quickThemeBtn" type="button" class="theme-quick-btn" title="Chuyển chế độ Sáng / Tối">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          <span id="quickThemeLabel">Đổi giao diện</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN WORKSPACE -->
+    <div class="workspace">
+      <header class="topbar">
+        <div class="page-heading">
+          <h2 id="pageTitle">Tổng quan hệ thống</h2>
+          <p id="pageSubtitle">Theo dõi lưu lượng DNS, hiệu quả chặn quảng cáo và băng thông tiết kiệm</p>
+        </div>
+        <div class="header-actions">
+          <span id="protectionBadge" class="pill ok">Đang bảo vệ</span>
+          <button id="toggleProtectionBtn" type="button" class="btn">Tạm dừng bảo vệ</button>
+          <button id="refreshListsBtn" type="button" class="btn primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+            <span>Cập nhật bộ lọc</span>
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <!-- TAB 1: TỔNG QUAN -->
+        <section id="tab-overview" class="panel active" role="tabpanel">
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="stat-label">Tổng truy vấn DNS</span>
+                <span class="kpi-icon accent" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </span>
+              </div>
+              <div id="statTotal" class="stat-value accent">0</div>
+              <div class="stat-sub">Toàn bộ mạng LAN</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="stat-label">Đã chặn quảng cáo</span>
+                <span class="kpi-icon danger" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+                </span>
+              </div>
+              <div id="statBlocked" class="stat-value danger">0</div>
+              <div class="stat-sub">Quảng cáo &amp; tracker</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="stat-label">Tỷ lệ chặn</span>
+                <span class="kpi-icon success" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                </span>
+              </div>
+              <div id="statRate" class="stat-value success">0%</div>
+              <div class="stat-sub">Hiệu suất lọc DNS</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="stat-label">Băng thông tiết kiệm</span>
+                <span class="kpi-icon success" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </span>
+              </div>
+              <div id="statSavedBandwidth" class="stat-value success">0 KB</div>
+              <div id="statSavedSub" class="stat-sub">Chưa có lượt chặn</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="stat-label">Tên miền trong bộ lọc</span>
+                <span class="kpi-icon" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
+                </span>
+              </div>
+              <div id="statRules" class="stat-value">0</div>
+              <div class="stat-sub">Quy tắc đang hoạt động</div>
+            </div>
+          </div>
+
+          <div class="card chart-card">
+            <div class="chart-header">
+              <div>
+                <h2>Biểu đồ băng thông tiết kiệm (24 giờ)</h2>
+                <div id="chartSubtitle" class="card-desc">Đang tải dữ liệu...</div>
+              </div>
+              <div class="segmented" role="group" aria-label="Chế độ xem biểu đồ">
+                <button type="button" data-chart-mode="hourly" aria-pressed="true">Theo giờ</button>
+                <button type="button" data-chart-mode="cumulative" aria-pressed="false">Lũy kế</button>
+                <button type="button" data-chart-mode="blocked" aria-pressed="false">Lượt chặn</button>
+              </div>
+            </div>
+            <div class="chart-stage">
+              <div id="bandwidthTooltip" class="chart-tooltip" role="status" aria-live="polite"></div>
+              <div id="bandwidthChartContainer"></div>
+            </div>
+            <div id="bandwidthCategoryBreakdown"></div>
+            <p id="bandwidthMethodology" class="chart-note">
+              * Lưu ý: DNS chỉ xử lý tên miền (không đọc nội dung HTTP), nên dung lượng băng thông tiết kiệm được ước tính theo nhóm nội dung chặn (Video/Rich Media ~750 KB, Dịch vụ chặn theo quy tắc ~500 KB, Banner/Display ~180 KB, Tracker/Telemetry ~25 KB).
+            </p>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Top tên miền bị chặn</h2>
+                  <p class="card-desc">Bấm vào tên miền để lọc nhanh trong Nhật ký</p>
+                </div>
+              </div>
+              <div id="topBlockedList" class="rank-list stat-label">Chưa có dữ liệu.</div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Top thiết bị trong mạng LAN</h2>
+                  <p class="card-desc">Bấm vào thiết bị để xem truy vấn chi tiết</p>
+                </div>
+              </div>
+              <div id="topClientsList" class="rank-list stat-label">Chưa có dữ liệu.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2: NHẬT KÝ TRỰC TIẾP -->
+        <section id="tab-logs" class="panel" role="tabpanel">
+          <div class="card">
+            <div class="row" style="margin-bottom: 1rem;">
+              <div class="search-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input id="logSearch" type="text" placeholder="Tìm theo tên miền, IP thiết bị hoặc lý do chặn..." aria-label="Tìm kiếm nhật ký" />
+              </div>
+              <select id="logFilter" aria-label="Lọc trạng thái truy vấn" style="width: auto; min-width: 165px;">
+                <option value="all">Tất cả truy vấn</option>
+                <option value="blocked">Chỉ mục Đã chặn</option>
+                <option value="allowed">Chỉ mục Cho phép</option>
+              </select>
+              <button id="toggleStreamBtn" type="button" class="btn">
+                <span id="streamDot" class="live-dot" style="margin:0;"></span>
+                <span id="streamLabel">Tạm dừng luồng</span>
+              </button>
+              <button id="reloadLogsBtn" type="button" class="btn">Làm mới</button>
+            </div>
+
+            <div tabindex="0" role="region" aria-labelledby="logs-caption" class="table-wrapper">
+              <table class="logs-table">
+                <caption id="logs-caption">Nhật ký truy vấn DNS thời gian thực (<span id="logsShownCount">0</span> bản ghi)</caption>
+                <thead>
+                  <tr>
+                    <th>Tên miền</th>
+                    <th>Thiết bị (IP)</th>
+                    <th>Loại</th>
+                    <th>Trạng thái / Lý do</th>
+                    <th>Thời gian</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="logsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: BỘ LỌC & DANH SÁCH -->
+        <section id="tab-lists" class="panel" role="tabpanel">
+          <div class="card" style="margin-bottom: 1.15rem;">
+            <div class="card-head" style="margin-bottom: 0.7rem;">
+              <div>
+                <h2>Kiểm tra nhanh tác dụng bộ lọc</h2>
+                <p class="card-desc">Thử nghiệm xem một tên miền có đang bị chặn bởi danh sách hay quy tắc nào không</p>
+              </div>
+            </div>
+            <div class="row">
+              <div class="search-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input id="testDomainInput" type="text" aria-label="Tên miền cần kiểm tra" placeholder="Nhập tên miền cần thử (vd: admicro.vn, gdt.gov.vn, doubleclick.net)..." />
+              </div>
+              <button id="testDomainBtn" type="button" class="btn primary">Kiểm tra</button>
+            </div>
+            <div class="row" style="margin-top: 0.6rem;">
+              <span class="stat-label">Thử nhanh:</span>
+              <button type="button" class="btn sm" onclick="quickCheckDomain('admicro.vn')">admicro.vn</button>
+              <button type="button" class="btn sm" onclick="quickCheckDomain('doubleclick.net')">doubleclick.net</button>
+              <button type="button" class="btn sm" onclick="quickCheckDomain('thuedientu.gdt.gov.vn')">thuedientu.gdt.gov.vn</button>
+            </div>
+            <div id="testDomainResult" class="verdict-box"></div>
+          </div>
+
+          <div class="card" style="margin-bottom: 1.15rem;">
+            <div class="card-head">
+              <div>
+                <h2>Danh sách chặn tự động (Blocklists)</h2>
+                <p class="card-desc">Bật/tắt hoặc thêm nguồn danh sách chặn định dạng hosts / AdGuard / domain</p>
+              </div>
+            </div>
+            <div id="blocklistsContainer"></div>
+            <hr class="divider" />
+            <div class="stat-label" style="margin-bottom: 0.5rem; font-weight: 600;">Thêm nguồn Blocklist mới</div>
+            <div class="row">
+              <input id="newListName" type="text" aria-label="Tên danh sách chặn mới" placeholder="Tên danh sách (vd: URLHaus Malware)" />
+              <input id="newListUrl" type="url" aria-label="Đường dẫn URL danh sách chặn mới" placeholder="Đường dẫn URL (https://...)" />
+              <button id="addBlocklistBtn" type="button" class="btn primary">Thêm &amp; Tải ngay</button>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Whitelist (Luôn cho phép)</h2>
+                  <p class="card-desc">Ưu tiên cao nhất — không bao giờ bị chặn</p>
+                </div>
+                <span id="whitelistCountBadge" class="badge allowed">0</span>
+              </div>
+              <div class="row">
+                <input id="whitelistInput" type="text" aria-label="Thêm tên miền vào Whitelist" placeholder="Nhập tên miền (vd: example.com)" />
+                <button id="addWhitelistBtn" type="button" class="btn success">Thêm</button>
+              </div>
+              <div id="whitelistChips" class="chip-list"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Blacklist (Chặn thủ công)</h2>
+                  <p class="card-desc">Chặn ngay lập tức trên toàn mạng LAN</p>
+                </div>
+                <span id="blacklistCountBadge" class="badge blocked">0</span>
+              </div>
+              <div class="row">
+                <input id="blacklistInput" type="text" aria-label="Thêm tên miền vào Blacklist" placeholder="Nhập tên miền cần chặn (vd: ads.site.vn)" />
+                <button id="addBlacklistBtn" type="button" class="btn danger">Chặn</button>
+              </div>
+              <div id="blacklistChips" class="chip-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: NHÓM & THIẾT BỊ -->
+        <section id="tab-clients" class="panel" role="tabpanel">
+          <div class="segmented sub-tabs" role="tablist" aria-label="Quản lý thiết bị và quy tắc">
+            <button type="button" role="tab" aria-selected="true" data-subtab="devices">Thiết bị LAN &amp; Nhóm</button>
+            <button type="button" role="tab" aria-selected="false" data-subtab="rules">Quy tắc &amp; Khung giờ</button>
+          </div>
+
+          <!-- SUBTAB 4A: DEVICES & GROUPS -->
+          <div id="subtab-devices" class="sub-panel active">
+            <div class="card" style="margin-bottom: 1.15rem;">
+              <div class="card-head">
+                <div>
+                  <h2>Nhóm thiết bị trong mạng LAN</h2>
+                  <p class="card-desc">Phân loại thiết bị để áp dụng quy tắc chặn đồng loạt theo nhóm</p>
+                </div>
+              </div>
+              <div id="deviceGroupsGrid" class="group-grid"></div>
+              <hr class="divider" />
+              <div class="stat-label" style="margin-bottom: 0.45rem; font-weight: 600;">Tạo nhóm thiết bị mới</div>
+              <div class="row">
+                <select id="newGroupIcon" aria-label="Biểu tượng nhóm" style="width: auto; min-width: 78px;">
+                  <option value="📷">📷</option>
+                  <option value="💻">💻</option>
+                  <option value="📱">📱</option>
+                  <option value="🔌">🔌</option>
+                  <option value="📺">📺</option>
+                  <option value="🎮">🎮</option>
+                  <option value="🖨️">🖨️</option>
+                  <option value="👶">👶</option>
+                  <option value="🏢">🏢</option>
+                  <option value="📁">📁</option>
+                </select>
+                <input id="newGroupName" type="text" aria-label="Tên nhóm thiết bị" placeholder="Tên nhóm (vd: Phòng họp, Máy trẻ em, TV phòng khách)" />
+                <input id="newGroupDesc" type="text" aria-label="Mô tả nhóm" placeholder="Mô tả ngắn (không bắt buộc)" />
+                <button id="addGroupBtn" type="button" class="btn primary">Thêm nhóm</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Gán thiết bị LAN vào nhóm</h2>
+                  <p class="card-desc">Tự dò tên máy (mDNS/PTR), hãng (ARP/MAC) &amp; hành vi DNS để gợi ý — không tự áp luật chặn khi chưa xác nhận. <span id="discoveryMeta"></span></p>
+                </div>
+                <div class="row" style="gap: 0.45rem;">
+                  <button id="scanDevicesBtn" type="button" class="btn sm">Quét nhận diện LAN</button>
+                  <button id="applySuggestionsBtn" type="button" class="btn success sm" style="display: none;">Áp dụng gợi ý</button>
+                </div>
+              </div>
+              <div class="row" style="margin-bottom: 0.9rem; padding: 0.75rem; background: var(--surface-alt); border-radius: 10px; border: 1px solid var(--border);">
+                <input id="manualDeviceIp" type="text" aria-label="Địa chỉ IP thiết bị mới" placeholder="Nhập IP (vd: 192.168.1.50)" style="max-width: 190px; background: var(--surface);" />
+                <input id="manualDeviceName" type="text" aria-label="Tên thiết bị mới" placeholder="Tên gợi nhớ (vd: Camera cổng chính)" style="background: var(--surface);" />
+                <select id="manualDeviceGroup" aria-label="Chọn nhóm cho thiết bị mới" style="width: auto; min-width: 190px; background: var(--surface);"></select>
+                <button id="addManualDeviceBtn" type="button" class="btn primary">Gán vào nhóm</button>
+              </div>
+              <div id="deviceAssignList" class="stat-label">Chưa phát hiện thiết bị nào trong mạng LAN.</div>
+            </div>
+          </div>
+
+          <!-- SUBTAB 4B: RULES & SCHEDULES -->
+          <div id="subtab-rules" class="sub-panel">
+            <div class="card" style="margin-bottom: 1.15rem;">
+              <div class="card-head">
+                <div>
+                  <h2>Danh sách quy tắc đang áp dụng</h2>
+                  <p class="card-desc">Quy tắc chặn theo nhóm thiết bị hoặc địa chỉ IP cụ thể</p>
+                </div>
+              </div>
+              <div id="clientRulesList" class="stat-label">Chưa có quy tắc thiết bị nào.</div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Tạo quy tắc mới</h2>
+                  <p class="card-desc">Chặn dịch vụ, chặn tên miền riêng, khóa Internet hoặc miễn trừ lọc quảng cáo</p>
+                </div>
+              </div>
+
+              <div class="grid-2" style="margin-bottom: 0.85rem;">
+                <div class="field">
+                  <label for="ruleTargetType">Áp dụng quy tắc cho</label>
+                  <select id="ruleTargetType">
+                    <option value="group">Nhóm thiết bị (Camera, Máy tính, Di động, IoT...)</option>
+                    <option value="ip">Địa chỉ IP cụ thể / Toàn mạng (*)</option>
+                  </select>
+                </div>
+                <div id="ruleGroupWrap" class="field">
+                  <label for="ruleGroupId">Chọn nhóm thiết bị</label>
+                  <select id="ruleGroupId"></select>
+                </div>
+                <div id="ruleIpWrap" class="field" style="display: none;">
+                  <label for="ruleIp">IP thiết bị (nhập <code>*</code> cho toàn mạng LAN)</label>
+                  <input id="ruleIp" type="text" placeholder="192.168.1.55 hoặc *" />
+                </div>
+              </div>
+
+              <div class="field" style="margin-bottom: 0.85rem;">
+                <label for="ruleName">Tên quy tắc (không bắt buộc)</label>
+                <input id="ruleName" type="text" placeholder="Ví dụ: Khóa Internet nhóm Camera, Chặn TikTok giờ làm việc" />
+              </div>
+
+              <div class="field" style="margin-bottom: 0.85rem;">
+                <label>Chọn nhanh nhóm dịch vụ muốn chặn</label>
+                <div id="serviceCheckboxes" class="checkbox-grid"></div>
+              </div>
+
+              <div class="field" style="margin-bottom: 0.9rem;">
+                <label for="ruleDomains">Hoặc nhập thêm tên miền riêng (cách nhau bởi dấu phẩy)</label>
+                <input id="ruleDomains" type="text" placeholder="vd: vnexpress.net, twitch.tv" />
+              </div>
+
+              <div class="checkbox-grid" style="margin-bottom: 0.85rem;">
+                <label><input type="checkbox" id="ruleBypass" /> Miễn trừ lọc quảng cáo (Bypass)</label>
+                <label><input type="checkbox" id="ruleBlockAll" /> Khóa toàn bộ Internet trong khung giờ</label>
+                <label><input type="checkbox" id="ruleScheduleEnabled" checked /> Áp dụng theo khung giờ</label>
+              </div>
+
+              <div id="scheduleBox" class="row" style="margin: 0.75rem 0 1rem; padding: 0.85rem; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 10px;">
+                <div class="field" style="min-width: 120px;">
+                  <label for="ruleStart">Từ giờ</label>
+                  <input id="ruleStart" type="time" value="08:00" style="background: var(--surface);" />
+                </div>
+                <div class="field" style="min-width: 120px;">
+                  <label for="ruleEnd">Đến giờ</label>
+                  <input id="ruleEnd" type="time" value="17:30" style="background: var(--surface);" />
+                </div>
+                <div class="field" style="flex: 1;">
+                  <label>Ngày áp dụng</label>
+                  <div class="checkbox-grid" id="daysCheckboxes" style="margin: 0;">
+                    <label><input type="checkbox" value="1" checked /> T2</label>
+                    <label><input type="checkbox" value="2" checked /> T3</label>
+                    <label><input type="checkbox" value="3" checked /> T4</label>
+                    <label><input type="checkbox" value="4" checked /> T5</label>
+                    <label><input type="checkbox" value="5" checked /> T6</label>
+                    <label><input type="checkbox" value="6" /> T7</label>
+                    <label><input type="checkbox" value="0" /> CN</label>
+                  </div>
+                </div>
+              </div>
+
+              <button id="saveRuleBtn" type="button" class="btn primary">Lưu quy tắc</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: CÀI ĐẶT & KẾT NỐI LAN -->
+        <section id="tab-setup" class="panel" role="tabpanel">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Hướng dẫn trỏ DNS cho toàn mạng LAN</h2>
+                  <p class="card-desc">Cấu hình một lần trên Router để bảo vệ mọi thiết bị không cần cài app</p>
+                </div>
+              </div>
+              <div class="stat-label" style="margin-bottom: 0.35rem;">Địa chỉ IP máy chủ DNS hiện tại:</div>
+              <div class="code-box">
+                <div id="lanIpBox">Đang kiểm tra...</div>
+                <button id="copyPrimaryIpBtn" type="button" class="btn sm">Sao chép IP</button>
+              </div>
+              <ol class="step-list">
+                <li>
+                  <span class="step-num">1</span>
+                  <div><strong>Cố định IP cho Mac Mini</strong> trên Router/Modem (DHCP Reservation) để IP không bị đổi sau khi mất điện.</div>
+                </li>
+                <li>
+                  <span class="step-num">2</span>
+                  <div>Chạy NetShield DNS ở cổng chuẩn <code>53</code> bằng lệnh <code>sudo ./scripts/run-lan.sh</code> (hoặc cài tự chạy 24/7: <code>sudo ./scripts/install-launchd.sh</code>).</div>
+                </li>
+                <li>
+                  <span class="step-num">3</span>
+                  <div>Vào <strong>DHCP Settings</strong> trên Router/Modem nhà mạng → đổi <strong>Primary DNS</strong> thành IP ở trên (xóa trống Secondary DNS hoặc điền cùng IP).</div>
+                </li>
+                <li>
+                  <span class="step-num">4</span>
+                  <div>Ngắt kết nối Wi-Fi rồi kết nối lại trên điện thoại/laptop để nhận DNS mới.</div>
+                </li>
+              </ol>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Cài đặt DNS Upstream &amp; Giao diện</h2>
+                  <p class="card-desc">Tùy chỉnh máy chủ phân giải cấp trên, bộ nhớ đệm và chế độ hiển thị</p>
+                </div>
+              </div>
+
+              <div class="field" style="margin-bottom: 0.9rem;">
+                <label for="upstreamInput">Máy chủ DNS Upstream (cách nhau bằng dấu phẩy)</label>
+                <input id="upstreamInput" type="text" value="1.1.1.1, 8.8.8.8" />
+              </div>
+
+              <div class="field" style="margin-bottom: 1rem;">
+                <label for="blockModeSelect">Cách phản hồi khi chặn tên miền</label>
+                <select id="blockModeSelect">
+                  <option value="zero">Trả về 0.0.0.0 / :: (Nhanh, khuyên dùng)</option>
+                  <option value="nxdomain">Trả về NXDOMAIN (Không tồn tại)</option>
+                </select>
+              </div>
+
+              <div class="row" style="margin-bottom: 1.2rem;">
+                <button id="saveSettingsBtn" type="button" class="btn primary">Lưu cài đặt</button>
+                <button id="clearCacheBtn" type="button" class="btn">Xóa DNS Cache (<span id="cacheCount" class="tabular">0</span>)</button>
+              </div>
+
+              <hr class="divider" />
+
+              <div class="field">
+                <label>Giao diện hiển thị (Theme)</label>
+                <div class="segmented" role="group" aria-label="Chọn giao diện" id="themeSegmented">
+                  <button type="button" data-theme-val="system" aria-pressed="true">Theo hệ thống</button>
+                  <button type="button" data-theme-val="light" aria-pressed="false">Sáng</button>
+                  <button type="button" data-theme-val="dark" aria-pressed="false">Tối</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
-    <div class="header-actions">
-      <span id="protectionBadge" class="pill ok">Đang bảo vệ</span>
-      <button id="toggleProtectionBtn" class="btn">Tạm dừng bảo vệ</button>
-      <button id="refreshListsBtn" class="btn primary">Cập nhật danh sách chặn</button>
-    </div>
-  </header>
+  </div>
 
-  <nav class="tabs" role="tablist" aria-label="Điều hướng chính">
-    <button role="tab" aria-selected="true" data-tab="overview">Tổng quan</button>
-    <button role="tab" aria-selected="false" data-tab="logs">Nhật ký trực tiếp</button>
-    <button role="tab" aria-selected="false" data-tab="lists">Bộ lọc & Danh sách</button>
-    <button role="tab" aria-selected="false" data-tab="clients">Nhóm &amp; Thiết bị</button>
-    <button role="tab" aria-selected="false" data-tab="setup">Cài đặt & Kết nối LAN</button>
-  </nav>
-
-  <main>
-    <!-- TAB 1: TỔNG QUAN -->
-    <section id="tab-overview" class="panel active">
-      <div class="grid-4">
-        <div class="card">
-          <div class="stat-label">Tổng truy vấn DNS</div>
-          <div id="statTotal" class="stat-value accent">0</div>
-        </div>
-        <div class="card">
-          <div class="stat-label">Đã chặn quảng cáo / lọc</div>
-          <div id="statBlocked" class="stat-value danger">0</div>
-        </div>
-        <div class="card">
-          <div class="stat-label">Tỷ lệ chặn</div>
-          <div id="statRate" class="stat-value success">0%</div>
-        </div>
-        <div class="card">
-          <div class="stat-label">Băng thông tiết kiệm (ước tính)</div>
-          <div id="statSavedBandwidth" class="stat-value success">0 KB</div>
-          <div id="statSavedSub" class="stat-sub">Chưa có lượt chặn</div>
-        </div>
-        <div class="card">
-          <div class="stat-label">Tên miền trong bộ lọc</div>
-          <div id="statRules" class="stat-value">0</div>
-        </div>
-      </div>
-
-      <div class="card chart-card">
-        <div class="chart-header">
-          <div>
-            <h2>Biểu đồ băng thông tiết kiệm nhờ chặn quảng cáo (24 giờ)</h2>
-            <div id="chartSubtitle" class="stat-label">Đang tải dữ liệu...</div>
-          </div>
-          <div class="segmented" role="group" aria-label="Chế độ xem biểu đồ">
-            <button type="button" data-chart-mode="hourly" aria-pressed="true">Theo giờ</button>
-            <button type="button" data-chart-mode="cumulative" aria-pressed="false">Lũy kế</button>
-            <button type="button" data-chart-mode="blocked" aria-pressed="false">Lượt chặn</button>
-          </div>
-        </div>
-        <div class="chart-stage">
-          <div id="bandwidthTooltip" class="chart-tooltip" role="status" aria-live="polite"></div>
-          <div id="bandwidthChartContainer"></div>
-        </div>
-        <div id="bandwidthCategoryBreakdown"></div>
-        <p id="bandwidthMethodology" class="chart-note">
-          * Lưu ý: DNS chỉ xử lý tên miền (không đọc nội dung HTTP), nên dung lượng băng thông tiết kiệm được ước tính theo nhóm nội dung chặn (Video/Rich Media ~750 KB, Dịch vụ chặn theo quy tắc ~500 KB, Banner/Display ~180 KB, Tracker/Telemetry ~25 KB).
-        </p>
-      </div>
-
-      <div class="grid-2">
-        <div class="card">
-          <h2>Top tên miền bị chặn nhiều nhất</h2>
-          <div id="topBlockedList" class="stat-label">Chưa có dữ liệu.</div>
-        </div>
-        <div class="card">
-          <h2>Top thiết bị trong mạng LAN</h2>
-          <div id="topClientsList" class="stat-label">Chưa có dữ liệu.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 2: NHẬT KÝ TRỰC TIẾP -->
-    <section id="tab-logs" class="panel">
-      <div class="card">
-        <div class="row" style="margin-bottom: 0.85rem;">
-          <input id="logSearch" type="text" placeholder="Tìm theo tên miền, IP thiết bị hoặc lý do..." />
-          <select id="logFilter" style="width: auto; min-width: 150px;">
-            <option value="all">Tất cả truy vấn</option>
-            <option value="blocked">Chỉ mục Đã chặn</option>
-            <option value="allowed">Chỉ mục Cho phép</option>
-          </select>
-          <button id="reloadLogsBtn" class="btn">Làm mới</button>
-        </div>
-
-        <div tabindex="0" role="region" aria-labelledby="logs-caption" class="table-wrapper">
-          <table class="logs-table">
-            <caption id="logs-caption">Nhật ký truy vấn DNS thời gian thực (tự cập nhật)</caption>
-            <thead>
-              <tr>
-                <th>Tên miền</th>
-                <th>Thiết bị (IP)</th>
-                <th>Loại</th>
-                <th>Trạng thái / Lý do</th>
-                <th>Thời gian</th>
-                <th>Thao tác nhanh</th>
-              </tr>
-            </thead>
-            <tbody id="logsBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 3: BỘ LỌC & DANH SÁCH -->
-    <section id="tab-lists" class="panel">
-      <div class="card" style="margin-bottom: 1rem;">
-        <h2>Kiểm tra nhanh tác dụng bộ lọc</h2>
-        <div class="row">
-          <input id="testDomainInput" type="text" placeholder="Nhập tên miền cần thử (vd: admicro.vn, gdt.gov.vn, doubleclick.net)..." />
-          <button id="testDomainBtn" class="btn primary">Kiểm tra</button>
-        </div>
-        <div class="row" style="margin-top: 0.5rem;">
-          <span class="stat-label">Thử nhanh:</span>
-          <button class="btn sm" onclick="quickCheckDomain('admicro.vn')">admicro.vn (QC VN)</button>
-          <button class="btn sm" onclick="quickCheckDomain('doubleclick.net')">doubleclick.net (QC Google)</button>
-          <button class="btn sm" onclick="quickCheckDomain('thuedientu.gdt.gov.vn')">thuedientu.gdt.gov.vn (Thuế)</button>
-        </div>
-        <div id="testDomainResult" style="margin-top: 0.75rem; display: none; padding: 0.65rem 0.9rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-alt);"></div>
-      </div>
-
-      <div class="card" style="margin-bottom: 1rem;">
-        <h2>Danh sách chặn tự động (Blocklists)</h2>
-        <div id="blocklistsContainer"></div>
-        <hr style="border: none; border-top: 1px solid var(--border); margin: 1rem 0;" />
-        <div class="row">
-          <input id="newListName" type="text" placeholder="Tên danh sách (vd: URLHaus Malware)" />
-          <input id="newListUrl" type="url" placeholder="Đường dẫn URL (https://...)" />
-          <button id="addBlocklistBtn" class="btn primary">Thêm &amp; Tải ngay</button>
-        </div>
-      </div>
-
-      <div class="grid-2">
-        <div class="card">
-          <h2>Whitelist (Luôn cho phép)</h2>
-          <div class="row">
-            <input id="whitelistInput" type="text" placeholder="Nhập tên miền (vd: example.com)" />
-            <button id="addWhitelistBtn" class="btn success">Thêm</button>
-          </div>
-          <div id="whitelistChips" class="chip-list"></div>
-        </div>
-
-        <div class="card">
-          <h2>Blacklist (Chặn tay toàn mạng)</h2>
-          <div class="row">
-            <input id="blacklistInput" type="text" placeholder="Nhập tên miền cần chặn (vd: ads.site.vn)" />
-            <button id="addBlacklistBtn" class="btn danger">Chặn</button>
-          </div>
-          <div id="blacklistChips" class="chip-list"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 4: NHÓM & THIẾT BỊ -->
-    <section id="tab-clients" class="panel">
-      <div class="card" style="margin-bottom: 1rem;">
-        <h2>Nhóm thiết bị trong mạng LAN</h2>
-        <div id="deviceGroupsGrid" class="group-grid"></div>
-        <hr style="border: none; border-top: 1px solid var(--border); margin: 0.9rem 0;" />
-        <div class="stat-label" style="margin-bottom: 0.45rem;">Thêm nhóm thiết bị mới:</div>
-        <div class="row">
-          <select id="newGroupIcon" aria-label="Biểu tượng nhóm" style="width: auto; min-width: 78px;">
-            <option value="📷">📷</option>
-            <option value="💻">💻</option>
-            <option value="📱">📱</option>
-            <option value="🔌">🔌</option>
-            <option value="📺">📺</option>
-            <option value="🎮">🎮</option>
-            <option value="🖨️">🖨️</option>
-            <option value="👶">👶</option>
-            <option value="🏢">🏢</option>
-            <option value="📁">📁</option>
-          </select>
-          <input id="newGroupName" type="text" aria-label="Tên nhóm thiết bị" placeholder="Tên nhóm (vd: Phòng họp, Máy trẻ em, TV phòng khách)" />
-          <input id="newGroupDesc" type="text" aria-label="Mô tả nhóm" placeholder="Mô tả ngắn (không bắt buộc)" />
-          <button id="addGroupBtn" type="button" class="btn primary">Thêm nhóm</button>
-        </div>
-      </div>
-
-      <div class="card" style="margin-bottom: 1rem;">
-        <div class="chart-header" style="margin-bottom: 0.4rem;">
-          <h2>Gán thiết bị LAN vào nhóm</h2>
-          <div class="row" style="gap: 0.4rem;">
-            <button id="scanDevicesBtn" type="button" class="btn sm">Quét nhận diện LAN</button>
-            <button id="applySuggestionsBtn" type="button" class="btn success sm" style="display: none;">Áp dụng gợi ý</button>
-          </div>
-        </div>
-        <p class="stat-label" style="margin-top: 0;">Quản lý thiết bị theo <strong>địa chỉ MAC</strong> (tự theo dõi khi router đổi IP, tự lùi về IP nếu sau Repeater). Hệ thống chỉ gợi ý tên &amp; nhóm — <strong>không tự áp luật chặn</strong> khi bạn chưa xác nhận. <span id="discoveryMeta"></span></p>
-        <div class="row" style="margin-bottom: 0.85rem;">
-          <input id="manualDeviceIp" type="text" aria-label="Địa chỉ MAC hoặc IP thiết bị mới" placeholder="Nhập MAC hoặc IP (vd: 54:46:17:DF:0E:01)" style="max-width: 245px;" />
-          <input id="manualDeviceName" type="text" aria-label="Tên thiết bị mới" placeholder="Tên gợi nhớ (vd: Camera cổng chính)" />
-          <select id="manualDeviceGroup" aria-label="Chọn nhóm cho thiết bị mới" style="width: auto; min-width: 190px;"></select>
-          <button id="addManualDeviceBtn" type="button" class="btn primary">Gán vào nhóm</button>
-        </div>
-        <div id="deviceAssignList" class="stat-label">Chưa phát hiện thiết bị nào trong mạng LAN.</div>
-      </div>
-
-      <div class="card" style="margin-bottom: 1rem;">
-        <h2>Thêm / Sửa quy tắc chặn theo nhóm thiết bị hoặc IP &amp; khung giờ</h2>
-        <div class="grid-2" style="margin-bottom: 0.75rem;">
-          <div>
-            <label for="ruleTargetType" class="stat-label">Áp dụng quy tắc cho:</label>
-            <select id="ruleTargetType">
-              <option value="group">Nhóm thiết bị (Camera, Máy tính, Di động, IoT...)</option>
-              <option value="ip">Địa chỉ IP cụ thể / Toàn mạng (*)</option>
-            </select>
-          </div>
-          <div id="ruleGroupWrap">
-            <label for="ruleGroupId" class="stat-label">Chọn nhóm thiết bị</label>
-            <select id="ruleGroupId"></select>
-          </div>
-          <div id="ruleIpWrap" style="display: none;">
-            <label for="ruleIp" class="stat-label">Địa chỉ MAC / IP thiết bị (nhập <code>*</code> cho toàn mạng LAN)</label>
-            <input id="ruleIp" type="text" placeholder="54:46:17:DF:0E:01, 192.168.1.55 hoặc *" />
-          </div>
-        </div>
-
-        <div style="margin-bottom: 0.75rem;">
-          <label for="ruleName" class="stat-label">Tên quy tắc (không bắt buộc)</label>
-          <input id="ruleName" type="text" placeholder="Ví dụ: Khóa Internet nhóm Camera, Chặn TikTok giờ làm việc" />
-        </div>
-
-        <div class="stat-label">Chọn nhanh nhóm dịch vụ muốn chặn:</div>
-        <div id="serviceCheckboxes" class="checkbox-grid"></div>
-
-        <div style="margin: 0.75rem 0;">
-          <label for="ruleDomains" class="stat-label">Hoặc nhập thêm tên miền riêng (cách nhau bởi dấu phẩy):</label>
-          <input id="ruleDomains" type="text" placeholder="vd: vnexpress.net, twitch.tv" />
-        </div>
-
-        <div class="checkbox-grid">
-          <label><input type="checkbox" id="ruleBypass" /> Miễn trừ lọc quảng cáo cho đối tượng này (Bypass)</label>
-          <label><input type="checkbox" id="ruleBlockAll" /> Khóa toàn bộ Internet trong khung giờ</label>
-          <label><input type="checkbox" id="ruleScheduleEnabled" checked /> Áp dụng theo khung giờ</label>
-        </div>
-
-        <div id="scheduleBox" class="row" style="margin: 0.75rem 0;">
-          <div>
-            <label for="ruleStart" class="stat-label">Từ giờ</label>
-            <input id="ruleStart" type="time" value="08:00" />
-          </div>
-          <div>
-            <label for="ruleEnd" class="stat-label">Đến giờ</label>
-            <input id="ruleEnd" type="time" value="17:30" />
-          </div>
-          <div class="checkbox-grid" id="daysCheckboxes">
-            <label><input type="checkbox" value="1" checked /> T2</label>
-            <label><input type="checkbox" value="2" checked /> T3</label>
-            <label><input type="checkbox" value="3" checked /> T4</label>
-            <label><input type="checkbox" value="4" checked /> T5</label>
-            <label><input type="checkbox" value="5" checked /> T6</label>
-            <label><input type="checkbox" value="6" /> T7</label>
-            <label><input type="checkbox" value="0" /> CN</label>
-          </div>
-        </div>
-
-        <button id="saveRuleBtn" type="button" class="btn primary">Lưu quy tắc</button>
-      </div>
-
-      <div class="card">
-        <h2>Danh sách quy tắc đang áp dụng</h2>
-        <div id="clientRulesList" class="stat-label">Chưa có quy tắc thiết bị nào.</div>
-      </div>
-    </section>
-
-    <!-- TAB 5: CÀI ĐẶT & KẾT NỐI LAN -->
-    <section id="tab-setup" class="panel">
-      <div class="grid-2">
-        <div class="card">
-          <h2>Hướng dẫn trỏ DNS cho toàn mạng LAN</h2>
-          <p class="stat-label">Địa chỉ IP máy Mac Mini hiện tại:</p>
-          <div id="lanIpBox" class="code-box">Đang kiểm tra...</div>
-          <ol style="padding-left: 1.2rem; font-size: 0.9rem;">
-            <li><strong>Cố định IP cho Mac Mini</strong> trên Router/Modem (DHCP Reservation) để IP không bị đổi sau khi mất điện.</li>
-            <li>Chạy NetShield DNS ở cổng chuẩn <code>53</code> bằng lệnh:<br />
-              <code>sudo ./scripts/run-lan.sh</code> (hoặc cài tự chạy 24/7: <code>sudo ./scripts/install-launchd.sh</code>)
-            </li>
-            <li>Vào phần <strong>DHCP Settings</strong> trên Router/Modem nhà mạng → đổi <strong>Primary DNS</strong> thành IP Mac Mini ở trên (xóa trống Secondary DNS hoặc điền chính IP Mac Mini).</li>
-            <li>Ngắt kết nối Wi-Fi rồi kết nối lại trên điện thoại/laptop để nhận DNS mới.</li>
-          </ol>
-        </div>
-
-        <div class="card">
-          <h2>Cài đặt DNS Upstream & Bộ nhớ đệm</h2>
-          <div style="margin-bottom: 0.85rem;">
-            <label class="stat-label">Máy chủ DNS Upstream (cách nhau bằng dấu phẩy):</label>
-            <input id="upstreamInput" type="text" value="1.1.1.1, 8.8.8.8" />
-          </div>
-          <div style="margin-bottom: 0.85rem;">
-            <label class="stat-label">Cách phản hồi khi chặn tên miền:</label>
-            <select id="blockModeSelect">
-              <option value="zero">Trả về 0.0.0.0 / :: (Nhanh, khuyên dùng)</option>
-              <option value="nxdomain">Trả về NXDOMAIN (Không tồn tại)</option>
-            </select>
-          </div>
-          <div class="row">
-            <button id="saveSettingsBtn" class="btn primary">Lưu cài đặt</button>
-            <button id="clearCacheBtn" class="btn">Xóa DNS Cache (<span id="cacheCount">0</span>)</button>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <!-- Toast region (modern-web-guidance: persistent-toast-notifications) -->
+  <div id="toastRegion" class="toast-region" role="region" aria-label="Thông báo"></div>
+  <p class="sr-only">Thông báo hệ thống</p>
+  <div id="srLiveRegion" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
   <script>
-    const state = { status: null, logs: [], chartMode: 'hourly' };
+    const state = {
+      status: null,
+      logs: [],
+      chartMode: 'hourly',
+      streamPaused: false,
+      activeTab: 'overview',
+    };
+
+    const TAB_META = {
+      overview: {
+        title: 'Tổng quan hệ thống',
+        sub: 'Theo dõi lưu lượng DNS, hiệu quả chặn quảng cáo và băng thông tiết kiệm',
+      },
+      logs: {
+        title: 'Nhật ký truy vấn trực tiếp',
+        sub: 'Luồng DNS thời gian thực từ các thiết bị trong mạng LAN',
+      },
+      lists: {
+        title: 'Bộ lọc & Danh sách chặn',
+        sub: 'Kiểm tra tên miền, quản lý Blocklists, Whitelist và Blacklist toàn mạng',
+      },
+      clients: {
+        title: 'Nhóm & Thiết bị LAN',
+        sub: 'Nhận diện thiết bị, phân nhóm và thiết lập quy tắc chặn theo khung giờ',
+      },
+      setup: {
+        title: 'Cài đặt & Kết nối LAN',
+        sub: 'Hướng dẫn trỏ DNS trên Router, cấu hình Upstream và giao diện',
+      },
+    };
 
     const CATEGORY_COLORS = {
       display_ad: 'var(--accent)',
@@ -975,10 +2043,179 @@
       const n = Number(bytes) || 0;
       if (n < 1024) return `${Math.round(n)} B`;
       if (n < 1024 * 1024) return `${(n / 1024).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} KB`;
-      if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toLocaleString('vi-VN', { maximumFractionDigits: 2 })} MB`;
+      if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} MB`;
       return `${(n / (1024 * 1024 * 1024)).toLocaleString('vi-VN', { maximumFractionDigits: 2 })} GB`;
     }
 
+    function niceMaxScale(rawMax, isBytes) {
+      if (rawMax <= 0) return isBytes ? 100 * 1024 : 4;
+      if (isBytes) {
+        const units = [1, 1024, 1024 * 1024, 1024 * 1024 * 1024];
+        let unit = 1;
+        for (const u of units) {
+          if (rawMax >= u) unit = u;
+        }
+        const scaled = rawMax / unit;
+        const exp = Math.pow(10, Math.floor(Math.log10(scaled)));
+        const frac = scaled / exp;
+        let nice = 1;
+        if (frac <= 1) nice = 1;
+        else if (frac <= 1.2) nice = 1.2;
+        else if (frac <= 1.5) nice = 1.5;
+        else if (frac <= 2) nice = 2;
+        else if (frac <= 2.5) nice = 2.5;
+        else if (frac <= 3) nice = 3;
+        else if (frac <= 4) nice = 4;
+        else if (frac <= 5) nice = 5;
+        else if (frac <= 6) nice = 6;
+        else if (frac <= 8) nice = 8;
+        else nice = 10;
+        return nice * exp * unit;
+      }
+      const exp = Math.pow(10, Math.floor(Math.log10(rawMax)));
+      const frac = rawMax / exp;
+      const nice = frac <= 1 ? 1 : frac <= 2 ? 2 : frac <= 4 ? 4 : frac <= 5 ? 5 : frac <= 8 ? 8 : 10;
+      return Math.max(4, nice * exp);
+    }
+
+    // ================= THEME MANAGEMENT (dark-mode-toggle) =================
+    const metaScheme = document.querySelector('meta[name="color-scheme"]');
+    const darkMql = window.matchMedia('(prefers-color-scheme: dark)');
+
+    function getStoredTheme() {
+      try {
+        const v = localStorage.getItem('color-scheme');
+        return v === 'light' || v === 'dark' ? v : 'system';
+      } catch {
+        return 'system';
+      }
+    }
+
+    function getResolvedTheme() {
+      const stored = getStoredTheme();
+      if (stored === 'light' || stored === 'dark') return stored;
+      return darkMql.matches ? 'dark' : 'light';
+    }
+
+    function applyTheme(val) {
+      try {
+        if (val === 'light' || val === 'dark') localStorage.setItem('color-scheme', val);
+        else localStorage.removeItem('color-scheme');
+      } catch {}
+      metaScheme.content = val === 'light' || val === 'dark' ? val : 'light dark';
+      syncThemeControls();
+    }
+
+    function syncThemeControls() {
+      const stored = getStoredTheme();
+      const resolved = getResolvedTheme();
+      document.querySelectorAll('#themeSegmented button').forEach((b) => {
+        b.setAttribute('aria-pressed', String(b.dataset.themeVal === stored));
+      });
+      const quickLabel = document.getElementById('quickThemeLabel');
+      if (quickLabel) {
+        quickLabel.textContent = resolved === 'dark' ? 'Chế độ Sáng' : 'Chế độ Tối';
+      }
+    }
+
+    document.querySelectorAll('#themeSegmented button').forEach((btn) => {
+      btn.addEventListener('click', () => applyTheme(btn.dataset.themeVal));
+    });
+
+    document.getElementById('quickThemeBtn').addEventListener('click', () => {
+      const target = getResolvedTheme() === 'dark' ? 'light' : 'dark';
+      const sys = darkMql.matches ? 'dark' : 'light';
+      applyTheme(target === sys ? 'system' : target);
+    });
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'color-scheme') {
+        const stored = getStoredTheme();
+        metaScheme.content = stored === 'system' ? 'light dark' : stored;
+        syncThemeControls();
+      }
+    });
+    darkMql.addEventListener('change', syncThemeControls);
+    syncThemeControls();
+
+    // ================= TOAST NOTIFICATIONS (popover="manual") =================
+    let activeToastEl = null;
+    function showToast(msg) {
+      const region = document.getElementById('toastRegion');
+      const prevTrigger = document.activeElement;
+
+      if (activeToastEl) {
+        try {
+          if (typeof activeToastEl.hidePopover === 'function') activeToastEl.hidePopover();
+        } catch {}
+        clearTimeout(activeToastEl._timer);
+        activeToastEl.remove();
+        activeToastEl = null;
+      }
+
+      const toast = document.createElement('div');
+      toast.className = 'toast-item';
+      toast.id = `toast-${Date.now()}`;
+      toast.setAttribute('popover', 'manual');
+
+      const textSpan = document.createElement('span');
+      textSpan.textContent = msg;
+
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'toast-close';
+      closeBtn.setAttribute('aria-label', 'Đóng thông báo');
+      closeBtn.setAttribute('popovertarget', toast.id);
+      closeBtn.setAttribute('popovertargetaction', 'hide');
+      closeBtn.textContent = '×';
+
+      const dismiss = () => {
+        clearTimeout(toast._timer);
+        const wasFocused = toast.contains(document.activeElement);
+        try {
+          if (typeof toast.hidePopover === 'function') toast.hidePopover();
+        } catch {}
+        toast.classList.remove(':popover-open');
+        toast.remove();
+        if (activeToastEl === toast) activeToastEl = null;
+        if (wasFocused && prevTrigger && typeof prevTrigger.focus === 'function') {
+          prevTrigger.focus();
+        }
+      };
+      closeBtn.addEventListener('click', dismiss);
+
+      toast.append(textSpan, closeBtn);
+      region.appendChild(toast);
+      activeToastEl = toast;
+
+      try {
+        if (typeof toast.showPopover === 'function') toast.showPopover();
+        else toast.classList.add(':popover-open');
+      } catch {
+        toast.classList.add(':popover-open');
+      }
+
+      if (typeof document.ariaNotify === 'function') {
+        document.ariaNotify(msg);
+      } else {
+        const live = document.getElementById('srLiveRegion');
+        if (live) live.textContent = msg;
+      }
+
+      const scheduleHide = () => {
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(() => {
+          if (toast.contains(document.activeElement)) {
+            scheduleHide();
+            return;
+          }
+          dismiss();
+        }, 3400);
+      };
+      scheduleHide();
+    }
+
+    // ================= BANDWIDTH & CHART =================
     function estimateDomainBytesClient(domain) {
       const d = String(domain || '').toLowerCase();
       if (FALLBACK_TRACKER_RE.test(d)) return { category: 'tracker', bytes: 25 * 1024 };
@@ -1002,7 +2239,6 @@
         };
       }
 
-      // Fallback tương thích khi server chưa khởi động lại sau bản cập nhật store.js
       const catMap = {
         video_ad: { key: 'video_ad', label: 'Quảng cáo Video / Rich Media', bytesPerQuery: 750 * 1024, count: 0, bytes: 0 },
         service_rule: { key: 'service_rule', label: 'Dịch vụ chặn theo quy tắc', bytesPerQuery: 500 * 1024, count: 0, bytes: 0 },
@@ -1059,7 +2295,6 @@
           ? `≈ ${formatBytes(bw.avgSavedBytesPerBlocked)} / lượt chặn`
           : 'Chưa có lượt chặn';
 
-      // Build series for 24 hours
       let running = 0;
       const points = bw.hourly.map((h) => {
         running += h.savedBytes;
@@ -1076,7 +2311,7 @@
       if (summary.blockedQueries === 0) {
         subtitleEl.textContent = 'Chưa có truy vấn quảng cáo nào bị chặn trong 24 giờ qua.';
       } else if (mode === 'cumulative') {
-        subtitleEl.textContent = `Tổng băng thông tiết kiệm tích lũy trong ngày: ${formatBytes(running)} (${summary.blockedQueries.toLocaleString('vi-VN')} lượt chặn).`;
+        subtitleEl.textContent = `Tổng băng thông tiết kiệm tích lũy: ${formatBytes(running)} (${summary.blockedQueries.toLocaleString('vi-VN')} lượt chặn).`;
       } else if (mode === 'blocked') {
         subtitleEl.textContent = `Cao điểm lúc ${String(peak.hour).padStart(2, '0')}:00 với ${peak.blocked.toLocaleString('vi-VN')} lượt chặn (${activeHours} khung giờ hoạt động).`;
       } else {
@@ -1087,17 +2322,16 @@
         document.getElementById('bandwidthMethodology').textContent = `* Lưu ý: ${bw.methodology}`;
       }
 
-      // SVG dimensions
-      const W = 860;
-      const H = 240;
-      const padL = 62;
-      const padR = 16;
-      const padT = 18;
+      const W = 900;
+      const H = 230;
+      const padL = 66;
+      const padR = 14;
+      const padT = 16;
       const padB = 30;
       const plotW = W - padL - padR;
       const plotH = H - padT - padB;
       const rawMax = Math.max(...points.map((p) => p.value), 0);
-      const maxVal = rawMax > 0 ? rawMax * 1.12 : mode === 'blocked' ? 4 : 100 * 1024;
+      const maxVal = niceMaxScale(rawMax, mode !== 'blocked');
 
       const yTicks = 4;
       let gridHtml = '';
@@ -1110,7 +2344,7 @@
             ? Math.round(tickVal).toLocaleString('vi-VN')
             : formatBytes(tickVal);
         gridHtml += `<line class="chart-grid-line" x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" />`;
-        gridHtml += `<text class="chart-axis-text" x="${padL - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">${esc(label)}</text>`;
+        gridHtml += `<text class="chart-axis-text" x="${padL - 10}" y="${(y + 4).toFixed(1)}" text-anchor="end">${esc(label)}</text>`;
       }
 
       const slotW = plotW / 24;
@@ -1136,8 +2370,8 @@
         dataHtml += `
           <defs>
             <linearGradient id="bwAreaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="var(--success)" stop-opacity="0.34" />
-              <stop offset="100%" stop-color="var(--success)" stop-opacity="0.03" />
+              <stop offset="0%" stop-color="var(--success)" stop-opacity="0.32" />
+              <stop offset="100%" stop-color="var(--success)" stop-opacity="0.02" />
             </linearGradient>
           </defs>
           <path d="${areaPath}" fill="url(#bwAreaGrad)" />
@@ -1148,25 +2382,38 @@
           const ariaLabel = `${String(c.p.hour).padStart(2, '0')} giờ: lũy kế ${formatBytes(c.p.cumulativeBytes)}, riêng giờ này ${formatBytes(c.p.savedBytes)}, ${c.p.blocked} lượt chặn`;
           dataHtml += `<rect class="chart-hit" data-hour="${c.p.hour}" tabindex="0" role="button" aria-label="${esc(ariaLabel)}" x="${hitX.toFixed(1)}" y="${padT}" width="${slotW.toFixed(1)}" height="${plotH}" fill="transparent" />`;
           if (c.p.blocked > 0 || c.p.hour === nowHour) {
-            dataHtml += `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${c.p.hour === nowHour ? 4.5 : 3}" fill="var(--success)" stroke="var(--surface)" stroke-width="1.5" pointer-events="none" />`;
+            dataHtml += `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${c.p.hour === nowHour ? 4.5 : 3}" fill="var(--success)" stroke="var(--surface)" stroke-width="1.8" pointer-events="none" />`;
           }
         }
       } else {
         const barColor = mode === 'blocked' ? 'var(--danger)' : 'var(--success)';
         const barColorNow = 'var(--accent)';
-        const barW = Math.max(8, slotW * 0.62);
+        const barW = Math.max(10, slotW * 0.56);
         const barOffset = (slotW - barW) / 2;
+
+        dataHtml += `
+          <defs>
+            <linearGradient id="barGradMain" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="${barColor}" stop-opacity="0.95" />
+              <stop offset="100%" stop-color="${barColor}" stop-opacity="0.58" />
+            </linearGradient>
+            <linearGradient id="barGradNow" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="${barColorNow}" stop-opacity="1" />
+              <stop offset="100%" stop-color="${barColorNow}" stop-opacity="0.65" />
+            </linearGradient>
+          </defs>
+        `;
 
         for (const p of points) {
           const hitX = padL + p.hour * slotW;
           const barX = hitX + barOffset;
-          const barH = p.value > 0 ? Math.max(3, (p.value / maxVal) * plotH) : 0;
+          const barH = p.value > 0 ? Math.max(4, (p.value / maxVal) * plotH) : 0;
           const barY = padT + plotH - barH;
           const isNow = p.hour === nowHour;
           const ariaLabel = `${String(p.hour).padStart(2, '0')} giờ: tiết kiệm ${formatBytes(p.savedBytes)}, ${p.blocked} lượt chặn trên ${p.total} truy vấn`;
-          dataHtml += `<rect class="chart-hit" data-hour="${p.hour}" tabindex="0" role="button" aria-label="${esc(ariaLabel)}" x="${hitX.toFixed(1)}" y="${padT}" width="${slotW.toFixed(1)}" height="${plotH}" fill="transparent" />`;
+          dataHtml += `<rect class="chart-hit" data-hour="${p.hour}" tabindex="0" role="button" aria-label="${esc(ariaLabel)}" x="${hitX.toFixed(1)}" y="${padT}" width="${slotW.toFixed(1)}" height="${plotH}" rx="4" fill="transparent" />`;
           if (barH > 0) {
-            dataHtml += `<rect class="chart-bar" x="${barX.toFixed(1)}" y="${barY.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="4" fill="${isNow ? barColorNow : barColor}" fill-opacity="${isNow ? '0.95' : '0.82'}" pointer-events="none" />`;
+            dataHtml += `<rect class="chart-bar" x="${barX.toFixed(1)}" y="${barY.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="5" fill="url(#${isNow ? 'barGradNow' : 'barGradMain'})" pointer-events="none" />`;
           } else {
             dataHtml += `<rect x="${barX.toFixed(1)}" y="${(padT + plotH - 2).toFixed(1)}" width="${barW.toFixed(1)}" height="2" rx="1" fill="var(--border)" pointer-events="none" />`;
           }
@@ -1189,7 +2436,6 @@
         </svg>
       `;
 
-      // Bind interactive tooltip for mouse & keyboard focus
       const tooltip = document.getElementById('bandwidthTooltip');
       const showHourTip = (hour) => {
         const p = points[hour];
@@ -1197,10 +2443,13 @@
         const rate = p.total > 0 ? ((p.blocked / p.total) * 100).toFixed(1) : '0.0';
         const hh = String(p.hour).padStart(2, '0');
         tooltip.innerHTML = `
-          <div><strong>${hh}:00 – ${hh}:59</strong> ${p.hour === nowHour ? '<span class="badge cached">Giờ hiện tại</span>' : ''}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.2rem;">
+            <strong>${hh}:00 – ${hh}:59</strong>
+            ${p.hour === nowHour ? '<span class="badge cached">Hiện tại</span>' : ''}
+          </div>
           <div>Tiết kiệm: <strong style="color:var(--success)">${formatBytes(p.savedBytes)}</strong></div>
           ${mode === 'cumulative' ? `<div>Lũy kế tới ${hh}h: <strong>${formatBytes(p.cumulativeBytes)}</strong></div>` : ''}
-          <div style="color:var(--muted)">Chặn ${p.blocked.toLocaleString('vi-VN')} / ${p.total.toLocaleString('vi-VN')} truy vấn (${rate}%)</div>
+          <div class="stat-sub" style="margin-top:0.15rem;">Chặn ${p.blocked.toLocaleString('vi-VN')} / ${p.total.toLocaleString('vi-VN')} truy vấn (${rate}%)</div>
         `;
         tooltip.classList.add('visible');
       };
@@ -1214,7 +2463,6 @@
         el.addEventListener('blur', hideHourTip);
       });
 
-      // Category breakdown bar + legend
       const breakdownEl = document.getElementById('bandwidthCategoryBreakdown');
       const nonZeroCats = bw.byCategory.filter((c) => c.bytes > 0).sort((a, b) => b.bytes - a.bytes);
       if (nonZeroCats.length === 0 || bw.totalSavedBytes === 0) {
@@ -1238,7 +2486,7 @@
                   <span class="cat-dot" style="background:${color};"></span>
                   <span>${esc(c.label)}</span>
                 </span>
-                <span><strong>${formatBytes(c.bytes)}</strong> <span class="stat-label">(${pct}% • ${c.count.toLocaleString('vi-VN')})</span></span>
+                <span class="tabular"><strong>${formatBytes(c.bytes)}</strong> <span class="stat-label">(${pct}% • ${c.count.toLocaleString('vi-VN')})</span></span>
               </div>
             `;
           })
@@ -1249,14 +2497,6 @@
           <div class="cat-legend">${legend}</div>
         `;
       }
-    }
-
-    function showToast(msg) {
-      const el = document.getElementById('toast');
-      el.textContent = msg;
-      el.classList.add('show');
-      clearTimeout(el._t);
-      el._t = setTimeout(() => el.classList.remove('show'), 3200);
     }
 
     async function api(url, method = 'GET', body = null) {
@@ -1271,6 +2511,46 @@
       return data;
     }
 
+    // ================= NAVIGATION =================
+    function switchTab(tabId) {
+      state.activeTab = tabId;
+      document.querySelectorAll('nav.tabs button').forEach((b) => {
+        b.setAttribute('aria-selected', String(b.dataset.tab === tabId));
+      });
+      document.querySelectorAll('.panel').forEach((p) => {
+        p.classList.toggle('active', p.id === `tab-${tabId}`);
+      });
+      const meta = TAB_META[tabId];
+      if (meta) {
+        document.getElementById('pageTitle').textContent = meta.title;
+        document.getElementById('pageSubtitle').textContent = meta.sub;
+      }
+    }
+
+    document.querySelectorAll('nav.tabs button').forEach((btn) => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    // Sub-tabs inside Clients
+    document.querySelectorAll('[data-subtab]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.subtab;
+        document.querySelectorAll('[data-subtab]').forEach((b) =>
+          b.setAttribute('aria-selected', String(b === btn))
+        );
+        document.querySelectorAll('.sub-panel').forEach((p) =>
+          p.classList.toggle('active', p.id === `subtab-${target}`)
+        );
+      });
+    });
+
+    window.filterLogsBy = (term, onlyBlocked = false) => {
+      document.getElementById('logSearch').value = term;
+      document.getElementById('logFilter').value = onlyBlocked ? 'blocked' : 'all';
+      renderLogs();
+      switchTab('logs');
+    };
+
     // Chart mode toggle
     document.querySelectorAll('[data-chart-mode]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -1284,23 +2564,14 @@
       });
     });
 
-    // Tabs
-    document.querySelectorAll('nav.tabs button').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('nav.tabs button').forEach((b) => b.setAttribute('aria-selected', 'false'));
-        document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
-        btn.setAttribute('aria-selected', 'true');
-        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-      });
-    });
-
+    // ================= RENDER STATUS =================
     function renderStatus() {
       const s = state.status;
       if (!s) return;
 
       const lanIp = s.lanIps?.[0]?.ip || '127.0.0.1';
       document.getElementById('serverInfo').textContent =
-        `DNS ${lanIp}:${s.dnsPort} • Web :${s.webPort} • Cache: ${s.cacheSize}`;
+        `${lanIp}:${s.dnsPort}\nWeb :${s.webPort} • Cache ${s.cacheSize}`;
 
       const badge = document.getElementById('protectionBadge');
       const toggleBtn = document.getElementById('toggleProtectionBtn');
@@ -1320,10 +2591,18 @@
       document.getElementById('statRules').textContent = s.totalBlockedDomains.toLocaleString('vi-VN');
       document.getElementById('cacheCount').textContent = s.cacheSize;
 
+      // Sidebar badges
+      const enabledLists = (s.config.blocklists || []).filter((b) => b.enabled).length;
+      document.getElementById('navBadgeLists').textContent = enabledLists;
+      document.getElementById('navBadgeRules').textContent = (s.config.clientRules || []).length;
+      document.getElementById('whitelistCountBadge').textContent = (s.config.whitelist || []).length;
+      document.getElementById('blacklistCountBadge').textContent = (s.config.blacklist || []).length;
+
       renderBandwidthChart(s.summary);
 
-      // Top blocked
-      const tb = s.summary.topBlockedDomains;
+      // Top blocked domains (with proportional bars)
+      const tb = s.summary.topBlockedDomains || [];
+      const maxBlockedCount = tb.length ? Math.max(...tb.map((i) => i.count), 1) : 1;
       document.getElementById('topBlockedList').innerHTML = tb.length
         ? tb
             .map((i) => {
@@ -1331,14 +2610,27 @@
                 typeof i.savedBytes === 'number'
                   ? i.savedBytes
                   : estimateDomainBytesClient(i.domain).bytes * i.count;
-              return `<div class="row" style="justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid var(--border);"><span>${esc(i.domain)}</span><span><strong>${i.count.toLocaleString('vi-VN')}</strong> <span class="stat-label">(~${formatBytes(saved)})</span></span></div>`;
+              const pct = Math.max(3, Math.round((i.count / maxBlockedCount) * 100));
+              return `
+                <div class="rank-row" role="button" tabindex="0" onclick="filterLogsBy('${esc(i.domain)}', true)" onkeydown="if(event.key==='Enter')filterLogsBy('${esc(i.domain)}', true)" title="Bấm để xem nhật ký của ${esc(i.domain)}">
+                  <div class="rank-bar danger" style="width:${pct}%;"></div>
+                  <div class="rank-main">
+                    <div class="rank-primary"><span class="rank-domain mono">${esc(i.domain)}</span></div>
+                  </div>
+                  <div class="rank-stats">
+                    <span class="rank-count" style="color:var(--danger);">${i.count.toLocaleString('vi-VN')}</span>
+                    <span class="rank-meta">~${formatBytes(saved)}</span>
+                  </div>
+                </div>
+              `;
             })
             .join('')
-        : 'Chưa có truy vấn nào bị chặn.';
+        : '<div class="stat-label" style="padding:1rem 0;">Chưa có truy vấn nào bị chặn.</div>';
 
-      // Top clients
+      // Top LAN clients (with clean 2-line layout + proportional bars)
       const discoveredMap = s.discoveredDevices || {};
-      const tc = s.summary.topClients;
+      const tc = s.summary.topClients || [];
+      const maxClientTotal = tc.length ? Math.max(...tc.map((c) => c.total), 1) : 1;
       const bwData = resolveBandwidthData(s.summary);
       document.getElementById('topClientsList').innerHTML = tc.length
         ? tc
@@ -1347,62 +2639,81 @@
                 typeof c.savedBytes === 'number'
                   ? c.savedBytes
                   : c.blocked * (bwData.avgSavedBytesPerBlocked || 120 * 1024);
-              const savedText = c.blocked > 0 ? ` • <span style="color:var(--success)">~${formatBytes(saved)}</span>` : '';
-              const grpBadge = c.groupName ? ` <span class="group-badge">${esc(c.groupIcon || '📁')} ${esc(c.groupName)}</span>` : '';
+              const pct = Math.max(3, Math.round((c.total / maxClientTotal) * 100));
+              const grpBadge = c.groupName ? `<span class="group-badge">${esc(c.groupIcon || '📁')} ${esc(c.groupName)}</span>` : '';
               const disc = discoveredMap[c.ip];
-              const nameDisplay = c.name
-                ? `(${esc(c.name)})`
-                : disc?.suggestedName
-                ? `<span class="stat-label">(${esc(disc.suggestedName)})</span>`
-                : '';
-              return `<div class="row" style="justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid var(--border);"><span><strong>${esc(c.ip)}</strong> ${nameDisplay}${grpBadge}</span><span>${c.total.toLocaleString('vi-VN')} truy vấn / <span style="color:var(--danger)">${c.blocked.toLocaleString('vi-VN')} chặn</span>${savedText}</span></div>`;
+              const friendlyName = c.name || disc?.suggestedName || '';
+              return `
+                <div class="rank-row" role="button" tabindex="0" onclick="filterLogsBy('${esc(c.ip)}', false)" onkeydown="if(event.key==='Enter')filterLogsBy('${esc(c.ip)}', false)" title="Bấm để xem nhật ký của ${esc(c.ip)}">
+                  <div class="rank-bar" style="width:${pct}%;"></div>
+                  <div class="rank-main">
+                    <div class="rank-primary">
+                      <span class="mono">${esc(c.ip)}</span>
+                      ${grpBadge}
+                    </div>
+                    ${friendlyName ? `<div class="rank-sub">${esc(friendlyName)}</div>` : ''}
+                  </div>
+                  <div class="rank-stats">
+                    <span class="rank-count">${c.total.toLocaleString('vi-VN')} <span class="stat-label" style="font-weight:500;">truy vấn</span></span>
+                    <span class="rank-meta">
+                      <span style="color:${c.blocked > 0 ? 'var(--danger)' : 'var(--muted)'};font-weight:600;">${c.blocked.toLocaleString('vi-VN')} chặn</span>
+                      ${c.blocked > 0 ? ` • <span style="color:var(--success);">~${formatBytes(saved)}</span>` : ''}
+                    </span>
+                  </div>
+                </div>
+              `;
             })
             .join('')
-        : 'Chưa có thiết bị nào truy vấn.';
+        : '<div class="stat-label" style="padding:1rem 0;">Chưa có thiết bị nào truy vấn.</div>';
 
-      // Blocklists với trạng thái trực quan (Đang hoạt động / Lỗi tải / Chưa tải / Đang tắt)
+      // Blocklists with toggle switches
       document.getElementById('blocklistsContainer').innerHTML = s.config.blocklists
         .map((b) => {
           let badge = '';
           if (!b.enabled) {
-            badge = '<span class="badge" style="background:var(--surface-alt);color:var(--muted);">● Đang tắt</span>';
+            badge = '<span class="badge muted">Đang tắt</span>';
           } else if (b.lastError) {
-            badge = `<span class="badge blocked">● Lỗi tải: ${esc(b.lastError)}</span>`;
+            badge = `<span class="badge blocked">Lỗi tải: ${esc(b.lastError)}</span>`;
           } else if (b.count > 0) {
-            badge = `<span class="badge allowed">● Đang hoạt động (${b.count.toLocaleString('vi-VN')} tên miền)</span>`;
+            badge = `<span class="badge allowed">${b.count.toLocaleString('vi-VN')} tên miền</span>`;
           } else {
-            badge = '<span class="badge" style="background:color-mix(in srgb, var(--warn) 18%, transparent);color:var(--warn);">● Chưa tải dữ liệu</span>';
+            badge = '<span class="badge warn">Chưa tải dữ liệu</span>';
           }
           const updatedText = b.lastUpdated ? 'Cập nhật: ' + new Date(b.lastUpdated).toLocaleString('vi-VN') : 'Chưa tải';
           return `
-          <div class="row" style="justify-content:space-between;padding:0.7rem 0;border-bottom:1px solid var(--border);gap:0.75rem;">
-            <div style="flex:1;min-width:240px;">
-              <div class="row" style="gap:0.5rem;">
-                <label style="font-weight:600;cursor:pointer;">
-                  <input type="checkbox" ${b.enabled ? 'checked' : ''} onchange="toggleBlocklist('${esc(b.id)}', this.checked)" />
-                  ${esc(b.name)}
+          <div class="blocklist-item">
+            <div class="blocklist-meta">
+              <div class="row" style="gap:0.55rem;">
+                <label class="switch-wrap" style="font-weight:600;">
+                  <input type="checkbox" class="switch" role="switch" ${b.enabled ? 'checked' : ''} onchange="toggleBlocklist('${esc(b.id)}', this.checked)" />
+                  <span>${esc(b.name)}</span>
                 </label>
                 ${badge}
               </div>
-              <div class="stat-label" style="margin-top:0.2rem;word-break:break-all;">${esc(b.url)} • ${updatedText}</div>
+              <div class="blocklist-url mono">${esc(b.url)} <span style="font-family:inherit;">• ${updatedText}</span></div>
             </div>
             <div class="row" style="gap:0.4rem;">
-              <button class="btn sm" onclick="refreshOneBlocklist('${esc(b.id)}', this)">Tải lại</button>
-              <button class="btn danger sm" onclick="deleteBlocklist('${esc(b.id)}')">Xóa</button>
+              <button type="button" class="btn sm" onclick="refreshOneBlocklist('${esc(b.id)}', this)">Tải lại</button>
+              <button type="button" class="btn danger sm" onclick="deleteBlocklist('${esc(b.id)}')">Xóa</button>
             </div>
           </div>`;
         })
         .join('');
 
       // Whitelist / Blacklist chips
-      document.getElementById('whitelistChips').innerHTML = s.config.whitelist
-        .map((d) => `<span class="chip">${esc(d)} <button onclick="removeListItem('whitelist','${esc(d)}')" title="Xóa">×</button></span>`)
-        .join('');
-      document.getElementById('blacklistChips').innerHTML = s.config.blacklist
-        .map((d) => `<span class="chip">${esc(d)} <button onclick="removeListItem('blacklist','${esc(d)}')" title="Xóa">×</button></span>`)
-        .join('');
+      document.getElementById('whitelistChips').innerHTML = s.config.whitelist.length
+        ? s.config.whitelist
+            .map((d) => `<span class="chip mono">${esc(d)} <button type="button" onclick="removeListItem('whitelist','${esc(d)}')" title="Xóa" aria-label="Xóa ${esc(d)}">×</button></span>`)
+            .join('')
+        : '<span class="stat-label">Chưa có tên miền nào trong Whitelist.</span>';
 
-      // Service checkboxes (chỉ render 1 lần)
+      document.getElementById('blacklistChips').innerHTML = s.config.blacklist.length
+        ? s.config.blacklist
+            .map((d) => `<span class="chip mono">${esc(d)} <button type="button" onclick="removeListItem('blacklist','${esc(d)}')" title="Xóa" aria-label="Xóa ${esc(d)}">×</button></span>`)
+            .join('')
+        : '<span class="stat-label">Chưa có tên miền nào trong Blacklist.</span>';
+
+      // Service checkboxes (render once)
       const svcContainer = document.getElementById('serviceCheckboxes');
       if (!svcContainer.dataset.ready) {
         svcContainer.innerHTML = Object.entries(s.servicePresets)
@@ -1411,7 +2722,7 @@
         svcContainer.dataset.ready = '1';
       }
 
-      // Device Groups & Device Assignments
+      // Device Groups
       const groups = Array.isArray(s.config.deviceGroups)
         ? s.config.deviceGroups
         : [
@@ -1434,18 +2745,13 @@
                   ? `${gs.total.toLocaleString('vi-VN')} truy vấn • <span style="color:var(--danger)">${gs.blocked.toLocaleString('vi-VN')} chặn</span> • <span style="color:var(--success)">~${formatBytes(gs.savedBytes)}</span>`
                   : 'Chưa có lưu lượng DNS';
               const memberChips = members.length
-                ? `<div class="chip-list" style="margin-top:0.35rem;max-height:110px;">${members
-                    .map((m) => {
-                      const delKey = m.id || m.mac || m.ip;
-                      const label = m.name
-                        ? `${m.name} (${m.ip || m.mac})`
-                        : m.mac
-                        ? `${m.mac}${m.ip ? ' • ' + m.ip : ''}`
-                        : m.ip;
-                      return `<span class="chip" title="${esc(m.mac ? 'MAC: ' + m.mac : '')}">${esc(label)} <button type="button" onclick="removeDevice('${esc(delKey)}')" title="Gỡ khỏi nhóm">×</button></span>`;
-                    })
+                ? `<div class="chip-list" style="margin-top:0.3rem;max-height:105px;">${members
+                    .map(
+                      (m) =>
+                        `<span class="chip">${esc(m.name ? `${m.name} (${m.ip})` : m.ip)} <button type="button" onclick="removeDevice('${esc(m.ip)}')" title="Gỡ khỏi nhóm">×</button></span>`
+                    )
                     .join('')}</div>`
-                : '<div class="stat-label" style="margin-top:0.2rem;">Chưa có thiết bị nào trong nhóm</div>';
+                : '<div class="stat-sub" style="margin-top:0.15rem;">Chưa có thiết bị nào trong nhóm</div>';
               return `
                 <div class="group-card">
                   <div class="group-card-head">
@@ -1455,7 +2761,7 @@
                     </div>
                     <button type="button" class="btn danger sm" onclick="deleteDeviceGroup('${esc(g.id)}')" title="Xóa nhóm">Xóa</button>
                   </div>
-                  <div class="stat-label"><strong>${members.length}</strong> thiết bị • ${statsLine}</div>
+                  <div class="stat-label tabular"><strong>${members.length}</strong> thiết bị • ${statsLine}</div>
                   ${memberChips}
                 </div>
               `;
@@ -1463,7 +2769,7 @@
             .join('')
         : '<div class="stat-label">Chưa có nhóm thiết bị nào.</div>';
 
-      // Cập nhật dropdown chọn nhóm (giữ nguyên giá trị đang chọn khi auto-refresh)
+      // Dropdowns for groups
       const groupOptionsHtml =
         '<option value="">— Chưa phân nhóm —</option>' +
         groups.map((g) => `<option value="${esc(g.id)}">${esc(g.icon || '📁')} ${esc(g.name)}</option>`).join('');
@@ -1483,7 +2789,7 @@
         if (prev && groupById.has(prev)) ruleGroupSel.value = prev;
       }
 
-      // Danh sách gán thiết bị LAN (gộp IP đã lưu + IP đang hoạt động + thông tin tự nhận diện LAN)
+      // Discovery meta & device rows
       const discoveryMetaEl = document.getElementById('discoveryMeta');
       if (discoveryMetaEl) {
         discoveryMetaEl.textContent = s.lastDiscoveryScanAt
@@ -1495,50 +2801,17 @@
       const applyAllBtn = document.getElementById('applySuggestionsBtn');
       if (!assignContainer.contains(document.activeElement)) {
         const merged = new Map();
-        const keyByIp = new Map();
-        const makeKey = (mac, ip) => (mac ? `mac:${mac}` : `ip:${ip}`);
-
         for (const d of devices) {
-          const disc = d.ip ? discoveredMap[d.ip] : null;
-          const mac = d.mac || (disc && !disc.isSharedMac ? disc.mac : '') || '';
-          const key = d.id || makeKey(mac, d.ip);
-          merged.set(key, {
-            key,
-            id: d.id || key,
-            ip: d.ip || '',
-            mac,
-            name: d.name || '',
-            groupId: d.groupId || '',
-            saved: true,
-            total: 0,
-            blocked: 0,
-          });
-          if (d.ip) keyByIp.set(d.ip, key);
+          merged.set(d.ip, { ip: d.ip, name: d.name || '', groupId: d.groupId || '', mac: d.mac || '', saved: true, total: 0, blocked: 0 });
         }
         for (const c of tc) {
-          const disc = discoveredMap[c.ip] || null;
-          const mac = c.mac || (disc && !disc.isSharedMac ? disc.mac : '') || '';
-          const key = (mac && merged.has(`mac:${mac}`) ? `mac:${mac}` : keyByIp.get(c.ip)) || makeKey(mac, c.ip);
-          const existing = merged.get(key);
+          const existing = merged.get(c.ip);
           if (existing) {
-            existing.ip = c.ip || existing.ip;
-            if (!existing.mac && mac) existing.mac = mac;
-            existing.total += c.total;
-            existing.blocked += c.blocked;
+            existing.total = c.total;
+            existing.blocked = c.blocked;
           } else {
-            merged.set(key, {
-              key,
-              id: key,
-              ip: c.ip,
-              mac,
-              name: c.name || '',
-              groupId: c.groupId || '',
-              saved: false,
-              total: c.total,
-              blocked: c.blocked,
-            });
+            merged.set(c.ip, { ip: c.ip, name: c.name || '', groupId: c.groupId || '', mac: '', saved: false, total: c.total, blocked: c.blocked });
           }
-          if (c.ip) keyByIp.set(c.ip, key);
         }
         const deviceItems = [...merged.values()].sort((a, b) => {
           const aLoop = a.ip === '127.0.0.1' || a.ip === '::1' ? 1 : 0;
@@ -1549,16 +2822,14 @@
 
         const pendingSuggestions = [];
         for (const d of deviceItems) {
-          const disc = d.ip ? discoveredMap[d.ip] : null;
+          const disc = discoveredMap[d.ip];
           if (!disc || disc.isLoopback) continue;
           const sugGroup = disc.suggestedGroupId && groupById.has(disc.suggestedGroupId) ? disc.suggestedGroupId : '';
           const needsName = !d.name && Boolean(disc.suggestedName);
           const needsGroup = !d.groupId && Boolean(sugGroup);
           if (needsName || needsGroup) {
             pendingSuggestions.push({
-              key: d.key,
               ip: d.ip,
-              mac: d.mac || (!disc.isSharedMac ? disc.mac || '' : ''),
               name: d.name || disc.suggestedName || '',
               groupId: d.groupId || sugGroup,
             });
@@ -1577,8 +2848,7 @@
         assignContainer.innerHTML = deviceItems.length
           ? deviceItems
               .map((d, idx) => {
-                const disc = d.ip ? discoveredMap[d.ip] || null : null;
-                const displayMac = d.mac || disc?.mac || '';
+                const disc = discoveredMap[d.ip] || null;
                 const sugGroupId = disc?.suggestedGroupId && groupById.has(disc.suggestedGroupId) ? disc.suggestedGroupId : '';
                 const sugGroup = sugGroupId ? groupById.get(sugGroupId) : null;
                 const canSuggest = Boolean(
@@ -1586,12 +2856,9 @@
                 );
 
                 const tags = [];
-                if (d.mac && !disc?.isSharedMac) {
-                  tags.push('<span class="disc-tag info" title="Định danh cố định theo địa chỉ MAC (tự cập nhật khi router đổi IP)">🔑 Theo MAC</span>');
-                }
-                if (disc?.isLoopback) tags.push('<span class="disc-tag info">🖥️ Localhost</span>');
-                else if (disc?.isSelf) tags.push('<span class="disc-tag info">🖥️ Máy chủ NetShield</span>');
-                else if (disc?.isGateway) tags.push('<span class="disc-tag info">🌐 Router / Gateway</span>');
+                if (disc?.isLoopback) tags.push('<span class="disc-tag info">Localhost</span>');
+                else if (disc?.isSelf) tags.push('<span class="disc-tag info">Máy chủ NetShield</span>');
+                else if (disc?.isGateway) tags.push('<span class="disc-tag info">Router / Gateway</span>');
                 if (disc?.hostname && !disc.isLoopback) {
                   tags.push(`<span class="disc-tag info" title="Hostname: ${esc(disc.hostname)}">${esc(disc.hostname.replace(/\.local$/i, ''))}</span>`);
                 }
@@ -1599,16 +2866,14 @@
                   tags.push(`<span class="disc-tag">${esc(disc.vendor)}</span>`);
                 }
                 if (disc?.isPrivateMac) {
-                  tags.push('<span class="disc-tag warn" title="Thiết bị bật Private Wi-Fi Address. Khuyến nghị tắt trên Wi-Fi nhà để MAC không đổi.">🔒 MAC ẩn</span>');
+                  tags.push('<span class="disc-tag warn" title="Thiết bị bật Private Wi-Fi Address (MAC ngẫu nhiên)">MAC ẩn</span>');
                 }
                 if (disc?.isSharedMac) {
-                  tags.push('<span class="disc-tag warn" title="Cùng 1 MAC cho nhiều IP (sau Wi-Fi Repeater/Mesh) — tự quản lý theo IP">📡 Sau Repeater</span>');
+                  tags.push('<span class="disc-tag warn" title="Cùng 1 MAC cho nhiều IP (sau Wi-Fi Repeater/Mesh)">Sau Repeater</span>');
                 }
 
                 const tagsHtml = tags.length ? `<div class="disc-tags">${tags.join('')}</div>` : '';
-                const macLine = displayMac
-                  ? `<div class="stat-sub"><code>${esc(displayMac)}</code></div>`
-                  : '';
+                const macTitle = disc?.mac || d.mac ? `MAC: ${disc?.mac || d.mac}` : '';
                 const suggestLine =
                   canSuggest && disc
                     ? `<div class="disc-suggest" title="${esc((disc.reasons || []).join(' • '))}">Gợi ý: <strong>${esc(disc.suggestedName || 'Chưa rõ tên')}</strong>${sugGroup ? ` → ${esc(sugGroup.icon || '📁')} ${esc(sugGroup.name)}` : ''}${disc.confidence ? ` (${disc.confidence}%)` : ''}</div>`
@@ -1625,30 +2890,28 @@
                 const namePlaceholder = disc?.suggestedName
                   ? `Gợi ý: ${disc.suggestedName}`
                   : 'Đặt tên (vd: Cam sân trước, iPhone...)';
-                const primaryLabel = d.ip || d.mac;
                 return `
                   <div class="device-row">
                     <div>
-                      <strong><code>${esc(primaryLabel)}</code></strong>
-                      ${d.ip && displayMac ? macLine : ''}
-                      <div class="stat-sub">${d.total ? `${d.total.toLocaleString('vi-VN')} truy vấn / ${d.blocked.toLocaleString('vi-VN')} chặn` : 'Đã lưu thủ công'}</div>
+                      <strong title="${esc(macTitle)}" class="mono">${esc(d.ip)}</strong>
+                      <div class="stat-sub tabular">${d.total ? `${d.total.toLocaleString('vi-VN')} truy vấn / ${d.blocked.toLocaleString('vi-VN')} chặn` : 'Đã lưu thủ công'}</div>
                       ${tagsHtml}
                     </div>
                     <div>
-                      <input type="text" id="devName-${idx}" aria-label="Tên thiết bị ${esc(primaryLabel)}" value="${esc(d.name)}" placeholder="${esc(namePlaceholder)}" />
+                      <input type="text" id="devName-${idx}" aria-label="Tên thiết bị ${esc(d.ip)}" value="${esc(d.name)}" placeholder="${esc(namePlaceholder)}" />
                       ${suggestLine}
                     </div>
-                    <select id="devGroup-${idx}" aria-label="Nhóm cho ${esc(primaryLabel)}">${opts}</select>
+                    <select id="devGroup-${idx}" aria-label="Nhóm cho ${esc(d.ip)}">${opts}</select>
                     <div class="row" style="gap:0.35rem;flex-wrap:nowrap;">
-                      ${canSuggest ? `<button type="button" class="btn success sm" onclick="applySingleSuggestion('${esc(d.key)}')" title="Áp dụng tên & nhóm gợi ý">Dùng gợi ý</button>` : ''}
-                      <button type="button" class="btn primary sm" onclick="saveDeviceRow('${esc(d.ip)}', '${esc(d.mac)}', ${idx})">Lưu</button>
-                      ${d.saved ? `<button type="button" class="btn danger sm" onclick="removeDevice('${esc(d.id)}')" title="Xóa khỏi danh sách đã lưu">Gỡ</button>` : ''}
+                      ${canSuggest ? `<button type="button" class="btn success sm" onclick="applySingleSuggestion('${esc(d.ip)}')" title="Áp dụng tên & nhóm gợi ý">Dùng gợi ý</button>` : ''}
+                      <button type="button" class="btn primary sm" onclick="saveDeviceRow('${esc(d.ip)}', ${idx})">Lưu</button>
+                      ${d.saved ? `<button type="button" class="btn danger sm" onclick="removeDevice('${esc(d.ip)}')" title="Xóa khỏi danh sách đã lưu">Gỡ</button>` : ''}
                     </div>
                   </div>
                 `;
               })
               .join('')
-          : 'Chưa phát hiện thiết bị nào trong mạng LAN. Bạn có thể nhập MAC hoặc IP thủ công ở ô phía trên.';
+          : 'Chưa phát hiện thiết bị nào trong mạng LAN. Bạn có thể nhập IP thủ công ở ô phía trên.';
       }
 
       // Client Rules
@@ -1656,56 +2919,64 @@
       document.getElementById('clientRulesList').innerHTML = rules.length
         ? rules
             .map((r) => {
-              let targetHtml = `<code>${esc(r.clientIp || '*')}</code>`;
+              let targetHtml = `<span class="group-badge mono">${esc(r.clientIp || '*')}</span>`;
               if (r.targetType === 'group' && r.groupId) {
                 const grp = groupById.get(r.groupId);
                 targetHtml = `<span class="group-badge">${esc(grp?.icon || '📁')} Nhóm: ${esc(grp?.name || r.groupId)}</span>`;
               }
+              const details = [];
+              if (r.bypassProtection) details.push('<span class="badge allowed">Miễn trừ lọc QC</span>');
+              if (r.blockAllInternet) details.push('<span class="badge blocked">Khóa toàn bộ Internet</span>');
+              if (r.blockedServices?.length) details.push(`<span class="badge warn">Dịch vụ: ${esc(r.blockedServices.join(', '))}</span>`);
+              if (r.blockedDomains?.length) details.push(`<span class="badge muted mono">${esc(r.blockedDomains.join(', '))}</span>`);
+              details.push(
+                r.schedule?.enabled
+                  ? `<span class="badge cached">${esc(r.schedule.start)}–${esc(r.schedule.end)}</span>`
+                  : '<span class="badge muted">24/7</span>'
+              );
               return `
-            <div class="row" style="justify-content:space-between;padding:0.6rem 0;border-bottom:1px solid var(--border);">
-              <div>
-                <strong>${esc(r.name)}</strong> — ${targetHtml}
-                <div class="stat-label">
-                  ${r.bypassProtection ? 'Miễn trừ lọc quảng cáo • ' : ''}
-                  ${r.blockAllInternet ? 'Khóa toàn bộ Internet • ' : ''}
-                  ${r.blockedServices?.length ? 'Dịch vụ: ' + r.blockedServices.join(', ') + ' • ' : ''}
-                  ${r.blockedDomains?.length ? 'Tên miền riêng: ' + r.blockedDomains.join(', ') + ' • ' : ''}
-                  ${r.schedule?.enabled ? `Khung giờ: ${esc(r.schedule.start)}–${esc(r.schedule.end)}` : 'Áp dụng 24/7'}
-                </div>
-              </div>
-              <button class="btn danger sm" onclick="deleteClientRule('${esc(r.id)}')">Xóa</button>
-            </div>`;
+                <div class="rule-item">
+                  <div style="display:flex;flex-direction:column;gap:0.38rem;">
+                    <div class="row" style="gap:0.5rem;">
+                      <strong>${esc(r.name)}</strong>
+                      ${targetHtml}
+                    </div>
+                    <div class="row" style="gap:0.35rem;">${details.join('')}</div>
+                  </div>
+                  <button type="button" class="btn danger sm" onclick="deleteClientRule('${esc(r.id)}')">Xóa</button>
+                </div>`;
             })
             .join('')
         : 'Chưa có quy tắc thiết bị nào.';
 
       // Setup info
       document.getElementById('lanIpBox').innerHTML = (s.lanIps || [])
-        .map((i) => `${esc(i.iface)}: <strong>${esc(i.ip)}</strong> (Cổng DNS đang chạy: ${s.dnsPort})`)
+        .map((i) => `${esc(i.iface)}: <strong>${esc(i.ip)}</strong> (Cổng DNS: ${s.dnsPort})`)
         .join('<br/>') || 'Không tìm thấy IP LAN';
 
       document.getElementById('upstreamInput').value = (s.config.upstreamDns || []).join(', ');
       document.getElementById('blockModeSelect').value = s.config.blockResponseMode || 'zero';
     }
 
+    // ================= LOGS =================
     function renderLogRow(item) {
       const time = new Date(item.timestamp).toLocaleTimeString('vi-VN');
       const statusHtml = item.blocked
-        ? `<span class="badge blocked">Đã chặn</span> <small style="color:var(--muted)">${esc(item.reason)}</small>`
+        ? `<span class="badge blocked">Đã chặn</span> <small class="stat-sub">${esc(item.reason)}</small>`
         : item.cached
-        ? `<span class="badge cached">Cache</span> <small style="color:var(--muted)">${item.latencyMs}ms</small>`
-        : `<span class="badge allowed">Cho phép</span> <small style="color:var(--muted)">${item.latencyMs}ms</small>`;
+        ? `<span class="badge cached">Cache</span> <small class="stat-sub tabular">${item.latencyMs}ms</small>`
+        : `<span class="badge allowed">Cho phép</span> <small class="stat-sub tabular">${item.latencyMs}ms</small>`;
 
       const actionBtn = item.blocked
-        ? `<button class="btn success sm" onclick="quickList('whitelist','${esc(item.domain)}')">Bỏ chặn</button>`
-        : `<button class="btn danger sm" onclick="quickList('blacklist','${esc(item.domain)}')">Chặn ngay</button>`;
+        ? `<button type="button" class="btn success sm" onclick="quickList('whitelist','${esc(item.domain)}')">Bỏ chặn</button>`
+        : `<button type="button" class="btn danger sm" onclick="quickList('blacklist','${esc(item.domain)}')">Chặn ngay</button>`;
 
       return `<tr>
         <th>${esc(item.domain)}</th>
-        <td>${esc(item.clientIp)}</td>
-        <td>${esc(item.qtype)}</td>
+        <td class="mono">${esc(item.clientIp)}</td>
+        <td><span class="badge muted">${esc(item.qtype)}</span></td>
         <td>${statusHtml}</td>
-        <td>${time}</td>
+        <td class="tabular">${time}</td>
         <td>${actionBtn}</td>
       </tr>`;
     }
@@ -1724,7 +2995,11 @@
             (i.reason || '').toLowerCase().includes(search)
         );
       }
-      document.getElementById('logsBody').innerHTML = items.slice(0, 150).map(renderLogRow).join('');
+      const slice = items.slice(0, 150);
+      document.getElementById('logsShownCount').textContent = slice.length.toLocaleString('vi-VN');
+      document.getElementById('logsBody').innerHTML = slice.length
+        ? slice.map(renderLogRow).join('')
+        : '<tr><td colspan="6" class="stat-label" style="text-align:center;padding:1.5rem;">Không có bản ghi phù hợp.</td></tr>';
     }
 
     async function loadAll() {
@@ -1738,7 +3013,7 @@
       renderLogs();
     }
 
-    // Global actions
+    // ================= GLOBAL ACTIONS =================
     window.toggleBlocklist = async (id, enabled) => {
       showToast(enabled ? 'Đang bật và tải danh sách chặn...' : 'Đang tắt danh sách chặn...');
       const res = await api(`/api/blocklists/${encodeURIComponent(id)}`, 'PATCH', { enabled });
@@ -1781,10 +3056,11 @@
       try {
         const res = await api(`/api/check?domain=${encodeURIComponent(domain)}`);
         box.style.display = 'block';
+        box.className = `verdict-box ${res.blocked ? 'blocked' : 'allowed'}`;
         if (res.blocked) {
-          box.innerHTML = `<span class="badge blocked">ĐANG BỊ CHẶN</span> <strong>${esc(res.domain)}</strong> — Lý do: <strong>${esc(res.reason)}</strong>`;
+          box.innerHTML = `<span class="badge blocked">ĐANG BỊ CHẶN</span> <strong class="mono">${esc(res.domain)}</strong> — Lý do: <strong>${esc(res.reason)}</strong>`;
         } else {
-          box.innerHTML = `<span class="badge allowed">ĐƯỢC PHÉP TRUY CẬP</span> <strong>${esc(res.domain)}</strong> — Trạng thái: <strong>${esc(res.reason)}</strong>`;
+          box.innerHTML = `<span class="badge allowed">ĐƯỢC PHÉP TRUY CẬP</span> <strong class="mono">${esc(res.domain)}</strong> — Trạng thái: <strong>${esc(res.reason)}</strong>`;
         }
       } catch (err) {
         showToast(err.message);
@@ -1830,47 +3106,46 @@
       }
     };
 
-    window.saveDeviceRow = async (ip, mac, idx) => {
+    window.saveDeviceRow = async (ip, idx) => {
       const nameEl = document.getElementById(`devName-${idx}`);
       const groupEl = document.getElementById(`devGroup-${idx}`);
       try {
         await api('/api/devices', 'POST', {
           ip,
-          mac,
           name: nameEl ? nameEl.value : '',
           groupId: groupEl ? groupEl.value : '',
         });
         if (document.activeElement) document.activeElement.blur();
         await loadAll();
-        showToast(`Đã cập nhật thiết bị ${mac || ip}`);
+        showToast(`Đã cập nhật thiết bị ${ip}`);
       } catch (err) {
         showToast(err.message);
       }
     };
 
-    window.removeDevice = async (key) => {
+    window.removeDevice = async (ip) => {
       try {
-        await api(`/api/devices/${encodeURIComponent(key)}`, 'DELETE');
+        await api(`/api/devices/${encodeURIComponent(ip)}`, 'DELETE');
         await loadAll();
-        showToast(`Đã gỡ thiết bị`);
+        showToast(`Đã gỡ thiết bị ${ip}`);
       } catch (err) {
         showToast(err.message);
       }
     };
 
-    window.applySingleSuggestion = async (key) => {
-      const item = (state.pendingSuggestions || []).find((p) => p.key === key);
+    window.applySingleSuggestion = async (ip) => {
+      const item = (state.pendingSuggestions || []).find((p) => p.ip === ip);
       if (!item) return;
       try {
         await api('/api/devices/apply-suggestions', 'POST', { items: [item] });
         await loadAll();
-        showToast(`Đã áp dụng gợi ý cho ${item.mac || item.ip}`);
+        showToast(`Đã áp dụng gợi ý cho ${ip}`);
       } catch (err) {
         showToast(err.message);
       }
     };
 
-    // Event bindings
+    // ================= EVENT BINDINGS =================
     document.getElementById('toggleProtectionBtn').addEventListener('click', async () => {
       const next = !state.status?.config?.protectionEnabled;
       await api('/api/protection', 'POST', { enabled: next });
@@ -1879,8 +3154,10 @@
     });
 
     document.getElementById('refreshListsBtn').addEventListener('click', async (e) => {
-      e.target.disabled = true;
-      e.target.textContent = 'Đang tải danh sách...';
+      const btn = e.currentTarget;
+      const label = btn.querySelector('span');
+      btn.disabled = true;
+      if (label) label.textContent = 'Đang tải...';
       try {
         const res = await api('/api/blocklists/refresh', 'POST');
         await loadAll();
@@ -1888,16 +3165,25 @@
       } catch (err) {
         showToast('Lỗi cập nhật: ' + err.message);
       } finally {
-        e.target.disabled = false;
-        e.target.textContent = 'Cập nhật danh sách chặn';
+        btn.disabled = false;
+        if (label) label.textContent = 'Cập nhật bộ lọc';
       }
     });
 
+    document.getElementById('toggleStreamBtn').addEventListener('click', () => {
+      state.streamPaused = !state.streamPaused;
+      document.getElementById('streamLabel').textContent = state.streamPaused ? 'Tiếp tục luồng' : 'Tạm dừng luồng';
+      document.getElementById('streamDot').classList.toggle('paused', state.streamPaused);
+      document.getElementById('navLiveDot').classList.toggle('paused', state.streamPaused);
+      if (!state.streamPaused) renderLogs();
+    });
+
     document.getElementById('addBlocklistBtn').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
       const name = document.getElementById('newListName').value;
       const url = document.getElementById('newListUrl').value;
-      e.target.disabled = true;
-      e.target.textContent = 'Đang tải & kiểm tra...';
+      btn.disabled = true;
+      btn.textContent = 'Đang tải & kiểm tra...';
       try {
         const res = await api('/api/blocklists', 'POST', { name, url });
         document.getElementById('newListName').value = '';
@@ -1911,27 +3197,31 @@
       } catch (err) {
         showToast(err.message);
       } finally {
-        e.target.disabled = false;
-        e.target.textContent = 'Thêm & Tải ngay';
+        btn.disabled = false;
+        btn.textContent = 'Thêm & Tải ngay';
       }
     });
 
-    document.getElementById('addWhitelistBtn').addEventListener('click', async () => {
-      const input = document.getElementById('whitelistInput');
+    async function submitList(type, inputId) {
+      const input = document.getElementById(inputId);
       if (!input.value.trim()) return;
-      await api('/api/lists/whitelist', 'POST', { domain: input.value });
-      input.value = '';
-      await loadAll();
-      showToast('Đã thêm vào Whitelist');
-    });
+      try {
+        await api(`/api/lists/${type}`, 'POST', { domain: input.value });
+        input.value = '';
+        await loadAll();
+        showToast(type === 'whitelist' ? 'Đã thêm vào Whitelist' : 'Đã thêm vào Blacklist');
+      } catch (err) {
+        showToast(err.message);
+      }
+    }
 
-    document.getElementById('addBlacklistBtn').addEventListener('click', async () => {
-      const input = document.getElementById('blacklistInput');
-      if (!input.value.trim()) return;
-      await api('/api/lists/blacklist', 'POST', { domain: input.value });
-      input.value = '';
-      await loadAll();
-      showToast('Đã thêm vào Blacklist');
+    document.getElementById('addWhitelistBtn').addEventListener('click', () => submitList('whitelist', 'whitelistInput'));
+    document.getElementById('whitelistInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitList('whitelist', 'whitelistInput');
+    });
+    document.getElementById('addBlacklistBtn').addEventListener('click', () => submitList('blacklist', 'blacklistInput'));
+    document.getElementById('blacklistInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitList('blacklist', 'blacklistInput');
     });
 
     document.getElementById('addGroupBtn').addEventListener('click', async () => {
@@ -1954,8 +3244,9 @@
     });
 
     document.getElementById('scanDevicesBtn').addEventListener('click', async (e) => {
-      e.target.disabled = true;
-      e.target.textContent = 'Đang quét LAN...';
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      btn.textContent = 'Đang quét LAN...';
       try {
         const res = await api('/api/devices/scan', 'POST');
         await loadAll();
@@ -1964,15 +3255,16 @@
       } catch (err) {
         showToast('Lỗi quét LAN: ' + err.message);
       } finally {
-        e.target.disabled = false;
-        e.target.textContent = 'Quét nhận diện LAN';
+        btn.disabled = false;
+        btn.textContent = 'Quét nhận diện LAN';
       }
     });
 
     document.getElementById('applySuggestionsBtn').addEventListener('click', async (e) => {
       const items = state.pendingSuggestions || [];
       if (!items.length) return;
-      e.target.disabled = true;
+      const btn = e.currentTarget;
+      btn.disabled = true;
       try {
         const res = await api('/api/devices/apply-suggestions', 'POST', { items });
         await loadAll();
@@ -1980,7 +3272,7 @@
       } catch (err) {
         showToast(err.message);
       } finally {
-        e.target.disabled = false;
+        btn.disabled = false;
       }
     });
 
@@ -2009,6 +3301,13 @@
       document.getElementById('ruleGroupWrap').style.display = isGroup ? '' : 'none';
       document.getElementById('ruleIpWrap').style.display = isGroup ? 'none' : '';
     });
+
+    const ruleSchedEl = document.getElementById('ruleScheduleEnabled');
+    const syncScheduleVisibility = () => {
+      document.getElementById('scheduleBox').style.display = ruleSchedEl.checked ? '' : 'none';
+    };
+    ruleSchedEl.addEventListener('change', syncScheduleVisibility);
+    syncScheduleVisibility();
 
     document.getElementById('saveRuleBtn').addEventListener('click', async () => {
       const targetType = ruleTargetTypeEl.value;
@@ -2047,6 +3346,17 @@
       }
     });
 
+    document.getElementById('copyPrimaryIpBtn').addEventListener('click', async () => {
+      const ip = state.status?.lanIps?.[0]?.ip;
+      if (!ip) return;
+      try {
+        await navigator.clipboard.writeText(ip);
+        showToast(`Đã sao chép IP ${ip}`);
+      } catch {
+        showToast(`IP máy chủ: ${ip}`);
+      }
+    });
+
     document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
       const upstreamDns = document
         .getElementById('upstreamInput')
@@ -2076,7 +3386,7 @@
         const rec = JSON.parse(ev.data);
         state.logs.unshift(rec);
         if (state.logs.length > 500) state.logs.length = 500;
-        renderLogs();
+        if (!state.streamPaused) renderLogs();
       } catch {}
     };
 
