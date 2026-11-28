@@ -1,10 +1,48 @@
-/* NetShield Web — Ẩn khung quảng cáo nhanh không giật hình */
+/* NetShield Web — Ẩn khung quảng cáo & thu gọn vùng trắng tức thì */
 html.ns-active ins.adsbygoogle,
+html.ns-active .adsbygoogle,
+html.ns-active .google-auto-placed,
+html.ns-active [id^="div-gpt-ad"],
+html.ns-active [id^="google_ads_iframe"],
+html.ns-active [id^="aswift_"],
+html.ns-active [data-ad-slot],
+html.ns-active [data-ad-client],
+html.ns-active [data-ad-unit],
+html.ns-active [data-google-query-id],
+html.ns-active [data-adm-zone],
 html.ns-active [id^="admzone"],
 html.ns-active [id^="admicro"],
+html.ns-active [id^="adm_"],
+html.ns-active [id^="eclick_"],
+html.ns-active [id^="adtima"],
+html.ns-active [id*="adtima"],
+html.ns-active [id^="taboola-"],
+html.ns-active .taboola-container,
+html.ns-active .OUTBRAIN,
 html.ns-active .adm-ad,
 html.ns-active .admicro-ad,
 html.ns-active .eclick-ad,
+html.ns-active .eclick-zone,
+html.ns-active .adnzone,
+html.ns-active .zone-ad,
+html.ns-active .ads-zone,
+html.ns-active .box-ads,
+html.ns-active .box_ads,
+html.ns-active .banner-ads,
+html.ns-active .banner_ads,
+html.ns-active .ads-top,
+html.ns-active .ads-banner,
+html.ns-active .ads-wrapper,
+html.ns-active .ads-container,
+html.ns-active .ad-container,
+html.ns-active .ad-wrapper,
+html.ns-active .ad-slot,
+html.ns-active .ad-banner,
+html.ns-active .ad-box,
+html.ns-active .vne-ads,
+html.ns-active .dt-ads,
+html.ns-active .tuoitre-ads,
+html.ns-active .k14-ads,
 html.ns-active [class*="admzone"],
 html.ns-active #admicro_wrapper,
 html.ns-active ytd-ad-slot-renderer,
@@ -21,11 +59,27 @@ html.ns-active [data-testid="ad-slot-container"],
 html.ns-active [data-testid="leaderboard-ad"],
 html.ns-active [data-testid="billboard-ad"],
 html.ns-active [data-testid="hpto-parent-container"],
-html.ns-active [id*="adtima"],
 html.ns-active .zm-ads,
 html.ns-active .vip-banner-sidebar {
   display: none !important;
   visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Thu gọn tức thì thẻ cha chỉ bọc duy nhất 1 slot quảng cáo (không giật layout) */
+html.ns-active div:has(> ins.adsbygoogle:only-child),
+html.ns-active div:has(> [id^="div-gpt-ad"]:only-child),
+html.ns-active div:has(> [id^="google_ads_iframe"]:only-child),
+html.ns-active div:has(> [id^="admzone"]:only-child),
+html.ns-active div:has(> [id^="admicro"]:only-child),
+html.ns-active section:has(> ins.adsbygoogle:only-child),
+html.ns-active section:has(> [id^="div-gpt-ad"]:only-child),
+html.ns-active aside:has(> ins.adsbygoogle:only-child),
+html.ns-active aside:has(> [id^="div-gpt-ad"]:only-child) {
+  display: none !important;
   height: 0 !important;
   min-height: 0 !important;
   margin: 0 !important;
@@ -58,4 +112,51 @@ html.ns-active.ns-investing div[id^="bait-"] {
 
 .ns-hidden {
   display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Element Picker — Chọn ẩn vùng trắng thủ công */
+.ns-picker-hover {
+  outline: 2px dashed #EF4444 !important;
+  outline-offset: -2px !important;
+  background-color: rgba(239, 68, 68, 0.12) !important;
+  cursor: crosshair !important;
+}
+
+#ns-picker-bar {
+  position: fixed !important;
+  top: 14px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 8px 14px !important;
+  border-radius: 999px !important;
+  background: #0F172A !important;
+  color: #F8FAFC !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.35) !important;
+  pointer-events: auto !important;
+}
+
+#ns-picker-bar button {
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #FFFFFF !important;
+  border-radius: 6px !important;
+  padding: 3px 8px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+}
+
+#ns-picker-bar button:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
 }

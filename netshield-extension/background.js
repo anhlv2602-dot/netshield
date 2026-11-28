@@ -6,6 +6,7 @@ const DEFAULT_SETTINGS = {
   blockVnNews: true,
   defuseAntiAdblock: true,
   whitelist: [],
+  customRules: {},
   totalBlocked: 0,
 };
 

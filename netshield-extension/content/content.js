@@ -37,6 +37,7 @@
     blockVnNews: true,
     defuseAntiAdblock: true,
     whitelist: [],
+    customRules: {},
   };
 
   let spotifyMutedByUs = false;
@@ -360,29 +361,235 @@
   }
 
   // =========================================================================
-  // 3. BÁO VIỆT NAM & WEB PHỔ THÔNG: Dọn khung trống quảng cáo (Admicro/eClick/AdSense)
+  // 3. BÁO VIỆT NAM & WEB PHỔ THÔNG: Dọn khung & thu gọn vùng trắng quảng cáo
   // =========================================================================
+  const AD_LABEL_ONLY_RE =
+    /^(quảng\s*cáo|advertisement|advertising|sponsored|tài\s*trợ|được\s*tài\s*trợ|tin\s*tài\s*trợ|liên\s*hệ\s*quảng\s*cáo|ads?|promoted|x|×)$/i;
+
+  const PROTECTED_ANCESTOR_TAGS = new Set([
+    'HTML', 'BODY', 'MAIN', 'ARTICLE', 'HEADER', 'FOOTER', 'NAV', 'FORM',
+    'TABLE', 'THEAD', 'TBODY', 'TR', 'UL', 'OL', 'DIALOG',
+  ]);
+
+  const PROTECTED_ANCESTOR_IDS = new Set([
+    'root', 'app', '__next', '__nuxt', 'main', 'content', 'wrapper', 'page',
+  ]);
+
+  function getUncollapsedVisibleText(container) {
+    let text = '';
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      const val = (node.nodeValue || '').trim();
+      if (!val) continue;
+      const parent = node.parentElement;
+      if (!parent) continue;
+      if (parent.closest('[data-ns-hidden="1"]')) continue;
+      const cs = getComputedStyle(parent);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) {
+        continue;
+      }
+      text += ' ' + val;
+      if (text.length > 160) return text.trim();
+    }
+    return text.replace(/\s+/g, ' ').trim();
+  }
+
+  function hasMeaningfulVisibleMedia(container) {
+    const mediaNodes = container.querySelectorAll('img, video, audio, canvas, input, textarea, select');
+    for (const m of mediaNodes) {
+      if (m.dataset.nsHidden === '1' || m.closest('[data-ns-hidden="1"]')) continue;
+      const cs = getComputedStyle(m);
+      if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      const r = m.getBoundingClientRect();
+      // Bỏ qua pixel tracking 1x1 hoặc icon đóng nhỏ <= 20px
+      if (r.width > 24 && r.height > 24) return true;
+    }
+    return false;
+  }
+
+  function isEmptyAdWrapper(el) {
+    if (!el || el.nodeType !== 1) return false;
+    if (el.dataset.nsHidden === '1') return false;
+    if (PROTECTED_ANCESTOR_TAGS.has(el.tagName)) return false;
+    if (el.id && PROTECTED_ANCESTOR_IDS.has(el.id.toLowerCase())) return false;
+    const role = (el.getAttribute('role') || '').toLowerCase();
+    if (role === 'main' || role === 'navigation' || role === 'banner' || role === 'contentinfo') {
+      return false;
+    }
+
+    const rect = el.getBoundingClientRect();
+    // Không bao giờ ẩn khung bố cục quá lớn bao trùm phần lớn trang
+    if (rect.height > 900) return false;
+
+    // Nếu còn bất kỳ văn bản thật nào (không phải nhãn "Quảng cáo" / "Advertisement") -> giữ nguyên
+    const visibleText = getUncollapsedVisibleText(el);
+    if (visibleText && !AD_LABEL_ONLY_RE.test(visibleText)) {
+      return false;
+    }
+
+    // Nếu còn ảnh/video/form thật hiển thị -> giữ nguyên
+    if (hasMeaningfulVisibleMedia(el)) {
+      return false;
+    }
+
+    // Nếu còn phần tử con trực tiếp khác đang hiển thị có nội dung/kích thước đáng kể (không phải nhãn QC)
+    for (const child of el.children) {
+      if (child.dataset.nsHidden === '1') continue;
+      if (child.tagName === 'SCRIPT' || child.tagName === 'STYLE' || child.tagName === 'LINK') continue;
+      const cs = getComputedStyle(child);
+      if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      const cText = getUncollapsedVisibleText(child);
+      if (cText && !AD_LABEL_ONLY_RE.test(cText)) return false;
+      const cr = child.getBoundingClientRect();
+      // Nếu là iframe chưa bị đánh dấu ẩn nhưng có kích thước lớn và không phải ad -> dừng
+      if (child.tagName === 'IFRAME' && cr.width > 30 && cr.height > 30) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // Leo ngược tối đa 5 cấp cha để thu gọn sạch các wrapper rỗng còn giữ height/min-height/margin
+  function collapseEmptyAncestors(el) {
+    let collapsed = 0;
+    let cur = el ? el.parentElement : null;
+    for (let depth = 0; depth < 5 && cur; depth++) {
+      if (!isEmptyAdWrapper(cur)) break;
+      if (hideElement(cur)) collapsed++;
+      cur = cur.parentElement;
+    }
+    return collapsed;
+  }
+
+  const GENERIC_AD_SELECTORS = [
+    'ins.adsbygoogle',
+    '.adsbygoogle',
+    '.google-auto-placed',
+    '[id^="div-gpt-ad"]',
+    '[id^="google_ads_iframe"]',
+    '[id^="aswift_"]',
+    '[data-ad-slot]',
+    '[data-ad-client]',
+    '[data-ad-unit]',
+    '[data-google-query-id]',
+    '[data-adm-zone]',
+    '[id^="admzone"]',
+    '[id^="admicro"]',
+    '[id^="adm_"]',
+    '[id^="eclick_"]',
+    '[id^="adtima"]',
+    '[id*="adtima"]',
+    '[id^="taboola-"]',
+    '.taboola-container',
+    '.OUTBRAIN',
+    '.adm-ad',
+    '.admicro-ad',
+    '.eclick-ad',
+    '.eclick-zone',
+    '.adnzone',
+    '.zone-ad',
+    '.ads-zone',
+    '.box-ads',
+    '.box_ads',
+    '.banner-ads',
+    '.banner_ads',
+    '.ads-top',
+    '.ads-banner',
+    '.ads-wrapper',
+    '.ads-container',
+    '.ad-container',
+    '.ad-wrapper',
+    '.ad-slot',
+    '.ad-banner',
+    '.ad-box',
+    '.vne-ads',
+    '.dt-ads',
+    '.tuoitre-ads',
+    '.k14-ads',
+    'iframe[src*="admicro.vn"]',
+    'iframe[src*="amcdn.vn"]',
+    'iframe[src*="doubleclick.net"]',
+    'iframe[src*="googlesyndication.com"]',
+    'iframe[src*="googleadservices.com"]',
+    'iframe[src*="eclick.vn"]',
+    'iframe[src*="adtima.vn"]',
+    'iframe[src*="adnxs.com"]',
+    'iframe[src*="criteo.com"]',
+    'iframe[src*="criteo.net"]',
+    'iframe[src*="mgid.com"]',
+    'iframe[src*="taboola.com"]',
+    'iframe[src*="outbrain.com"]',
+    'iframe[src*="pubmatic.com"]',
+    'iframe[src*="rubiconproject.com"]',
+    'iframe[src*="openx.net"]',
+    'iframe[src*="casalemedia.com"]',
+    'iframe[src*="smartadserver.com"]',
+    'iframe[src*="amazon-adsystem.com"]',
+    'iframe[src*="2mdn.net"]',
+    'iframe[src*="novanet.vn"]',
+    'iframe[src*="ants.vn"]',
+    'iframe[src*="ambientdigitalgroup.com"]',
+    'iframe[src*="polyad.net"]',
+    'iframe[src*="adxcore.com"]',
+    'iframe[src*="adskeeper.com"]',
+    'iframe[src*="revcontent.com"]',
+  ];
+
   function scanGenericAds() {
     let blocked = 0;
-    const selectors = [
-      'ins.adsbygoogle',
-      '[id^="admzone"]',
-      '[id^="admicro"]',
-      '.adm-ad',
-      '.admicro-ad',
-      '.eclick-ad',
-      'iframe[src*="admicro.vn"]',
-      'iframe[src*="amcdn.vn"]',
-      'iframe[src*="doubleclick.net"]',
-      'iframe[src*="googlesyndication.com"]',
-      'iframe[src*="eclick.vn"]',
-      'iframe[src*="mgid.com"]',
-      'iframe[src*="taboola.com"]',
-    ];
-    for (const sel of selectors) {
+
+    // 3A. Ẩn slot quảng cáo đã nhận diện + leo ngược thu gọn mọi thẻ cha rỗng giữ khoảng trắng
+    for (const sel of GENERIC_AD_SELECTORS) {
       document.querySelectorAll(sel).forEach((el) => {
         if (hideElement(el)) blocked++;
+        collapseEmptyAncestors(el);
       });
+    }
+
+    // 3B. Dọn các khung chỉ còn lại chữ "Quảng cáo" / "Advertisement" với vùng trắng rỗng bên dưới
+    document.querySelectorAll('div, section, aside, figure').forEach((el) => {
+      if (el.dataset.nsHidden === '1' || el.closest('[data-ns-hidden="1"]')) return;
+      if (PROTECTED_ANCESTOR_TAGS.has(el.tagName)) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.height < 40 || rect.height > 700 || rect.width < 120) return;
+
+      const text = getUncollapsedVisibleText(el);
+      if (!text || !AD_LABEL_ONLY_RE.test(text)) return;
+      if (hasMeaningfulVisibleMedia(el)) return;
+
+      // Chỉ thu gọn nếu khung này thực sự chứa iframe rỗng/lỗi hoặc chứa slot đã ẩn hoặc chỉ là hộp trắng rỗng
+      const hasHiddenDescendant = Boolean(el.querySelector('[data-ns-hidden="1"]'));
+      const hasAdFrame = Boolean(el.querySelector('iframe, ins'));
+      const hasAdHint = /ad|banner|sponsor|quangcao|promo|slot/i.test(
+        `${el.id || ''} ${typeof el.className === 'string' ? el.className : ''}`
+      );
+      if (hasHiddenDescendant || hasAdFrame || hasAdHint) {
+        if (hideElement(el)) blocked++;
+        collapseEmptyAncestors(el);
+      }
+    });
+
+    if (blocked > 0) reportBlocked(blocked);
+  }
+
+  // =========================================================================
+  // 3C. CUSTOM RULES: Áp dụng các vùng trống người dùng tự chọn ẩn cho trang này
+  // =========================================================================
+  function applyCustomRules() {
+    const rules = settings.customRules?.[HOST];
+    if (!Array.isArray(rules) || rules.length === 0) return;
+    let blocked = 0;
+    for (const sel of rules) {
+      if (!sel || typeof sel !== 'string') continue;
+      try {
+        document.querySelectorAll(sel).forEach((el) => {
+          if (el.id === 'ns-picker-bar') return;
+          if (hideElement(el)) blocked++;
+          collapseEmptyAncestors(el);
+        });
+      } catch (_) {}
     }
     if (blocked > 0) reportBlocked(blocked);
   }
@@ -579,6 +786,197 @@
     }
   }
 
+  // =========================================================================
+  // 5. ELEMENT PICKER — Chọn ẩn vùng trắng bất kỳ bằng chuột
+  // =========================================================================
+  let pickerActive = false;
+  let pickerTarget = null;
+  let pickerBar = null;
+
+  function escapeCssIdent(str) {
+    if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+      return CSS.escape(str);
+    }
+    return String(str).replace(/([^\w-])/g, '\\$1');
+  }
+
+  function buildStableSelector(el) {
+    if (!el || el.nodeType !== 1) return '';
+    // Ưu tiên ID nếu không phải ID ngẫu nhiên quá dài
+    if (el.id && el.id.length <= 64 && !/^\d+$/.test(el.id)) {
+      const idSel = '#' + escapeCssIdent(el.id);
+      if (document.querySelectorAll(idSel).length === 1) return idSel;
+    }
+
+    const parts = [];
+    let cur = el;
+    for (let depth = 0; depth < 4 && cur && cur !== document.body && cur !== document.documentElement; depth++) {
+      let part = cur.tagName.toLowerCase();
+      if (cur.id && cur.id.length <= 64 && !/^\d+$/.test(cur.id)) {
+        part = '#' + escapeCssIdent(cur.id);
+        parts.unshift(part);
+        break;
+      }
+
+      const classes = Array.from(cur.classList || []).filter(
+        (c) => c && !c.startsWith('ns-') && c.length <= 48
+      );
+      if (classes.length > 0) {
+        part += '.' + classes.slice(0, 2).map(escapeCssIdent).join('.');
+      } else if (cur.parentElement) {
+        const siblings = Array.from(cur.parentElement.children).filter(
+          (s) => s.tagName === cur.tagName
+        );
+        if (siblings.length > 1) {
+          part += `:nth-of-type(${siblings.indexOf(cur) + 1})`;
+        }
+      }
+
+      parts.unshift(part);
+      const candidate = parts.join(' > ');
+      try {
+        if (document.querySelectorAll(candidate).length === 1) return candidate;
+      } catch (_) {}
+      cur = cur.parentElement;
+    }
+    return parts.join(' > ');
+  }
+
+  function setPickerTarget(el) {
+    if (pickerTarget && pickerTarget !== el) {
+      pickerTarget.classList.remove('ns-picker-hover');
+    }
+    if (!el || el === document.body || el === document.documentElement || el.closest('#ns-picker-bar')) {
+      pickerTarget = null;
+      return;
+    }
+    pickerTarget = el;
+    pickerTarget.classList.add('ns-picker-hover');
+    if (pickerBar) {
+      const info = pickerBar.querySelector('[data-ns-info]');
+      if (info) {
+        const r = el.getBoundingClientRect();
+        const tag = el.tagName.toLowerCase();
+        const idPart = el.id ? `#${el.id}` : '';
+        info.textContent = `${tag}${idPart} (${Math.round(r.width)}×${Math.round(r.height)}px)`;
+      }
+    }
+  }
+
+  function onPickerMouseMove(e) {
+    if (!pickerActive) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    if (!el || el.closest('#ns-picker-bar')) return;
+    setPickerTarget(el);
+  }
+
+  function onPickerClick(e) {
+    if (!pickerActive) return;
+    if (e.target && e.target.closest && e.target.closest('#ns-picker-bar')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    const target = pickerTarget || e.target;
+    stopElementPicker();
+    if (!target || target === document.body || target === document.documentElement) return;
+
+    const selector = buildStableSelector(target);
+    if (hideElement(target)) reportBlocked(1);
+    collapseEmptyAncestors(target);
+
+    if (selector) {
+      const nextRules = { ...(settings.customRules || {}) };
+      const list = Array.isArray(nextRules[HOST]) ? [...nextRules[HOST]] : [];
+      if (!list.includes(selector)) {
+        list.push(selector);
+        nextRules[HOST] = list;
+        settings.customRules = nextRules;
+        chrome.storage.local.set({ customRules: nextRules });
+      }
+    }
+  }
+
+  function onPickerKeyDown(e) {
+    if (!pickerActive) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      stopElementPicker();
+    } else if (e.key === 'ArrowUp' && pickerTarget?.parentElement) {
+      e.preventDefault();
+      if (pickerTarget.parentElement !== document.body && pickerTarget.parentElement !== document.documentElement) {
+        setPickerTarget(pickerTarget.parentElement);
+      }
+    }
+  }
+
+  function stopElementPicker() {
+    pickerActive = false;
+    if (pickerTarget) {
+      pickerTarget.classList.remove('ns-picker-hover');
+      pickerTarget = null;
+    }
+    if (pickerBar) {
+      pickerBar.remove();
+      pickerBar = null;
+    }
+    document.removeEventListener('mousemove', onPickerMouseMove, true);
+    document.removeEventListener('click', onPickerClick, true);
+    document.removeEventListener('keydown', onPickerKeyDown, true);
+  }
+
+  function startElementPicker() {
+    if (!IS_TOP_FRAME || !document.body) return;
+    if (pickerActive) stopElementPicker();
+    pickerActive = true;
+
+    pickerBar = document.createElement('div');
+    pickerBar.id = 'ns-picker-bar';
+    pickerBar.innerHTML =
+      '<span>Click vào vùng trắng để ẩn • <strong data-ns-info>Di chuột chọn khung</strong></span>' +
+      '<button type="button" data-ns-parent>Khung cha (↑)</button>' +
+      '<button type="button" data-ns-cancel>Hủy (Esc)</button>';
+
+    pickerBar.querySelector('[data-ns-parent]').addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (pickerTarget?.parentElement && pickerTarget.parentElement !== document.body) {
+        setPickerTarget(pickerTarget.parentElement);
+      }
+    });
+    pickerBar.querySelector('[data-ns-cancel]').addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      stopElementPicker();
+    });
+
+    document.body.appendChild(pickerBar);
+    document.addEventListener('mousemove', onPickerMouseMove, true);
+    document.addEventListener('click', onPickerClick, true);
+    document.addEventListener('keydown', onPickerKeyDown, true);
+  }
+
+  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    if (!IS_TOP_FRAME) return false;
+    if (msg?.type === 'START_PICKER') {
+      startElementPicker();
+      sendResponse({ ok: true });
+      return true;
+    }
+    if (msg?.type === 'CLEAR_CUSTOM_RULES') {
+      const nextRules = { ...(settings.customRules || {}) };
+      delete nextRules[HOST];
+      settings.customRules = nextRules;
+      chrome.storage.local.set({ customRules: nextRules }).then(() => {
+        unhideAll();
+        runScan();
+        sendResponse({ ok: true });
+      });
+      return true;
+    }
+    return false;
+  });
+
   function runScan() {
     if (!settings.enabled || isWhitelisted(HOST, settings.whitelist)) return;
     if (settings.defuseAntiAdblock) scanAntiAdblock();
@@ -588,6 +986,7 @@
     else if (IS_ZINGMP3 && settings.blockMusic) scanZingMp3();
     else if (IS_SPOTIFY && settings.blockMusic) scanSpotify();
     else if (settings.blockVnNews) scanGenericAds();
+    applyCustomRules();
   }
 
   function scheduleScan() {
@@ -617,6 +1016,7 @@
         pollInterval = setInterval(runScan, 1500);
       }
     } else {
+      stopElementPicker();
       document.documentElement.classList.remove('ns-active', 'ns-anti-adblock', 'ns-investing');
       if (observer) {
         observer.disconnect();
@@ -632,7 +1032,7 @@
 
   // Khởi tạo từ chrome.storage
   chrome.storage.local.get(
-    ['enabled', 'blockFacebook', 'blockYoutube', 'blockMusic', 'blockVnNews', 'defuseAntiAdblock', 'whitelist'],
+    ['enabled', 'blockFacebook', 'blockYoutube', 'blockMusic', 'blockVnNews', 'defuseAntiAdblock', 'whitelist', 'customRules'],
     (res) => {
       settings = {
         enabled: res.enabled !== false,
@@ -642,6 +1042,7 @@
         blockVnNews: res.blockVnNews !== false,
         defuseAntiAdblock: res.defuseAntiAdblock !== false,
         whitelist: Array.isArray(res.whitelist) ? res.whitelist : [],
+        customRules: res.customRules && typeof res.customRules === 'object' ? res.customRules : {},
       };
       applyActivation();
     }
@@ -656,6 +1057,10 @@
     if (changes.blockVnNews) settings.blockVnNews = changes.blockVnNews.newValue;
     if (changes.defuseAntiAdblock) settings.defuseAntiAdblock = changes.defuseAntiAdblock.newValue;
     if (changes.whitelist) settings.whitelist = changes.whitelist.newValue || [];
+    if (changes.customRules) {
+      settings.customRules = changes.customRules.newValue || {};
+      unhideAll();
+    }
     applyActivation();
   });
 

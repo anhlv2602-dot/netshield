@@ -160,6 +160,30 @@ body {
   cursor: default;
 }
 
+.picker-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-picker {
+  flex: 1;
+}
+
+.btn-ghost {
+  width: auto;
+  padding: 0 10px;
+  height: 34px;
+  background: #FEF2F2;
+  color: #B91C1C;
+  border: 1px solid #FECACA;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
 .toggles-card {
   padding: 4px 12px;
 }

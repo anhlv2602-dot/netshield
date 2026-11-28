@@ -10,6 +10,7 @@ function isProtected(host) {
 }
 
 let currentHost = '';
+let currentTabId = null;
 let state = {
   enabled: true,
   blockFacebook: true,
@@ -18,11 +19,13 @@ let state = {
   blockVnNews: true,
   defuseAntiAdblock: true,
   whitelist: [],
+  customRules: {},
   totalBlocked: 0,
 };
 
 async function init() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  currentTabId = tab?.id ?? null;
   if (tab?.url) {
     try {
       const u = new URL(tab.url);
@@ -41,7 +44,7 @@ async function init() {
   }
 
   const stored = await chrome.storage.local.get([
-    'enabled', 'blockFacebook', 'blockYoutube', 'blockMusic', 'blockVnNews', 'defuseAntiAdblock', 'whitelist', 'totalBlocked',
+    'enabled', 'blockFacebook', 'blockYoutube', 'blockMusic', 'blockVnNews', 'defuseAntiAdblock', 'whitelist', 'customRules', 'totalBlocked',
   ]);
   state = {
     enabled: stored.enabled !== false,
@@ -51,6 +54,7 @@ async function init() {
     blockVnNews: stored.blockVnNews !== false,
     defuseAntiAdblock: stored.defuseAntiAdblock !== false,
     whitelist: Array.isArray(stored.whitelist) ? stored.whitelist : [],
+    customRules: stored.customRules && typeof stored.customRules === 'object' ? stored.customRules : {},
     totalBlocked: stored.totalBlocked || 0,
   };
 
@@ -71,6 +75,26 @@ async function init() {
       state.whitelist.push(currentHost);
     }
     await chrome.storage.local.set({ whitelist: state.whitelist });
+    render();
+  });
+
+  document.getElementById('btnPickBlank').addEventListener('click', async () => {
+    if (currentTabId == null || !currentHost || isProtected(currentHost)) return;
+    try {
+      await chrome.tabs.sendMessage(currentTabId, { type: 'START_PICKER' });
+      window.close();
+    } catch (_) {}
+  });
+
+  document.getElementById('btnClearPicked').addEventListener('click', async () => {
+    if (!currentHost) return;
+    const nextRules = { ...state.customRules };
+    delete nextRules[currentHost];
+    state.customRules = nextRules;
+    await chrome.storage.local.set({ customRules: nextRules });
+    if (currentTabId != null) {
+      chrome.tabs.sendMessage(currentTabId, { type: 'CLEAR_CUSTOM_RULES' }).catch(() => {});
+    }
     render();
   });
 
@@ -112,9 +136,14 @@ function render() {
   const statusText = document.getElementById('statusText');
   const btnGlobal = document.getElementById('btnToggleGlobal');
   const btnSite = document.getElementById('btnToggleSite');
+  const btnPick = document.getElementById('btnPickBlank');
+  const btnClear = document.getElementById('btnClearPicked');
 
   const protectedSite = currentHost && isProtected(currentHost);
   const siteWhitelisted = currentHost && state.whitelist.includes(currentHost);
+  const customCount = currentHost && Array.isArray(state.customRules[currentHost])
+    ? state.customRules[currentHost].length
+    : 0;
 
   if (!state.enabled) {
     pill.className = 'pill inactive';
@@ -150,6 +179,14 @@ function render() {
   } else {
     btnSite.disabled = false;
     btnSite.textContent = 'Tạm dừng trên trang này';
+  }
+
+  btnPick.disabled = !currentHost || protectedSite || siteWhitelisted || !state.enabled;
+  if (customCount > 0 && currentHost && !protectedSite) {
+    btnClear.classList.remove('hidden');
+    btnClear.textContent = `Khôi phục (${customCount})`;
+  } else {
+    btnClear.classList.add('hidden');
   }
 }
 
