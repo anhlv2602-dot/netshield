@@ -128,9 +128,10 @@
       "id": "adguard-dns",
       "name": "AdGuard DNS Filter",
       "url": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
-      "enabled": false,
-      "count": 0,
-      "lastUpdated": null
+      "enabled": true,
+      "count": 195019,
+      "lastUpdated": "2026-11-28T05:17:20.642Z",
+      "lastError": null
     },
     {
       "id": "stevenblack-ads",
@@ -166,6 +167,15 @@
       "enabled": true,
       "count": 169540,
       "lastUpdated": "2026-11-27T08:30:02.864Z",
+      "lastError": null
+    },
+    {
+      "id": "custom-1795843040818",
+      "name": "HaGeZi Multi PRO (Mobile Ads & Trackers)",
+      "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro-onlydomains.txt",
+      "enabled": true,
+      "count": 239082,
+      "lastUpdated": "2026-11-28T05:17:21.522Z",
       "lastError": null
     }
   ],
