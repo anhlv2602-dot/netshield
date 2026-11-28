@@ -2515,6 +2515,7 @@
                   <input id="localDnsDomain" type="text" aria-label="Tên miền nội bộ" placeholder="Tên miền (vd: app.lan)" style="flex: 1; min-width: 140px;" />
                   <input id="localDnsIp" type="text" aria-label="IP backend" placeholder="IP backend (vd: 192.168.1.10*2, 192.168.1.11)" style="flex: 2; min-width: 200px;" />
                   <button id="addLocalDnsBtn" type="button" class="btn primary">Lưu</button>
+                  <button id="cancelLocalDnsEditBtn" type="button" class="btn" style="display: none;">Hủy</button>
                 </div>
 
                 <div class="local-form-grid">
@@ -2655,6 +2656,7 @@
 
     const SVG_REFRESH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>';
     const SVG_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+    const SVG_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
     const SVG_MORE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>';
     const SVG_SAVE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
     const SVG_COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
@@ -4029,6 +4031,7 @@
 
       // Local DNS records & Round-Robin Health (Setup tab)
       const localRecs = s.localRecordsHealth || s.config.localRecords || [];
+      window._localDnsCache = localRecs;
       document.getElementById('localDnsList').innerHTML = localRecs.length
         ? localRecs
             .map((r) => {
@@ -4036,6 +4039,7 @@
                 ? r.targets
                 : (Array.isArray(r.ips) && r.ips.length ? r.ips : [r.ip]).filter(Boolean).map((ip) => ({ ip, weight: 1 }));
               const stratLabel = r.strategy === 'weighted' ? 'Weighted' : 'RR';
+              const isEditing = window._editingLocalDnsDomain === r.domain;
               const targetBadges = targets
                 .map((t) => {
                   const h = t.health;
@@ -4057,7 +4061,7 @@
                 })
                 .join(' ');
               return `
-                <div class="iface-row" style="align-items: flex-start;">
+                <div class="iface-row" style="align-items: flex-start;${isEditing ? ' border-color: var(--primary);' : ''}">
                   <div style="display:flex;flex-direction:column;gap:0.35rem;">
                     <div class="row" style="gap: 0.45rem; flex-wrap: wrap;">
                       <strong class="mono">${esc(r.domain)}</strong>
@@ -4065,7 +4069,10 @@
                     </div>
                     <div class="row" style="gap: 0.35rem; flex-wrap: wrap;">${targetBadges}</div>
                   </div>
-                  <button type="button" class="btn icon-btn danger-hover" onclick="deleteLocalDns('${esc(r.domain)}')" title="Xóa">${SVG_TRASH}</button>
+                  <div class="row" style="gap: 0.25rem; flex-shrink: 0;">
+                    <button type="button" class="btn icon-btn" onclick="editLocalDns('${esc(r.domain)}')" title="Sửa" aria-label="Sửa ${esc(r.domain)}">${SVG_EDIT}</button>
+                    <button type="button" class="btn icon-btn danger-hover" onclick="deleteLocalDns('${esc(r.domain)}')" title="Xóa" aria-label="Xóa ${esc(r.domain)}">${SVG_TRASH}</button>
+                  </div>
                 </div>
               `;
             })
@@ -4770,6 +4777,51 @@
       window.location.href = `/api/logs/export.csv?${params.toString()}`;
     });
 
+    function resetLocalDnsForm() {
+      window._editingLocalDnsDomain = null;
+      document.getElementById('localDnsDomain').value = '';
+      document.getElementById('localDnsIp').value = '';
+      document.getElementById('localDnsStrategy').value = 'round_robin';
+      document.getElementById('localDnsHealthPort').value = '';
+      document.getElementById('localDnsHealthPath').value = '';
+      document.getElementById('localDnsTtl').value = '15';
+      document.getElementById('localDnsSingleAnswer').checked = false;
+      document.getElementById('addLocalDnsBtn').textContent = 'Lưu';
+      document.getElementById('cancelLocalDnsEditBtn').style.display = 'none';
+    }
+
+    window.editLocalDns = (domain) => {
+      const rec = (window._localDnsCache || []).find((r) => r.domain === domain);
+      if (!rec) return;
+      window._editingLocalDnsDomain = rec.domain;
+      const targets = Array.isArray(rec.targets) && rec.targets.length
+        ? rec.targets
+        : (Array.isArray(rec.ips) && rec.ips.length ? rec.ips : [rec.ip]).filter(Boolean).map((ip) => ({ ip, weight: 1 }));
+      const ipStr = targets
+        .map((t) => (t.weight && t.weight > 1 ? `${t.ip}*${t.weight}` : t.ip))
+        .join(', ');
+      const firstPort = targets.find((t) => t.healthPort)?.healthPort || '';
+      const firstPath = targets.find((t) => t.healthPath)?.healthPath || '';
+
+      document.getElementById('localDnsDomain').value = rec.domain;
+      document.getElementById('localDnsIp').value = ipStr;
+      document.getElementById('localDnsStrategy').value = rec.strategy || 'round_robin';
+      document.getElementById('localDnsHealthPort').value = firstPort ? String(firstPort) : '';
+      document.getElementById('localDnsHealthPath').value = firstPath;
+      document.getElementById('localDnsTtl').value = String(rec.ttl || 15);
+      document.getElementById('localDnsSingleAnswer').checked = Boolean(rec.singleAnswer);
+      document.getElementById('addLocalDnsBtn').textContent = 'Cập nhật';
+      document.getElementById('cancelLocalDnsEditBtn').style.display = '';
+      document.getElementById('localDnsDomain').focus();
+      document.getElementById('localDnsDomain').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      loadAll();
+    };
+
+    document.getElementById('cancelLocalDnsEditBtn')?.addEventListener('click', () => {
+      resetLocalDnsForm();
+      loadAll();
+    });
+
     document.getElementById('addLocalDnsBtn').addEventListener('click', async () => {
       const domain = document.getElementById('localDnsDomain').value.trim();
       const rawIps = document.getElementById('localDnsIp').value.trim();
@@ -4779,6 +4831,7 @@
       const healthPath = document.getElementById('localDnsHealthPath')?.value.trim() || '';
       const ttl = Number(document.getElementById('localDnsTtl')?.value) || 15;
       const singleAnswer = Boolean(document.getElementById('localDnsSingleAnswer')?.checked);
+      const previousDomain = window._editingLocalDnsDomain || '';
 
       const targets = rawIps
         .split(',')
@@ -4795,11 +4848,17 @@
         });
 
       try {
-        await api('/api/local-dns', 'POST', { domain, ttl, strategy, singleAnswer, targets });
-        document.getElementById('localDnsDomain').value = '';
-        document.getElementById('localDnsIp').value = '';
+        await api('/api/local-dns', 'POST', {
+          ...(previousDomain ? { previousDomain } : {}),
+          domain,
+          ttl,
+          strategy,
+          singleAnswer,
+          targets,
+        });
+        resetLocalDnsForm();
         await loadAll();
-        showToast(`Đã lưu Local DNS: ${domain} (${targets.length} IP)`);
+        showToast(previousDomain ? `Đã cập nhật Local DNS: ${domain}` : `Đã lưu Local DNS: ${domain} (${targets.length} IP)`);
       } catch (err) {
         showToast(err.message);
       }
@@ -4823,6 +4882,9 @@
 
     window.deleteLocalDns = async (domain) => {
       await api(`/api/local-dns/${encodeURIComponent(domain)}`, 'DELETE');
+      if (window._editingLocalDnsDomain === domain) {
+        resetLocalDnsForm();
+      }
       await loadAll();
       showToast(`Đã xóa Local DNS: ${domain}`);
     };

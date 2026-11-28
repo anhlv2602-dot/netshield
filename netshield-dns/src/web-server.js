@@ -595,6 +595,12 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
           return sendJson(res, 400, { error: err.message });
         }
         if (!Array.isArray(store.config.localRecords)) store.config.localRecords = [];
+        const prevDomain = body.previousDomain ? normalizeDomain(body.previousDomain) : '';
+        if (prevDomain && prevDomain !== rec.domain) {
+          store.config.localRecords = store.config.localRecords.filter(
+            (r) => normalizeDomain(r.domain) !== prevDomain
+          );
+        }
         const idx = store.config.localRecords.findIndex((r) => normalizeDomain(r.domain) === rec.domain);
         if (idx >= 0) store.config.localRecords[idx] = rec;
         else store.config.localRecords.push(rec);
