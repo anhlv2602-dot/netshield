@@ -1,5 +1,18 @@
 [
   {
+    "id": "alt-1795869381398-4cuo",
+    "timestamp": "2026-11-28T12:36:21.398Z",
+    "type": "c2_beaconing",
+    "severity": "medium",
+    "title": "Nghi vấn C2 Beaconing (gọi định kỳ bất thường)",
+    "message": "Máy chủ NetShield (Mac-mini-cua-Le) (192.168.1.210) gọi đều đặn mỗi ~158s (12 lần, CV=0.015) tới github.com",
+    "clientIp": "192.168.1.210",
+    "mac": "D0:11:E5:D2:F6:37",
+    "domain": "github.com",
+    "reason": "Beaconing ~158s",
+    "acknowledged": false
+  },
+  {
     "id": "alt-1795867493283-7r0u",
     "timestamp": "2026-11-28T12:04:53.283Z",
     "type": "c2_beaconing",
