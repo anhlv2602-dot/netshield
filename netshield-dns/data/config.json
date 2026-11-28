@@ -276,7 +276,7 @@
     {
       "id": "mac:1C:F6:4C:4A:18:08",
       "ip": "192.168.1.209",
-      "name": "",
+      "name": "server-mac",
       "groupId": "",
       "mac": "1C:F6:4C:4A:18:08"
     },
@@ -300,6 +300,13 @@
       "name": "VNPT Technology",
       "groupId": "iot",
       "mac": "24:0B:2A:D9:7C:A2"
+    },
+    {
+      "id": "mac:24:0B:2A:D9:B3:F4",
+      "ip": "192.168.1.202",
+      "name": "VNPT Technology",
+      "groupId": "iot",
+      "mac": "24:0B:2A:D9:B3:F4"
     }
   ],
   "clientRules": []
