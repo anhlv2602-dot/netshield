@@ -10,7 +10,7 @@
     "mac": "D0:11:E5:D2:F6:37",
     "domain": "github.com",
     "reason": "Beaconing ~158s",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795867493283-7r0u",
@@ -23,7 +23,7 @@
     "mac": "D0:11:E5:D2:F6:37",
     "domain": "github.com",
     "reason": "Beaconing ~156.9s",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795865610312-m4ij",
@@ -36,7 +36,7 @@
     "mac": "D0:11:E5:D2:F6:37",
     "domain": "github.com",
     "reason": "Beaconing ~156.9s",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795863727220-mded",
@@ -49,7 +49,7 @@
     "mac": "D0:11:E5:D2:F6:37",
     "domain": "github.com",
     "reason": "Beaconing ~157s",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795862443374-3zub",
@@ -62,7 +62,7 @@
     "mac": "66:BE:2A:8C:CA:ED",
     "domain": "pushnotificationtpbank.firebaseio.com",
     "reason": "Giả mạo thương hiệu VN (TPBank)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795861844196-mdbm",
@@ -75,7 +75,7 @@
     "mac": "D0:11:E5:D2:F6:37",
     "domain": "github.com",
     "reason": "Beaconing ~163s",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795858722188-dv67",
@@ -88,7 +88,7 @@
     "mac": "66:BE:2A:8C:CA:ED",
     "domain": "4.115.217.172.in-addr.arpa",
     "reason": "NXDOMAIN spike (30/min)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795855172289-e1a7",
@@ -101,7 +101,7 @@
     "mac": "28:F3:66:F4:AD:5A",
     "domain": "dns.msftncsi.com",
     "reason": "Chống DNS Rebinding (fd3e:4f5a:5b81::1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795853348570-59w1",
@@ -114,7 +114,7 @@
     "mac": "66:BE:2A:8C:CA:ED",
     "domain": "225.128.181.220.in-addr.arpa",
     "reason": "NXDOMAIN spike (30/min)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795847067148-a083",
@@ -127,7 +127,7 @@
     "mac": "22:48:4D:06:CB:A9",
     "domain": "dns.msftncsi.com",
     "reason": "Chống DNS Rebinding (fd3e:4f5a:5b81::1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795846112873-w7jd",
@@ -140,7 +140,7 @@
     "mac": "22:48:4D:06:CB:A9",
     "domain": "dns.msftncsi.com",
     "reason": "Chống DNS Rebinding (fd3e:4f5a:5b81::1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844450931-o4my",
@@ -153,7 +153,7 @@
     "mac": "22:48:4D:06:CB:A9",
     "domain": "dns.msftncsi.com",
     "reason": "Chống DNS Rebinding (fd3e:4f5a:5b81::1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844265625-u4v3",
@@ -166,7 +166,7 @@
     "mac": "2A:F3:D1:B9:8C:F0",
     "domain": "clientservices.googleapis.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844262367-iq2q",
@@ -179,7 +179,7 @@
     "mac": "2A:F3:D1:B9:8C:F0",
     "domain": "edge-mqtt.facebook.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844262365-mba7",
@@ -192,7 +192,7 @@
     "mac": "62:98:B5:A4:50:23",
     "domain": "z-m-gateway.facebook.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844262365-ss1c",
@@ -205,7 +205,7 @@
     "mac": "2A:F3:D1:B9:8C:F0",
     "domain": "z-m-gateway.facebook.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844262365-sdjg",
@@ -218,7 +218,7 @@
     "mac": "2A:F3:D1:B9:8C:F0",
     "domain": "connectivitycheck.platform.hihonorcloud.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844262363-cc7o",
@@ -231,7 +231,7 @@
     "mac": "2A:F3:D1:B9:8C:F0",
     "domain": "chat-e2ee-mini.facebook.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844262361-fdv9",
@@ -244,7 +244,7 @@
     "mac": "2A:F3:D1:B9:8C:F0",
     "domain": "developers.google.cn",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844262081-2gj5",
@@ -257,7 +257,7 @@
     "mac": "2A:F3:D1:B9:8C:F0",
     "domain": "spot-pa.googleapis.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844261045-czqh",
@@ -270,7 +270,7 @@
     "mac": "3C:55:76:6E:99:AF",
     "domain": "functions3.ultraviewer.net",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844209702-snm6",
@@ -283,7 +283,7 @@
     "mac": "3C:55:76:6E:99:AF",
     "domain": "signaler-pa.clients6.google.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844206566-1s8q",
@@ -296,7 +296,7 @@
     "mac": "D0:11:E5:D2:F6:37",
     "domain": "ssl.gstatic.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205957-ctg5",
@@ -309,7 +309,7 @@
     "mac": "66:BE:2A:8C:CA:ED",
     "domain": "gslb.sgw.shopeemobile.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205482-zgqm",
@@ -322,7 +322,7 @@
     "mac": "FC:03:9F:EB:67:90",
     "domain": "rr7---sn-8pxuuxa-nbosz.googlevideo.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205453-quh2",
@@ -335,7 +335,7 @@
     "mac": "1C:F6:4C:4A:18:08",
     "domain": "1.courier-sandbox-push-apple.com.akadns.net",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205451-6vze",
@@ -348,7 +348,7 @@
     "mac": "1C:F6:4C:4A:18:08",
     "domain": "api.apple-cloudkit.fe2.apple-dns.net",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205414-1qpa",
@@ -361,7 +361,7 @@
     "mac": "FC:03:9F:EB:67:90",
     "domain": "rr8---sn-8pxuuxa-q5qee.googlevideo.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205367-fzh4",
@@ -374,7 +374,7 @@
     "mac": "66:BE:2A:8C:CA:ED",
     "domain": "sg.migoo.ai",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205189-v05p",
@@ -387,7 +387,7 @@
     "mac": "D0:11:E5:D2:F6:37",
     "domain": "gateway.fe2.apple-dns.net",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205189-s4b5",
@@ -400,7 +400,7 @@
     "mac": "FE:B9:7F:C0:5F:30",
     "domain": "gateway.fe2.apple-dns.net",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205178-53s0",
@@ -413,7 +413,7 @@
     "mac": "66:BE:2A:8C:CA:ED",
     "domain": "vpushort-stsdk.vivo.com.cn",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205079-hquh",
@@ -426,7 +426,7 @@
     "mac": "8E:3B:29:69:E7:99",
     "domain": "www.google.com.vn",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205073-8jkr",
@@ -439,7 +439,7 @@
     "mac": "8E:3B:29:69:E7:99",
     "domain": "youtubei.googleapis.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205068-53gm",
@@ -452,7 +452,7 @@
     "mac": "8E:3B:29:69:E7:99",
     "domain": "suggestqueries.google.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205056-elzz",
@@ -465,7 +465,7 @@
     "mac": "8E:3B:29:69:E7:99",
     "domain": "r7---sn-8pxuuxa-nbosz.googlevideo.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205046-h9w0",
@@ -478,7 +478,7 @@
     "mac": "8E:3B:29:69:E7:99",
     "domain": "api.ipify.org",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205041-lq41",
@@ -491,7 +491,7 @@
     "mac": "8E:3B:29:69:E7:99",
     "domain": "www.googleapis.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205034-g5t1",
@@ -504,7 +504,7 @@
     "mac": "8E:3B:29:69:E7:99",
     "domain": "i.ytimg.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205029-rlfb",
@@ -517,7 +517,7 @@
     "mac": "8E:3B:29:69:E7:99",
     "domain": "www.youtube.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205027-m7as",
@@ -530,7 +530,7 @@
     "mac": "8E:3B:29:69:E7:99",
     "domain": "notifications-pa.googleapis.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205015-gy39",
@@ -543,7 +543,7 @@
     "mac": "FE:B9:7F:C0:5F:30",
     "domain": "s.youtube.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844205010-thyy",
@@ -556,7 +556,7 @@
     "mac": "8E:3B:29:69:E7:99",
     "domain": "s.youtube.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844204998-1yi2",
@@ -569,7 +569,7 @@
     "mac": "8E:3B:29:69:E7:99",
     "domain": "play.googleapis.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844204987-4tdg",
@@ -582,7 +582,7 @@
     "mac": "FE:B9:7F:C0:5F:30",
     "domain": "clients3.google.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844204987-77f2",
@@ -595,7 +595,7 @@
     "mac": "8E:3B:29:69:E7:99",
     "domain": "clients3.google.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844204735-8x53",
@@ -608,7 +608,7 @@
     "mac": "FC:03:9F:EB:67:90",
     "domain": "cdn.samsungcloudsolution.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844204727-x7nw",
@@ -621,7 +621,7 @@
     "mac": "62:98:B5:A4:50:23",
     "domain": "connectivitycheck.gstatic.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844204353-1u2g",
@@ -634,7 +634,7 @@
     "mac": "D0:11:E5:D2:F6:37",
     "domain": "e673.dsce9.akamaiedge.net",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844204351-phh5",
@@ -647,7 +647,7 @@
     "mac": "D0:11:E5:D2:F6:37",
     "domain": "e13678.dscb.akamaiedge.net",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844204342-zgnz",
@@ -660,7 +660,7 @@
     "mac": "8E:3B:29:69:E7:99",
     "domain": "www.google.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844204342-7w0t",
@@ -673,7 +673,7 @@
     "mac": "62:98:B5:A4:50:23",
     "domain": "www.google.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844204341-gym8",
@@ -686,7 +686,7 @@
     "mac": "D0:11:E5:D2:F6:37",
     "domain": "www.google.com",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844204333-8m7j",
@@ -699,7 +699,7 @@
     "mac": "D0:11:E5:D2:F6:37",
     "domain": "1.courier-push-apple.com.akadns.net",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844204331-wbct",
@@ -712,7 +712,7 @@
     "mac": "D0:11:E5:D2:F6:37",
     "domain": "us-sandbox-courier-4.push-apple.com.akadns.net",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844204298-dfvp",
@@ -725,7 +725,7 @@
     "mac": "D0:11:E5:D2:F6:37",
     "domain": "api.apple-cloudkit.fe2.apple-dns.net",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795844204208-62vg",
@@ -738,7 +738,7 @@
     "mac": "D0:11:E5:D2:F6:37",
     "domain": "210.1.168.192.in-addr.arpa",
     "reason": "Chống DNS Rebinding (192.168.2.1)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795843488344-a9oa",
@@ -751,7 +751,7 @@
     "mac": "9E:53:20:79:FD:BD",
     "domain": "",
     "reason": "Private MAC chưa duyệt",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795843488344-xk48",
@@ -764,7 +764,7 @@
     "mac": "1A:7E:3F:71:85:FA",
     "domain": "",
     "reason": "Private MAC chưa duyệt",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795843488344-wzep",
@@ -777,7 +777,7 @@
     "mac": "36:4F:7C:8B:CA:C0",
     "domain": "",
     "reason": "Private MAC chưa duyệt",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795843488343-j3gi",
@@ -790,7 +790,7 @@
     "mac": "8E:3B:29:69:E7:99",
     "domain": "",
     "reason": "Private MAC chưa duyệt",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795843488343-36no",
@@ -803,7 +803,7 @@
     "mac": "9E:CD:55:5A:0C:85",
     "domain": "",
     "reason": "Private MAC chưa duyệt",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795840299509-esb7",
@@ -829,7 +829,7 @@
     "mac": "80:A5:89:EF:C6:83",
     "domain": "",
     "reason": "MAC thật chưa có trong danh sách thiết bị",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795834423927-3jb9",
@@ -842,7 +842,7 @@
     "mac": "48:5F:99:A6:D4:3D",
     "domain": "",
     "reason": "MAC thật chưa có trong danh sách thiết bị",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795834423927-xq3e",
@@ -855,7 +855,7 @@
     "mac": "00:08:22:24:FE:FB",
     "domain": "",
     "reason": "MAC thật chưa có trong danh sách thiết bị",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795834423927-ljca",
@@ -868,7 +868,7 @@
     "mac": "70:B3:06:36:DE:E3",
     "domain": "",
     "reason": "MAC thật chưa có trong danh sách thiết bị",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795834423917-okdk",
@@ -881,6 +881,6 @@
     "mac": "3C:55:76:6E:99:AF",
     "domain": "",
     "reason": "MAC thật chưa có trong danh sách thiết bị",
-    "acknowledged": false
+    "acknowledged": true
   }
 ]
