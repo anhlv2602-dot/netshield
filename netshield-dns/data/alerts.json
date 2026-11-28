@@ -1,5 +1,18 @@
 [
   {
+    "id": "alt-1795853348570-59w1",
+    "timestamp": "2026-11-28T08:09:08.570Z",
+    "type": "dns_anomaly",
+    "severity": "high",
+    "title": "Bùng phát NXDOMAIN bất thường (Nghi vấn DGA / Botnet)",
+    "message": "iQOO Z9 Turbo (192.168.1.175) phát sinh 30 tên miền không tồn tại trong 60 giây (mới nhất: 225.128.181.220.in-addr.arpa)",
+    "clientIp": "192.168.1.175",
+    "mac": "66:BE:2A:8C:CA:ED",
+    "domain": "225.128.181.220.in-addr.arpa",
+    "reason": "NXDOMAIN spike (30/min)",
+    "acknowledged": false
+  },
+  {
     "id": "alt-1795847067148-a083",
     "timestamp": "2026-11-28T06:24:27.148Z",
     "type": "threat_hit",
