@@ -3,6 +3,8 @@ import { blocklistEngine } from './blocklist.js';
 import { startDnsServer, dnsCache } from './dns-server.js';
 import { startWebServer } from './web-server.js';
 import { deviceDiscovery } from './discovery.js';
+import { alertEngine } from './alerts.js';
+import { forensicsDb } from './db.js';
 
 const DNS_PORT = Number(process.env.DNS_PORT || 5335);
 const WEB_PORT = Number(process.env.WEB_PORT || 8080);
@@ -27,7 +29,9 @@ async function main() {
   console.log(`📦 Đã nạp ${cachedCount.toLocaleString('vi-VN')} tên miền chặn từ bộ nhớ đệm.`);
 
   const dnsSrv = await startDnsServer({ host: BIND_HOST, port: DNS_PORT });
-  console.log(`🌐 DNS Server đang chạy tại ${dnsSrv.host}:${dnsSrv.port} (UDP + TCP)`);
+  console.log(
+    `🌐 DNS Server đang chạy tại ${dnsSrv.host}:${dnsSrv.port} (UDP + TCP${dnsSrv.ipv6Enabled ? ' + IPv6' : ''})`
+  );
 
   // Hạ quyền khỏi root ngay sau khi mở xong cổng 53
   dropRootPrivileges();
@@ -35,11 +39,21 @@ async function main() {
   // Tự động lưu snapshot thống kê 24h mỗi 60 giây (sau khi hạ quyền để file thuộc user thường)
   store.startStatsAutosave(60_000);
 
+  // Khởi chạy bộ máy cảnh báo bảo mật & kho log SQLite (sau khi hạ quyền để file thuộc user thường)
+  alertEngine.start(store);
+  const dbOk = await forensicsDb.start(store);
+  if (dbOk) {
+    console.log(`🗄️  SQLite Forensics đang bật (lưu lịch sử ${store.config.storage?.retentionDays || 14} ngày).`);
+  }
+
   const webSrv = await startWebServer({ host: WEB_HOST, port: WEB_PORT, dnsPort: DNS_PORT });
   console.log(`🖥️  Giao diện quản trị (chỉ máy Mac Mini): http://${webSrv.host}:${webSrv.port}`);
 
   // Khởi chạy bộ nhận diện thiết bị LAN ở nền (không làm chậm luồng DNS chính)
-  deviceDiscovery.start(store, { onMigration: () => dnsCache.clear() });
+  deviceDiscovery.start(store, {
+    onMigration: () => dnsCache.clear(),
+    onDeviceDiscovered: (info) => alertEngine.handleDiscoveredDevice(info),
+  });
 
   // Nếu chưa có cache blocklist thì tự tải ngay ở nền
   if (cachedCount === 0) {
@@ -60,8 +74,15 @@ async function main() {
     console.log('\n🛑 Đang dừng NetShield DNS...');
     clearInterval(refreshTimer);
     store.stopStatsAutosave();
+    alertEngine.stop();
+    forensicsDb.stop();
     deviceDiscovery.stop();
-    await Promise.allSettled([store.saveStats({ force: true }), dnsSrv.close(), webSrv.close()]);
+    await Promise.allSettled([
+      store.saveStats({ force: true }),
+      alertEngine.save(),
+      dnsSrv.close(),
+      webSrv.close(),
+    ]);
     process.exit(0);
   };
 

@@ -6,7 +6,9 @@ import { deviceDiscovery, normalizeMac } from './discovery.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT_DIR = path.resolve(__dirname, '..');
-export const DATA_DIR = path.join(ROOT_DIR, 'data');
+export const DATA_DIR = process.env.NETSHIELD_DATA_DIR
+  ? path.resolve(process.env.NETSHIELD_DATA_DIR)
+  : path.join(ROOT_DIR, 'data');
 export const CACHE_DIR = path.join(DATA_DIR, 'blocklists-cache');
 const CONFIG_PATH = path.join(DATA_DIR, 'config.json');
 const STATS_PATH = path.join(DATA_DIR, 'stats.json');
@@ -192,10 +194,88 @@ export const PROTECTED_WHITELIST = [
   'onepay.vn',
 ];
 
+export const IOT_ALLOWLIST_PRESETS = {
+  camera_ezviz: {
+    label: 'Camera Ezviz / Hikvision',
+    domains: ['ezvizlife.com', 'ezviz.com', 'ezvizru.com', 'hik-connect.com', 'ys7.com', 'ntp.org', 'pool.ntp.org', 'time.google.com'],
+  },
+  camera_dahua_imou: {
+    label: 'Camera Dahua / Imou',
+    domains: ['imoulife.com', 'easy4ipcloud.com', 'easy4ip.com', 'dahuasecurity.com', 'lechange.cn', 'ntp.org', 'pool.ntp.org'],
+  },
+  iot_smarthome: {
+    label: 'SmartHome (ESP / Tuya / Hunonic)',
+    domains: ['hunonic.com', 'hunonic.vn', 'tuyaus.com', 'tuyaeu.com', 'tuyacn.com', 'tuya.com', 'espressif.com', 'ntp.org', 'pool.ntp.org'],
+  },
+  iot_printer: {
+    label: 'Máy in (Brother / Canon)',
+    domains: ['brother.com', 'canon.com', 'canon.jp', 'ntp.org', 'pool.ntp.org'],
+  },
+};
+
+export const DEFAULT_ALERTS_CONFIG = {
+  enabled: true,
+  rogueDeviceEnabled: true,
+  ignorePrivateMacPush: true,
+  threatHitEnabled: true,
+  anomalyEnabled: true,
+  nxdomainThresholdPerMin: 30,
+  tunnelingLabelLength: 60,
+  telegramBotToken: '',
+  telegramChatId: '',
+  webhookUrl: '',
+};
+
+export function inferBlocklistMeta(list) {
+  const explicit = String(list?.category || '').toLowerCase();
+  if (['malware', 'phishing', 'threat_intel', 'ads'].includes(explicit)) {
+    return {
+      category: explicit,
+      severity: explicit === 'ads' ? 'info' : 'high',
+    };
+  }
+  const haystack = `${list?.id || ''} ${list?.name || ''} ${list?.url || ''}`.toLowerCase();
+  if (haystack.includes('phish')) return { category: 'phishing', severity: 'high' };
+  if (haystack.includes('urlhaus') || haystack.includes('malware')) return { category: 'malware', severity: 'high' };
+  if (haystack.includes('tif') || haystack.includes('threat') || haystack.includes('botnet')) {
+    return { category: 'threat_intel', severity: 'high' };
+  }
+  return { category: 'ads', severity: 'info' };
+}
+
+export const ANTI_BYPASS_DOMAINS = [
+  'use-application-dns.net', // Firefox DoH canary
+  'mask.icloud.com',         // Apple iCloud Private Relay
+  'mask-h2.icloud.com',      // Apple iCloud Private Relay (HTTP/2)
+  '_dns.resolver.arpa',      // DDR (Discovery of Designated Resolvers)
+];
+
+export const DEFAULT_SECURITY_CONFIG = {
+  dnsRebindingGuard: true,
+  cnameCloakingGuard: true,
+  antiBypass: true,
+  serveStaleCache: true,
+  enableIpv6: true,
+  rebindingWhitelist: [],
+};
+
+export const DEFAULT_STORAGE_CONFIG = {
+  sqliteEnabled: true,
+  retentionDays: 14,
+};
+
 export const DEFAULT_CONFIG = {
   protectionEnabled: true,
-  upstreamDns: ['1.1.1.1', '8.8.8.8'],
+  upstreamDns: [
+    'https://1.1.1.2/dns-query',
+    'https://9.9.9.9/dns-query',
+    '203.113.131.1',
+  ],
   blockResponseMode: 'zero', // 'zero' (0.0.0.0 / ::) hoặc 'nxdomain'
+  security: { ...DEFAULT_SECURITY_CONFIG },
+  alerts: { ...DEFAULT_ALERTS_CONFIG },
+  storage: { ...DEFAULT_STORAGE_CONFIG },
+  localRecords: [],
   blocklists: [
     {
       id: 'abpvn-hosts',
@@ -374,6 +454,38 @@ class Store extends EventEmitter {
               })
           : [],
         clientRules: Array.isArray(parsed.clientRules) ? parsed.clientRules : [],
+        security: {
+          ...DEFAULT_SECURITY_CONFIG,
+          ...(parsed.security && typeof parsed.security === 'object' ? parsed.security : {}),
+          rebindingWhitelist: Array.isArray(parsed.security?.rebindingWhitelist)
+            ? parsed.security.rebindingWhitelist.map(normalizeDomain).filter(Boolean)
+            : [],
+        },
+        alerts: {
+          ...DEFAULT_ALERTS_CONFIG,
+          ...(parsed.alerts && typeof parsed.alerts === 'object' ? parsed.alerts : {}),
+        },
+        storage: {
+          ...DEFAULT_STORAGE_CONFIG,
+          ...(parsed.storage && typeof parsed.storage === 'object' ? parsed.storage : {}),
+        },
+        localRecords: Array.isArray(parsed.localRecords)
+          ? parsed.localRecords
+              .filter((r) => r && r.domain && (r.ip || (Array.isArray(r.ips) && r.ips.length)))
+              .map((r) => {
+                const domain = normalizeDomain(r.domain);
+                const ips = Array.isArray(r.ips) && r.ips.length
+                  ? r.ips.map((s) => String(s || '').trim()).filter(Boolean)
+                  : [String(r.ip || '').trim()].filter(Boolean);
+                return {
+                  domain,
+                  ip: ips[0] || '',
+                  ips,
+                  ttl: Number.isFinite(Number(r.ttl)) ? Math.max(10, Math.min(86400, Number(r.ttl))) : 60,
+                };
+              })
+              .filter((r) => r.domain && r.ips.length > 0)
+          : [],
       };
     } catch {
       await this.save();
@@ -520,7 +632,7 @@ class Store extends EventEmitter {
   async save() {
     await fs.mkdir(DATA_DIR, { recursive: true });
     const tmpPath = `${CONFIG_PATH}.tmp`;
-    await fs.writeFile(tmpPath, JSON.stringify(this.config, null, 2), 'utf8');
+    await fs.writeFile(tmpPath, JSON.stringify(this.config, null, 2), { encoding: 'utf8', mode: 0o600 });
     await fs.rename(tmpPath, CONFIG_PATH);
   }
 

@@ -1,5 +1,6 @@
 import dgram from 'node:dgram';
 import net from 'node:net';
+import http2 from 'node:http2';
 import dnsPacket from 'dns-packet';
 import { store, normalizeDomain } from './store.js';
 import { blocklistEngine } from './blocklist.js';
@@ -7,8 +8,11 @@ import { blocklistEngine } from './blocklist.js';
 const MAX_CACHE_SIZE = 5000;
 const MIN_TTL_SEC = 30;
 const MAX_TTL_SEC = 3600;
+const STALE_GRACE_MS = 24 * 60 * 60 * 1000; // Serve-Stale tối đa 24h khi mất upstream
 const UPSTREAM_TIMEOUT_MS = 2500;
 const MAX_QPS_PER_IP = Number(process.env.MAX_QPS_PER_IP || 250);
+const CIRCUIT_FAILURE_THRESHOLD = 3;
+const CIRCUIT_OPEN_MS = 60 * 1000;
 
 // Chống spam/flood DNS theo từng IP (cửa sổ trượt 1 giây, tự dọn mỗi 30s)
 const rateWindows = new Map();
@@ -32,6 +36,69 @@ function isRateLimited(ip) {
   return entry.count > MAX_QPS_PER_IP;
 }
 
+// Circuit breaker & thống kê sức khỏe theo từng Upstream
+const upstreamHealthMap = new Map();
+
+function getHealthEntry(upstream) {
+  let entry = upstreamHealthMap.get(upstream);
+  if (!entry) {
+    entry = {
+      upstream,
+      protocol: upstream.startsWith('https://') ? 'DoH' : 'UDP',
+      consecutiveFailures: 0,
+      openUntil: 0,
+      lastLatencyMs: null,
+      lastError: null,
+      lastOkAt: null,
+    };
+    upstreamHealthMap.set(upstream, entry);
+  }
+  return entry;
+}
+
+function recordUpstreamSuccess(upstream, latencyMs) {
+  const entry = getHealthEntry(upstream);
+  entry.consecutiveFailures = 0;
+  entry.openUntil = 0;
+  entry.lastLatencyMs = Number(latencyMs.toFixed(1));
+  entry.lastError = null;
+  entry.lastOkAt = new Date().toISOString();
+}
+
+function recordUpstreamFailure(upstream, errorMsg) {
+  const entry = getHealthEntry(upstream);
+  entry.consecutiveFailures += 1;
+  entry.lastError = errorMsg;
+  if (entry.consecutiveFailures >= CIRCUIT_FAILURE_THRESHOLD) {
+    entry.openUntil = Date.now() + CIRCUIT_OPEN_MS;
+  }
+}
+
+export function getUpstreamHealth() {
+  const now = Date.now();
+  const configured = store.config.upstreamDns?.length
+    ? store.config.upstreamDns
+    : ['https://1.1.1.2/dns-query', 'https://9.9.9.9/dns-query', '203.113.131.1'];
+  return configured.map((u) => {
+    const e = getHealthEntry(u);
+    const circuitOpen = e.openUntil > now;
+    return {
+      upstream: u,
+      protocol: u.startsWith('https://') ? 'DoH' : 'UDP',
+      status: circuitOpen ? 'circuit_open' : e.lastError && !e.lastOkAt ? 'degraded' : 'healthy',
+      consecutiveFailures: e.consecutiveFailures,
+      retryInSec: circuitOpen ? Math.ceil((e.openUntil - now) / 1000) : 0,
+      lastLatencyMs: e.lastLatencyMs,
+      lastError: e.lastError,
+      lastOkAt: e.lastOkAt,
+    };
+  });
+}
+
+export function resetUpstreamHealth() {
+  upstreamHealthMap.clear();
+}
+
 class DnsCache {
   constructor(maxSize = MAX_CACHE_SIZE) {
     this.maxSize = maxSize;
@@ -41,13 +108,28 @@ class DnsCache {
   get(key) {
     const entry = this.map.get(key);
     if (!entry) return null;
-    if (Date.now() > entry.expiresAt) {
+    const now = Date.now();
+    if (now > entry.staleUntil) {
       this.map.delete(key);
+      return null;
+    }
+    if (now > entry.expiresAt) {
+      // Đã hết TTL tươi, giữ lại cho Serve-Stale nếu upstream lỗi
       return null;
     }
     // LRU refresh
     this.map.delete(key);
     this.map.set(key, entry);
+    return entry.buffer;
+  }
+
+  getStale(key) {
+    const entry = this.map.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.staleUntil) {
+      this.map.delete(key);
+      return null;
+    }
     return entry.buffer;
   }
 
@@ -57,9 +139,11 @@ class DnsCache {
       const oldestKey = this.map.keys().next().value;
       if (oldestKey) this.map.delete(oldestKey);
     }
+    const expiresAt = Date.now() + clampedTtl * 1000;
     this.map.set(key, {
       buffer,
-      expiresAt: Date.now() + clampedTtl * 1000,
+      expiresAt,
+      staleUntil: expiresAt + STALE_GRACE_MS,
     });
   }
 
@@ -74,9 +158,140 @@ class DnsCache {
 
 export const dnsCache = new DnsCache();
 
-function buildBlockedResponse(queryPacket) {
+/**
+ * Kiểm tra IP có thuộc dải nội bộ / loopback / link-local / CGNAT hay không (chống DNS Rebinding)
+ */
+export function isPrivateOrReservedIp(rawIp) {
+  if (!rawIp || typeof rawIp !== 'string') return false;
+  let ip = rawIp.trim().toLowerCase();
+  if (ip.startsWith('::ffff:')) {
+    ip = ip.slice(7);
+  }
+
+  // IPv4
+  if (net.isIPv4(ip)) {
+    const parts = ip.split('.').map(Number);
+    const [a, b] = parts;
+    if (a === 0) return true; // 0.0.0.0/8
+    if (a === 10) return true; // 10.0.0.0/8
+    if (a === 127) return true; // 127.0.0.0/8 loopback
+    if (a === 169 && b === 254) return true; // 169.254.0.0/16 link-local
+    if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
+    if (a === 192 && b === 168) return true; // 192.168.0.0/16
+    if (a === 100 && b >= 64 && b <= 127) return true; // 100.64.0.0/10 CGNAT / Tailscale
+    return false;
+  }
+
+  // IPv6
+  if (net.isIPv6(ip)) {
+    if (ip === '::' || ip === '::1') return true;
+    const firstHextet = ip.split(':')[0] || '';
+    if (/^f[cd][0-9a-f]{2}$/.test(firstHextet)) return true; // fc00::/7 Unique Local
+    if (/^fe[89ab][0-9a-f]$/.test(firstHextet)) return true; // fe80::/10 Link-Local
+    return false;
+  }
+
+  return false;
+}
+
+function isRebindingWhitelisted(domain) {
+  const list = store.config.security?.rebindingWhitelist || [];
+  if (!list.length) return false;
+  const parts = domain.split('.');
+  for (let i = 0; i < parts.length - 1; i++) {
+    const suffix = parts.slice(i).join('.');
+    if (list.includes(suffix)) return true;
+  }
+  return false;
+}
+
+/**
+ * Giải mã 1 lần duy nhất phản hồi từ upstream để:
+ * 1. Lấy minTTL cho cache
+ * 2. Kiểm tra DNS Rebinding (IP private từ upstream công cộng)
+ * 3. Kiểm tra CNAME Cloaking (mục tiêu CNAME nằm trong blocklist)
+ */
+export function inspectUpstreamResponse(responseBuffer, originalDomain, clientIp, { bypassProtection = false } = {}) {
+  const result = {
+    ttl: 60,
+    rcode: 'NOERROR',
+    blocked: false,
+    forceNxdomain: false,
+    severity: 'info',
+    reason: null,
+  };
+
+  let decoded;
+  try {
+    decoded = dnsPacket.decode(responseBuffer);
+  } catch {
+    return result;
+  }
+
+  result.rcode = decoded.rcode || 'NOERROR';
+  const answers = decoded.answers || [];
+  if (answers.length === 0) return result;
+
+  let minTtl = MAX_TTL_SEC;
+  for (const ans of answers) {
+    if (typeof ans.ttl === 'number' && ans.ttl < minTtl) {
+      minTtl = ans.ttl;
+    }
+  }
+  result.ttl = minTtl;
+
+  if (!store.config.protectionEnabled || bypassProtection) {
+    return result;
+  }
+
+  const sec = store.config.security || {};
+  const domainWhitelisted = blocklistEngine.isWhitelisted(originalDomain);
+
+  // 1. Chống DNS Rebinding
+  if (sec.dnsRebindingGuard !== false && !domainWhitelisted && !isRebindingWhitelisted(originalDomain)) {
+    for (const ans of answers) {
+      if ((ans.type === 'A' || ans.type === 'AAAA') && typeof ans.data === 'string') {
+        if (isPrivateOrReservedIp(ans.data)) {
+          return {
+            ttl: minTtl,
+            rcode: result.rcode,
+            blocked: true,
+            forceNxdomain: true,
+            severity: 'high',
+            reason: `Chống DNS Rebinding (${ans.data})`,
+          };
+        }
+      }
+    }
+  }
+
+  // 2. Chống CNAME Cloaking
+  if (sec.cnameCloakingGuard !== false && !domainWhitelisted) {
+    for (const ans of answers) {
+      if (ans.type === 'CNAME' && typeof ans.data === 'string') {
+        const cnameTarget = normalizeDomain(ans.data);
+        if (!cnameTarget || cnameTarget === originalDomain) continue;
+        const cnameDecision = blocklistEngine.evaluateCnameTarget(cnameTarget, clientIp);
+        if (cnameDecision.blocked) {
+          return {
+            ttl: minTtl,
+            rcode: result.rcode,
+            blocked: true,
+            forceNxdomain: false,
+            severity: cnameDecision.severity || 'info',
+            reason: `CNAME Cloaking (${cnameTarget} → ${cnameDecision.reason})`,
+          };
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+export function buildBlockedResponse(queryPacket, { forceNxdomain = false } = {}) {
   const q = queryPacket.questions?.[0];
-  const mode = store.config.blockResponseMode || 'zero';
+  const mode = forceNxdomain ? 'nxdomain' : store.config.blockResponseMode || 'zero';
   const base = {
     type: 'response',
     id: queryPacket.id,
@@ -114,16 +329,26 @@ function buildBlockedResponse(queryPacket) {
   return dnsPacket.encode(base);
 }
 
-function forwardUdp(rawQuery, upstreamIp, upstreamPort = 53) {
+function parseUdpUpstream(entry) {
+  // Hỗ trợ '1.1.1.2' hoặc '1.1.1.2:5353'
+  const idx = entry.lastIndexOf(':');
+  if (idx > 0 && !entry.includes(']') && /^\d+$/.test(entry.slice(idx + 1))) {
+    return { host: entry.slice(0, idx), port: Number(entry.slice(idx + 1)) };
+  }
+  return { host: entry, port: 53 };
+}
+
+function forwardUdp(rawQuery, upstreamEntry) {
+  const { host: upstreamIp, port: upstreamPort } = parseUdpUpstream(upstreamEntry);
   return new Promise((resolve, reject) => {
-    const socket = dgram.createSocket('udp4');
+    const socket = dgram.createSocket(net.isIPv6(upstreamIp) ? 'udp6' : 'udp4');
     let settled = false;
 
     const timer = setTimeout(() => {
       if (!settled) {
         settled = true;
         socket.close();
-        reject(new Error(`Upstream ${upstreamIp} timeout`));
+        reject(new Error(`Upstream ${upstreamEntry} timeout`));
       }
     }, UPSTREAM_TIMEOUT_MS);
 
@@ -149,33 +374,164 @@ function forwardUdp(rawQuery, upstreamIp, upstreamPort = 53) {
   });
 }
 
+function forwardDohHttp2(rawQuery, urlStr) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(urlStr);
+    const client = http2.connect(u.origin);
+    let settled = false;
+    const done = (err, buf) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try {
+        client.close();
+      } catch {}
+      if (err) reject(err);
+      else resolve(buf);
+    };
+
+    const timer = setTimeout(() => done(new Error('DoH/H2 timeout')), UPSTREAM_TIMEOUT_MS);
+    client.once('error', (err) => done(err));
+
+    const req = client.request({
+      ':method': 'POST',
+      ':path': `${u.pathname}${u.search}`,
+      'content-type': 'application/dns-message',
+      accept: 'application/dns-message',
+      'content-length': rawQuery.length,
+    });
+
+    let status = 0;
+    const chunks = [];
+    req.on('response', (headers) => {
+      status = Number(headers[':status'] || 0);
+    });
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('error', (err) => done(err));
+    req.on('end', () => {
+      if (status !== 200) return done(new Error(`DoH/H2 HTTP ${status}`));
+      const buf = Buffer.concat(chunks);
+      if (buf.length < 12) return done(new Error('DoH/H2 gói tin không hợp lệ'));
+      done(null, buf);
+    });
+    req.end(rawQuery);
+  });
+}
+
+const h2RequiredUrls = new Set();
+
+async function forwardDoh(rawQuery, urlStr) {
+  if (h2RequiredUrls.has(urlStr)) {
+    return await forwardDohHttp2(rawQuery, urlStr);
+  }
+  const res = await fetch(urlStr, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/dns-message',
+      Accept: 'application/dns-message',
+    },
+    body: rawQuery,
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+  });
+  if (res.status === 505) {
+    // Một số máy chủ DoH (như Quad9 9.9.9.9) yêu cầu HTTP/2 -> ghi nhớ để không lãng phí 1 round-trip
+    h2RequiredUrls.add(urlStr);
+    return await forwardDohHttp2(rawQuery, urlStr);
+  }
+  if (!res.ok) {
+    throw new Error(`DoH HTTP ${res.status}`);
+  }
+  const arrBuf = await res.arrayBuffer();
+  const buf = Buffer.from(arrBuf);
+  if (buf.length < 12) {
+    throw new Error('DoH trả về gói tin không hợp lệ');
+  }
+  return buf;
+}
+
+export async function forwardSingleUpstream(rawQuery, upstreamEntry) {
+  const trimmed = String(upstreamEntry || '').trim();
+  if (trimmed.startsWith('https://')) {
+    return await forwardDoh(rawQuery, trimmed);
+  }
+  return await forwardUdp(rawQuery, trimmed);
+}
+
 async function forwardWithFailover(rawQuery) {
-  const upstreams = store.config.upstreamDns?.length ? store.config.upstreamDns : ['1.1.1.1', '8.8.8.8'];
+  const upstreams = store.config.upstreamDns?.length
+    ? store.config.upstreamDns
+    : ['https://1.1.1.2/dns-query', 'https://9.9.9.9/dns-query', '203.113.131.1'];
+
+  const now = Date.now();
+  const healthy = [];
+  const openCircuit = [];
+  for (const u of upstreams) {
+    const entry = getHealthEntry(u);
+    if (entry.openUntil > now) openCircuit.push(u);
+    else healthy.push(u);
+  }
+
+  // Ưu tiên upstream khỏe trước; nếu tất cả đều đang mở circuit thì vẫn thử lại (half-open)
+  const ordered = healthy.length > 0 ? [...healthy, ...openCircuit] : upstreams;
+
   let lastError = null;
-  for (const ip of upstreams) {
+  for (const upstream of ordered) {
+    const t0 = performance.now();
     try {
-      return await forwardUdp(rawQuery, ip, 53);
+      const resp = await forwardSingleUpstream(rawQuery, upstream);
+      recordUpstreamSuccess(upstream, performance.now() - t0);
+      return resp;
     } catch (err) {
-      lastError = err;
+      const msg = err.name === 'TimeoutError' ? 'Timeout' : err.message;
+      recordUpstreamFailure(upstream, msg);
+      lastError = new Error(`${upstream}: ${msg}`);
     }
   }
   throw lastError || new Error('All upstream DNS failed');
 }
 
-function extractMinTtl(responseBuffer) {
-  try {
-    const decoded = dnsPacket.decode(responseBuffer);
-    if (!decoded.answers || decoded.answers.length === 0) return 60;
-    let min = MAX_TTL_SEC;
-    for (const ans of decoded.answers) {
-      if (typeof ans.ttl === 'number' && ans.ttl < min) {
-        min = ans.ttl;
+export async function testAllUpstreams(list = null) {
+  const upstreams = Array.isArray(list) && list.length
+    ? list
+    : store.config.upstreamDns?.length
+      ? store.config.upstreamDns
+      : ['https://1.1.1.2/dns-query', 'https://9.9.9.9/dns-query', '203.113.131.1'];
+
+  const probe = dnsPacket.encode({
+    type: 'query',
+    id: Math.floor(Math.random() * 65535),
+    flags: dnsPacket.RECURSION_DESIRED,
+    questions: [{ type: 'A', name: 'cloudflare.com' }],
+  });
+
+  return await Promise.all(
+    upstreams.map(async (u) => {
+      const t0 = performance.now();
+      const protocol = u.startsWith('https://') ? 'DoH' : 'UDP';
+      try {
+        const resp = await forwardSingleUpstream(probe, u);
+        const latencyMs = Number((performance.now() - t0).toFixed(1));
+        const decoded = dnsPacket.decode(resp);
+        recordUpstreamSuccess(u, latencyMs);
+        return {
+          upstream: u,
+          protocol,
+          ok: true,
+          latencyMs,
+          answers: (decoded.answers || []).length,
+        };
+      } catch (err) {
+        const error = err.name === 'TimeoutError' ? 'Timeout' : err.message;
+        return {
+          upstream: u,
+          protocol,
+          ok: false,
+          latencyMs: Number((performance.now() - t0).toFixed(1)),
+          error,
+        };
       }
-    }
-    return min;
-  } catch {
-    return 60;
-  }
+    })
+  );
 }
 
 function cleanClientIp(ip) {
@@ -183,9 +539,44 @@ function cleanClientIp(ip) {
   return ip.replace(/^::ffff:/, '');
 }
 
+export function resolveLocalDnsRecord(queryPacket, domain, qtype) {
+  const records = store.config.localRecords || [];
+  if (!records.length || !domain) return null;
+
+  const rec = records.find((r) => normalizeDomain(r.domain) === domain);
+  if (!rec) return null;
+
+  const rawIps = Array.isArray(rec.ips) && rec.ips.length ? rec.ips : rec.ip ? [rec.ip] : [];
+  const matchingIps =
+    qtype === 'A'
+      ? rawIps.filter((ip) => net.isIPv4(ip))
+      : qtype === 'AAAA'
+        ? rawIps.filter((ip) => net.isIPv6(ip))
+        : [];
+
+  const ttl = Number.isFinite(Number(rec.ttl)) ? Number(rec.ttl) : 60;
+  const answers = matchingIps.map((ip) => ({
+    type: qtype,
+    class: 'IN',
+    name: queryPacket.questions[0].name,
+    ttl,
+    data: ip,
+  }));
+
+  // Domain nội bộ tồn tại nhưng không có loại bản ghi yêu cầu (vd hỏi AAAA khi chỉ khai báo IPv4) -> NOERROR rỗng, không gửi ra upstream!
+  return dnsPacket.encode({
+    type: 'response',
+    id: queryPacket.id,
+    flags: dnsPacket.RECURSION_DESIRED | dnsPacket.RECURSION_AVAILABLE | dnsPacket.AUTHORITATIVE_ANSWER,
+    questions: queryPacket.questions,
+    answers,
+  });
+}
+
 async function handleDnsPayload(rawBuffer, clientIp) {
   const ip = cleanClientIp(clientIp);
   if (isRateLimited(ip)) {
+    store.emit('rate_limited', { clientIp: ip, limit: MAX_QPS_PER_IP });
     return null;
   }
 
@@ -205,27 +596,46 @@ async function handleDnsPayload(rawBuffer, clientIp) {
   const domain = normalizeDomain(question.name);
   const qtype = question.type || 'A';
 
-  // Kiểm tra bộ lọc
+  // 0. Local DNS Split-Horizon (trả lời trực tiếp 0ms, không rò rỉ tên miền nội bộ ra Internet)
+  const localResp = resolveLocalDnsRecord(query, domain, qtype);
+  if (localResp) {
+    store.recordQuery({
+      clientIp: ip,
+      domain,
+      qtype,
+      blocked: false,
+      cached: true,
+      rcode: 'NOERROR',
+      reason: 'local_dns',
+      latencyMs: Number((performance.now() - startMs).toFixed(2)),
+    });
+    return localResp;
+  }
+
+  // 1. Kiểm tra bộ lọc (Whitelist, Client/Group Rules, Anti-Bypass, Blacklist, Blocklists)
   const decision = blocklistEngine.evaluate(domain, ip);
   if (decision.blocked) {
-    const resp = buildBlockedResponse(query);
+    const resp = buildBlockedResponse(query, { forceNxdomain: Boolean(decision.forceNxdomain) });
     store.recordQuery({
       clientIp: ip,
       domain,
       qtype,
       blocked: true,
       cached: false,
+      severity: decision.severity || 'info',
+      ...(decision.iotViolation ? { iotViolation: true } : {}),
       reason: decision.reason,
       latencyMs: Number((performance.now() - startMs).toFixed(2)),
     });
     return resp;
   }
 
-  // Kiểm tra Cache
+  const bypassProtection = typeof decision.reason === 'string' && decision.reason.startsWith('bypass:');
+
+  // 2. Kiểm tra Cache tươi
   const cacheKey = `${domain}:${qtype}`;
   const cachedResp = dnsCache.get(cacheKey);
   if (cachedResp) {
-    // Gắn lại đúng Transaction ID của gói tin yêu cầu
     const patched = Buffer.from(cachedResp);
     patched.writeUInt16BE(query.id, 0);
     store.recordQuery({
@@ -240,11 +650,27 @@ async function handleDnsPayload(rawBuffer, clientIp) {
     return patched;
   }
 
-  // Forward lên Upstream DNS
+  // 3. Forward lên Upstream DNS (DoH / UDP + Circuit Breaker)
   try {
     const upstreamResp = await forwardWithFailover(rawBuffer);
-    const ttl = extractMinTtl(upstreamResp);
-    dnsCache.set(cacheKey, upstreamResp, ttl);
+    const inspection = inspectUpstreamResponse(upstreamResp, domain, ip, { bypassProtection });
+
+    if (inspection.blocked) {
+      const blockedResp = buildBlockedResponse(query, { forceNxdomain: inspection.forceNxdomain });
+      store.recordQuery({
+        clientIp: ip,
+        domain,
+        qtype,
+        blocked: true,
+        cached: false,
+        severity: inspection.severity || 'info',
+        reason: inspection.reason,
+        latencyMs: Number((performance.now() - startMs).toFixed(2)),
+      });
+      return blockedResp;
+    }
+
+    dnsCache.set(cacheKey, upstreamResp, inspection.ttl);
 
     store.recordQuery({
       clientIp: ip,
@@ -252,11 +678,31 @@ async function handleDnsPayload(rawBuffer, clientIp) {
       qtype,
       blocked: false,
       cached: false,
+      rcode: inspection.rcode,
       reason: decision.reason,
       latencyMs: Number((performance.now() - startMs).toFixed(2)),
     });
     return upstreamResp;
   } catch (err) {
+    // Serve-Stale Cache khi toàn bộ upstream lỗi
+    if (store.config.security?.serveStaleCache !== false) {
+      const staleResp = dnsCache.getStale(cacheKey);
+      if (staleResp) {
+        const patched = Buffer.from(staleResp);
+        patched.writeUInt16BE(query.id, 0);
+        store.recordQuery({
+          clientIp: ip,
+          domain,
+          qtype,
+          blocked: false,
+          cached: true,
+          reason: 'stale_cache',
+          latencyMs: Number((performance.now() - startMs).toFixed(2)),
+        });
+        return patched;
+      }
+    }
+
     const servfail = dnsPacket.encode({
       type: 'response',
       id: query.id,
@@ -275,6 +721,44 @@ async function handleDnsPayload(rawBuffer, clientIp) {
     });
     return servfail;
   }
+}
+
+function startOptionalUdp6(port, host) {
+  if (store.config.security?.enableIpv6 === false) return Promise.resolve(null);
+  const bindAddr6 = host === '127.0.0.1' ? '::1' : '::';
+  return new Promise((resolve) => {
+    let settled = false;
+    try {
+      const udp6 = dgram.createSocket({ type: 'udp6', ipv6Only: true });
+      udp6.on('message', async (msg, rinfo) => {
+        try {
+          const resp = await handleDnsPayload(msg, rinfo.address);
+          if (resp) {
+            udp6.send(resp, rinfo.port, rinfo.address);
+          }
+        } catch {
+          // Bỏ qua gói tin lỗi
+        }
+      });
+      udp6.once('error', () => {
+        if (!settled) {
+          settled = true;
+          try {
+            udp6.close();
+          } catch {}
+          resolve(null);
+        }
+      });
+      udp6.bind(port, bindAddr6, () => {
+        if (!settled) {
+          settled = true;
+          resolve(udp6);
+        }
+      });
+    } catch {
+      resolve(null);
+    }
+  });
 }
 
 export function startDnsServer({ host = '0.0.0.0', port = 5335 } = {}) {
@@ -318,13 +802,19 @@ export function startDnsServer({ host = '0.0.0.0', port = 5335 } = {}) {
     });
 
     udpServer.bind(port, host, () => {
-      tcpServer.listen(port, host, () => {
+      tcpServer.listen(port, host, async () => {
+        const udp6Server = await startOptionalUdp6(port, host);
         resolve({
           host,
           port,
+          ipv6Enabled: Boolean(udp6Server),
           close: () =>
             new Promise((done) => {
-              udpServer.close(() => tcpServer.close(() => done()));
+              const finishUdp6 = () => {
+                if (!udp6Server) return done();
+                udp6Server.close(() => done());
+              };
+              udpServer.close(() => tcpServer.close(() => finishUdp6()));
             }),
         });
       });

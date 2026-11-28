@@ -1,11 +1,61 @@
 {
   "protectionEnabled": true,
   "upstreamDns": [
-    "1.1.1.2",
-    "9.9.9.9",
+    "https://1.1.1.2/dns-query",
+    "https://9.9.9.9/dns-query",
     "203.113.131.1"
   ],
   "blockResponseMode": "zero",
+  "security": {
+    "dnsRebindingGuard": true,
+    "cnameCloakingGuard": true,
+    "antiBypass": true,
+    "serveStaleCache": true,
+    "enableIpv6": true,
+    "rebindingWhitelist": []
+  },
+  "alerts": {
+    "enabled": true,
+    "rogueDeviceEnabled": true,
+    "ignorePrivateMacPush": true,
+    "threatHitEnabled": true,
+    "anomalyEnabled": true,
+    "nxdomainThresholdPerMin": 30,
+    "tunnelingLabelLength": 60,
+    "telegramBotToken": "",
+    "telegramChatId": "",
+    "webhookUrl": ""
+  },
+  "storage": {
+    "sqliteEnabled": true,
+    "retentionDays": 14
+  },
+  "localRecords": [
+    {
+      "domain": "netshield.lan",
+      "ip": "192.168.1.210",
+      "ips": [
+        "192.168.1.210"
+      ],
+      "ttl": 60
+    },
+    {
+      "domain": "server.lan",
+      "ip": "192.168.1.209",
+      "ips": [
+        "192.168.1.209"
+      ],
+      "ttl": 60
+    },
+    {
+      "domain": "router.lan",
+      "ip": "192.168.1.1",
+      "ips": [
+        "192.168.1.1"
+      ],
+      "ttl": 60
+    }
+  ],
   "blocklists": [
     {
       "id": "abpvn-hosts",
@@ -547,5 +597,46 @@
       "mac": "28:F3:66:F4:AD:5A"
     }
   ],
-  "clientRules": []
+  "clientRules": [
+    {
+      "id": "rule-camera-zt-audit",
+      "name": "Zero-Trust Audit: Camera an ninh",
+      "targetType": "group",
+      "groupId": "camera",
+      "clientIp": "",
+      "ruleMode": "allowlist_audit",
+      "enabled": true,
+      "bypassProtection": false,
+      "blockAllInternet": false,
+      "blockedServices": [],
+      "blockedDomains": [],
+      "allowedDomains": [
+        "ezvizlife.com",
+        "ezviz.com",
+        "ezvizru.com",
+        "hik-connect.com",
+        "ys7.com",
+        "imoulife.com",
+        "easy4ipcloud.com",
+        "easy4ip.com",
+        "dahuasecurity.com",
+        "lechange.cn",
+        "ntp.org",
+        "pool.ntp.org",
+        "time.google.com"
+      ],
+      "schedule": {
+        "enabled": false,
+        "start": "08:00",
+        "end": "17:30",
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    }
+  ]
 }

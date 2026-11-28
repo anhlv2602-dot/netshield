@@ -1,7 +1,17 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { CACHE_DIR, PROTECTED_WHITELIST, SERVICE_PRESETS, normalizeDomain, store } from './store.js';
+import {
+  ANTI_BYPASS_DOMAINS,
+  CACHE_DIR,
+  PROTECTED_WHITELIST,
+  SERVICE_PRESETS,
+  inferBlocklistMeta,
+  normalizeDomain,
+  store,
+} from './store.js';
 import { deviceDiscovery, normalizeMac } from './discovery.js';
+
+const ANTI_BYPASS_SET = new Set(ANTI_BYPASS_DOMAINS.map(normalizeDomain));
 
 const DOMAIN_REGEX = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
 
@@ -97,9 +107,40 @@ class BlocklistEngine {
   constructor() {
     this.whitelistSet = new Set();
     this.blacklistSet = new Set();
-    // Map domain -> tên blocklist nguồn đầu tiên
+    // Map domain -> { name, category, severity }
     this.blocklistMap = new Map();
+    // Map groupId -> Map<domain, { count, lastSeen, allowedByRule }>
+    this.observedByGroup = new Map();
     this.isUpdating = false;
+  }
+
+  _recordObservedForGroup(groupId, domain, allowedByRule = true) {
+    if (!groupId || !domain) return;
+    let map = this.observedByGroup.get(groupId);
+    if (!map) {
+      map = new Map();
+      this.observedByGroup.set(groupId, map);
+    }
+    const existing = map.get(domain);
+    if (existing) {
+      existing.count += 1;
+      existing.lastSeen = new Date().toISOString();
+      existing.allowedByRule = allowedByRule;
+      return;
+    }
+    if (map.size >= 300) {
+      const oldest = map.keys().next().value;
+      if (oldest) map.delete(oldest);
+    }
+    map.set(domain, { count: 1, lastSeen: new Date().toISOString(), allowedByRule });
+  }
+
+  getObservedDomainsForGroup(groupId) {
+    const map = this.observedByGroup.get(groupId);
+    if (!map) return [];
+    return [...map.entries()]
+      .map(([domain, meta]) => ({ domain, ...meta }))
+      .sort((a, b) => b.count - a.count);
   }
 
   rebuildCustomSets() {
@@ -118,6 +159,7 @@ class BlocklistEngine {
 
     for (const list of store.config.blocklists) {
       if (!list.enabled) continue;
+      const meta = inferBlocklistMeta(list);
       const cacheFile = path.join(CACHE_DIR, `${list.id}.txt`);
       try {
         const content = await fs.readFile(cacheFile, 'utf8');
@@ -127,8 +169,10 @@ class BlocklistEngine {
           const d = line.trim();
           if (!d) continue;
           count += 1;
-          if (!nextMap.has(d)) {
-            nextMap.set(d, list.name);
+          const prev = nextMap.get(d);
+          // Ưu tiên nâng mức nghiêm trọng lên 'high' nếu domain xuất hiện trong nguồn Malware/Phishing/TIF
+          if (!prev || (prev.severity !== 'high' && meta.severity === 'high')) {
+            nextMap.set(d, { name: list.name, category: meta.category, severity: meta.severity });
           }
         }
         list.count = count;
@@ -205,6 +249,41 @@ class BlocklistEngine {
     return this.blocklistMap.size + this.blacklistSet.size;
   }
 
+  isWhitelisted(rawDomain) {
+    const domain = normalizeDomain(rawDomain);
+    if (!domain) return false;
+    for (const s of getDomainSuffixes(domain)) {
+      if (this.whitelistSet.has(s)) return true;
+    }
+    return false;
+  }
+
+  evaluateCnameTarget(rawCname, clientIp) {
+    if (!store.config.protectionEnabled) {
+      return { blocked: false, reason: 'protection_paused' };
+    }
+    const domain = normalizeDomain(rawCname);
+    if (!domain) return { blocked: false, reason: 'invalid' };
+    const suffixes = getDomainSuffixes(domain);
+    for (const s of suffixes) {
+      if (this.whitelistSet.has(s)) {
+        return { blocked: false, reason: 'whitelist' };
+      }
+    }
+    for (const s of suffixes) {
+      if (this.blacklistSet.has(s)) {
+        return { blocked: true, reason: 'Blacklist tùy chỉnh' };
+      }
+    }
+    for (const s of suffixes) {
+      const hit = this.blocklistMap.get(s);
+      if (hit) {
+        return { blocked: true, reason: hit.name, severity: hit.severity, category: hit.category };
+      }
+    }
+    return { blocked: false, reason: 'allowed' };
+  }
+
   evaluate(rawDomain, clientIp, now = new Date()) {
     const domain = normalizeDomain(rawDomain);
     if (!domain) {
@@ -217,6 +296,24 @@ class BlocklistEngine {
 
     const suffixes = getDomainSuffixes(domain);
 
+    // 0. Chống vượt mặt DNS (Firefox DoH canary, Apple iCloud Private Relay, DDR)
+    // Đặt trước Whitelist suffix để không bị 'icloud.com' miễn trừ 'mask.icloud.com',
+    // nhưng vẫn tôn trọng nếu người dùng whitelist đích danh chính canary domain đó.
+    if (store.config.security?.antiBypass !== false && ANTI_BYPASS_SET.has(domain) && !this.whitelistSet.has(domain)) {
+      return {
+        blocked: true,
+        forceNxdomain: true,
+        severity: 'medium',
+        reason: 'Chống vượt mặt DNS (Anti-Bypass)',
+      };
+    }
+
+    const clientMac = deviceDiscovery.getMacForIp(clientIp);
+    const clientDevice = deviceDiscovery.resolveDeviceForIp(clientIp, store.config.devices || []);
+    if (clientDevice?.groupId) {
+      this._recordObservedForGroup(clientDevice.groupId, domain, true);
+    }
+
     // 1. Whitelist luôn ưu tiên cao nhất
     for (const s of suffixes) {
       if (this.whitelistSet.has(s)) {
@@ -225,8 +322,6 @@ class BlocklistEngine {
     }
 
     // 2. Quy tắc theo thiết bị (ưu tiên khớp theo MAC qua ARP, fallback IP) hoặc Nhóm thiết bị & Khung giờ
-    const clientMac = deviceDiscovery.getMacForIp(clientIp);
-    const clientDevice = deviceDiscovery.resolveDeviceForIp(clientIp, store.config.devices || []);
     for (const rule of store.config.clientRules || []) {
       if (!rule.enabled) continue;
       let targetMatches = false;
@@ -252,6 +347,33 @@ class BlocklistEngine {
       }
 
       if (!isTimeInSchedule(rule.schedule, now)) {
+        continue;
+      }
+
+      // Chế độ Zero-Trust Allowlist-Only (Audit hoặc Enforce) cho Camera / IoT
+      if (rule.ruleMode === 'allowlist_audit' || rule.ruleMode === 'allowlist_enforce') {
+        const allowSet = new Set((rule.allowedDomains || []).map(normalizeDomain).filter(Boolean));
+        const inAllowlist = suffixes.some((s) => allowSet.has(s));
+        if (!inAllowlist) {
+          if (clientDevice?.groupId) {
+            this._recordObservedForGroup(clientDevice.groupId, domain, false);
+          }
+          if (rule.ruleMode === 'allowlist_enforce') {
+            return {
+              blocked: true,
+              severity: 'medium',
+              iotViolation: true,
+              reason: `Zero-Trust IoT (${targetLabel})`,
+            };
+          }
+          // Chế độ allowlist_audit: ghi nhận để học, KHÔNG chặn
+          return {
+            blocked: false,
+            auditViolation: true,
+            reason: `Audit IoT (ngoài Allowlist): ${targetLabel}`,
+          };
+        }
+        // Nằm trong Allowlist hợp lệ -> tiếp tục kiểm tra Threat Intel/Blocklist bên dưới
         continue;
       }
 
@@ -289,9 +411,9 @@ class BlocklistEngine {
 
     // 4. Blocklist tự động
     for (const s of suffixes) {
-      const sourceName = this.blocklistMap.get(s);
-      if (sourceName) {
-        return { blocked: true, reason: sourceName };
+      const hit = this.blocklistMap.get(s);
+      if (hit) {
+        return { blocked: true, reason: hit.name, severity: hit.severity, category: hit.category };
       }
     }
 

@@ -568,6 +568,7 @@ class DeviceDiscovery {
   constructor() {
     this.store = null;
     this.onMigrationCallback = null;
+    this.onDeviceDiscoveredCallback = null;
     this.domainsByIp = new Map(); // ip -> Set<domain>
     this.hostnameCache = new Map(); // ip -> { hostname, fetchedAt }
     this.discovered = new Map(); // ip -> info object
@@ -585,9 +586,10 @@ class DeviceDiscovery {
     this._onQuery = null;
   }
 
-  start(store, { onMigration } = {}) {
+  start(store, { onMigration, onDeviceDiscovered } = {}) {
     this.store = store;
     this.onMigrationCallback = onMigration || null;
+    this.onDeviceDiscoveredCallback = onDeviceDiscovered || null;
 
     // Nạp lịch sử domain từ logs hiện có (nếu có)
     for (const log of store.logs || []) {
@@ -975,6 +977,11 @@ class DeviceDiscovery {
       for (const ip of ips) {
         const info = this._synthesizeInfo(ip, arp.byIp.get(ip), arp.sharedMacs);
         this.discovered.set(ip, info);
+        if (typeof this.onDeviceDiscoveredCallback === 'function') {
+          try {
+            this.onDeviceDiscoveredCallback(info);
+          } catch {}
+        }
       }
 
       this.lastScanAt = new Date().toISOString();

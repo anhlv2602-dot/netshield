@@ -1676,6 +1676,20 @@
       <main>
         <!-- TAB 1: TỔNG QUAN -->
         <section id="tab-overview" class="panel active" role="tabpanel">
+          <div id="securityAlertsCard" class="card" style="display: none; margin-bottom: 1.15rem; border-color: var(--danger);">
+            <div class="card-head">
+              <div>
+                <h2>🛡️ Cảnh báo Bảo mật <span id="alertUnackBadge" class="badge blocked" style="margin-left: 0.4rem;">0</span></h2>
+                <p class="card-desc">Thiết bị lạ (MAC mới), truy cập mã độc/lừa đảo, vi phạm Zero-Trust IoT và bất thường DNS</p>
+              </div>
+              <div class="row" style="gap: 0.45rem;">
+                <button id="ackAllAlertsBtn" type="button" class="btn sm">Xác nhận tất cả</button>
+                <button id="clearAlertsBtn" type="button" class="btn sm danger-hover">Xóa lịch sử</button>
+              </div>
+            </div>
+            <div id="securityAlertsList" class="iface-list"></div>
+          </div>
+
           <div class="kpi-grid">
             <div class="kpi-card">
               <div class="kpi-top">
@@ -1786,10 +1800,21 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input id="logSearch" type="text" placeholder="Tìm theo tên miền, IP thiết bị hoặc lý do chặn..." aria-label="Tìm kiếm nhật ký" />
               </div>
-              <select id="logFilter" aria-label="Lọc trạng thái truy vấn" style="width: auto; min-width: 165px;">
+              <select id="logFilter" aria-label="Lọc trạng thái truy vấn" style="width: auto; min-width: 155px;">
                 <option value="all">Tất cả truy vấn</option>
                 <option value="blocked">Chỉ mục Đã chặn</option>
                 <option value="allowed">Chỉ mục Cho phép</option>
+              </select>
+              <select id="logSeverityFilter" aria-label="Lọc mức độ bảo mật" style="width: auto; min-width: 150px;">
+                <option value="">Mọi mức độ</option>
+                <option value="high">Nghiêm trọng (Malware/Phish)</option>
+                <option value="medium">Cảnh báo (IoT/Bypass)</option>
+              </select>
+              <select id="logRangeSelect" aria-label="Nguồn lịch sử" style="width: auto; min-width: 150px;">
+                <option value="live">Trực tiếp (RAM)</option>
+                <option value="24">24 giờ (SQLite)</option>
+                <option value="168">7 ngày (SQLite)</option>
+                <option value="720">30 ngày (SQLite)</option>
               </select>
               <button id="clearLogFilterBtn" type="button" class="btn" style="display: none;">× Xóa lọc</button>
               <button id="toggleStreamBtn" type="button" class="btn">
@@ -1797,6 +1822,7 @@
                 <span id="streamLabel">Tạm dừng luồng</span>
               </button>
               <button id="reloadLogsBtn" type="button" class="btn">Làm mới</button>
+              <button id="exportCsvBtn" type="button" class="btn">Xuất CSV</button>
             </div>
 
             <div tabindex="0" role="region" aria-labelledby="logs-caption" class="table-wrapper">
@@ -2057,6 +2083,29 @@
                   <input id="ruleName" type="text" placeholder="Ví dụ: Khóa Internet nhóm Camera, Chặn TikTok giờ làm việc" />
                 </div>
 
+                <div class="field" style="margin-bottom: 0.85rem;">
+                  <label for="ruleModeSelect">Chế độ quy tắc</label>
+                  <select id="ruleModeSelect">
+                    <option value="block">Chặn theo danh sách (Mặc định)</option>
+                    <option value="allowlist_audit">Zero-Trust Camera/IoT: Chế độ Học (Audit — chỉ ghi nhận, chưa chặn)</option>
+                    <option value="allowlist_enforce">Zero-Trust Camera/IoT: Khóa cứng (Chỉ cho phép Allowlist)</option>
+                  </select>
+                </div>
+
+                <div id="ruleAllowlistBox" style="display: none; margin-bottom: 0.9rem; padding: 0.85rem; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 10px;">
+                  <div class="field" style="margin-bottom: 0.6rem;">
+                    <label for="ruleAllowedDomains">Danh sách tên miền ĐƯỢC PHÉP (Allowlist theo domain gốc, cách nhau dấu phẩy)</label>
+                    <input id="ruleAllowedDomains" type="text" placeholder="vd: ezvizlife.com, imoulife.com, hunonic.com, ntp.org" style="background: var(--surface);" />
+                  </div>
+                  <div class="row" style="gap: 0.4rem; flex-wrap: wrap;">
+                    <button type="button" class="btn sm" data-iot-preset="camera_ezviz">+ Ezviz</button>
+                    <button type="button" class="btn sm" data-iot-preset="camera_dahua_imou">+ Dahua/Imou</button>
+                    <button type="button" class="btn sm" data-iot-preset="iot_smarthome">+ SmartHome</button>
+                    <button type="button" class="btn sm" data-iot-preset="iot_printer">+ Máy in</button>
+                    <button type="button" id="loadObservedDomainsBtn" class="btn sm primary">Lấy domain thực tế từ nhóm</button>
+                  </div>
+                </div>
+
                 <div id="ruleBlockFields">
                   <div class="field" style="margin-bottom: 0.85rem;">
                     <label>Chọn nhanh nhóm dịch vụ muốn chặn</label>
@@ -2144,17 +2193,38 @@
                 </div>
               </div>
 
-              <div class="field" style="margin-bottom: 0.9rem;">
-                <label for="upstreamInput">Máy chủ DNS Upstream (cách nhau bằng dấu phẩy)</label>
-                <input id="upstreamInput" type="text" value="1.1.1.1, 8.8.8.8" />
+              <div class="field" style="margin-bottom: 0.75rem;">
+                <label for="upstreamInput">Máy chủ DNS Upstream (hỗ trợ DoH <code>https://...</code> và UDP IP, cách nhau bằng dấu phẩy)</label>
+                <input id="upstreamInput" type="text" value="https://1.1.1.2/dns-query, https://9.9.9.9/dns-query, 203.113.131.1" />
               </div>
 
-              <div class="field" style="margin-bottom: 1rem;">
+              <div class="row" style="margin-bottom: 0.9rem; gap: 0.5rem; flex-wrap: wrap;">
+                <button id="applyDohPresetBtn" type="button" class="btn sm">Dùng DoH mã hóa (1.1.1.2 + 9.9.9.9)</button>
+                <button id="testUpstreamsBtn" type="button" class="btn sm">Kiểm tra tốc độ Upstream</button>
+              </div>
+              <div id="upstreamHealthBox" class="iface-list" style="margin-bottom: 0.9rem;"></div>
+
+              <div class="field" style="margin-bottom: 0.9rem;">
                 <label for="blockModeSelect">Cách phản hồi khi chặn tên miền</label>
                 <select id="blockModeSelect">
                   <option value="zero">Trả về 0.0.0.0 / :: (Nhanh, khuyên dùng)</option>
                   <option value="nxdomain">Trả về NXDOMAIN (Không tồn tại)</option>
                 </select>
+              </div>
+
+              <div class="field" style="margin-bottom: 0.85rem;">
+                <label>Lá chắn bảo mật lõi DNS (Phase 1)</label>
+                <div class="checkbox-grid">
+                  <label><input type="checkbox" id="secRebindingGuard" checked /> Chống DNS Rebinding (bảo vệ Router/Camera LAN)</label>
+                  <label><input type="checkbox" id="secCnameGuard" checked /> Chống CNAME Cloaking (chặn tracker/malware ẩn)</label>
+                  <label><input type="checkbox" id="secAntiBypass" checked /> Chống vượt mặt DNS (Firefox DoH &amp; Apple Private Relay)</label>
+                  <label><input type="checkbox" id="secServeStale" checked /> Serve-Stale Cache (giữ mạng ổn định khi ISP chập chờn)</label>
+                </div>
+              </div>
+
+              <div class="field" style="margin-bottom: 1rem;">
+                <label for="rebindingWhitelistInput">Ngoại lệ DNS Rebinding (domain nội bộ được phép trả về IP LAN, cách nhau dấu phẩy)</label>
+                <input id="rebindingWhitelistInput" type="text" placeholder="vd: plex.direct, tailscale.net" />
               </div>
 
               <div class="row" style="margin-bottom: 1.2rem;">
@@ -2172,6 +2242,88 @@
                   <button type="button" data-theme-val="dark" aria-pressed="false">Tối</button>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top: 1.15rem;">
+            <div class="card-head">
+              <div>
+                <h2>Cảnh báo Bảo mật &amp; Thông báo Realtime (Phase 2)</h2>
+                <p class="card-desc">Báo động khi có thiết bị lạ (MAC thật), máy nội bộ chạm Malware/Phishing hoặc bất thường DNS</p>
+              </div>
+            </div>
+            <div class="checkbox-grid" style="margin-bottom: 0.9rem;">
+              <label><input type="checkbox" id="alertEnabled" checked /> Bật bộ máy cảnh báo bảo mật</label>
+              <label><input type="checkbox" id="alertRogueDevice" checked /> Cảnh báo thiết bị lạ vào mạng LAN</label>
+              <label><input type="checkbox" id="alertIgnorePrivMac" checked /> Không đẩy Telegram cho Private Wi-Fi MAC (chỉ ghi UI)</label>
+              <label><input type="checkbox" id="alertThreatHit" checked /> Báo động ngay khi chạm Malware / Phishing / Rebinding</label>
+              <label><input type="checkbox" id="alertAnomaly" checked /> Phát hiện bất thường (DNS Tunneling / NXDOMAIN spike)</label>
+            </div>
+            <div class="grid-2" style="gap: 0.85rem; margin-bottom: 0.9rem;">
+              <div class="field">
+                <label for="alertTelegramToken">Telegram Bot Token (tùy chọn)</label>
+                <input id="alertTelegramToken" type="password" placeholder="123456:ABC-DEF..." autocomplete="off" />
+              </div>
+              <div class="field">
+                <label for="alertTelegramChatId">Telegram Chat ID</label>
+                <input id="alertTelegramChatId" type="text" placeholder="vd: 123456789 hoặc -100..." />
+              </div>
+            </div>
+            <div class="field" style="margin-bottom: 1rem;">
+              <label for="alertWebhookUrl">Webhook URL tùy chỉnh (Discord / Slack / n8n — tùy chọn)</label>
+              <input id="alertWebhookUrl" type="url" placeholder="https://..." />
+            </div>
+            <div class="row" style="gap: 0.6rem;">
+              <button id="saveAlertsBtn" type="button" class="btn primary">Lưu cấu hình cảnh báo</button>
+              <button id="testAlertsBtn" type="button" class="btn">Gửi cảnh báo thử</button>
+            </div>
+          </div>
+
+          <div class="grid-2" style="margin-top: 1.15rem;">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Local DNS Nội bộ (Split-Horizon — Phase 3)</h2>
+                  <p class="card-desc">Ánh xạ tên miền nội bộ (vd <code>netshield.lan</code>) về IP LAN — trả lời 0ms, không rò rỉ ra Internet</p>
+                </div>
+              </div>
+              <div class="row" style="gap: 0.5rem; margin-bottom: 0.85rem;">
+                <input id="localDnsDomain" type="text" placeholder="vd: netshield.lan" style="flex: 1;" />
+                <input id="localDnsIp" type="text" placeholder="vd: 192.168.1.210" style="flex: 1;" />
+                <button id="addLocalDnsBtn" type="button" class="btn primary">Thêm</button>
+              </div>
+              <div id="localDnsList" class="iface-list"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Lưu trữ SQLite &amp; Sao lưu Cấu hình (Phase 3)</h2>
+                  <p class="card-desc">Lưu lịch sử điều tra dài hạn bằng SQLite WAL và sao lưu/khôi phục toàn bộ thiết bị &amp; quy tắc</p>
+                </div>
+              </div>
+              <div id="dbStatsBox" class="stat-sub" style="margin-bottom: 0.85rem;">Đang kiểm tra kho SQLite...</div>
+              <div class="row" style="gap: 0.6rem; margin-bottom: 1rem;">
+                <div class="field" style="flex: 1;">
+                  <label for="retentionDaysSelect">Thời gian lưu lịch sử truy vấn (SQLite)</label>
+                  <select id="retentionDaysSelect">
+                    <option value="7">7 ngày</option>
+                    <option value="14" selected>14 ngày (Khuyên dùng)</option>
+                    <option value="30">30 ngày</option>
+                    <option value="60">60 ngày</option>
+                  </select>
+                </div>
+                <button id="saveStorageBtn" type="button" class="btn primary" style="align-self: flex-end;">Lưu lưu trữ</button>
+              </div>
+              <hr class="divider" />
+              <div class="row" style="gap: 0.6rem; flex-wrap: wrap;">
+                <button id="exportBackupBtn" type="button" class="btn">Tải file Backup (JSON)</button>
+                <label class="btn" style="cursor: pointer;">
+                  Khôi phục từ file JSON
+                  <input id="importBackupFile" type="file" accept="application/json,.json" style="display: none;" />
+                </label>
+              </div>
+              <div class="stat-sub" style="margin-top: 0.5rem;">File backup mặc định ẩn Telegram Bot Token để bảo mật.</div>
             </div>
           </div>
         </section>
@@ -3385,6 +3537,11 @@
                 targetHtml = `<span class="group-badge">${esc(grp?.icon || '📁')} Nhóm: ${esc(grp?.name || r.groupId)}</span>`;
               }
               const details = [];
+              if (r.ruleMode === 'allowlist_audit') {
+                details.push(`<span class="badge warn">Zero-Trust Audit (${r.allowedDomains?.length || 0} domain)</span>`);
+              } else if (r.ruleMode === 'allowlist_enforce') {
+                details.push(`<span class="badge blocked">Zero-Trust Khóa cứng (${r.allowedDomains?.length || 0} domain)</span>`);
+              }
               if (r.bypassProtection) details.push('<span class="badge allowed">Miễn trừ lọc QC</span>');
               if (r.blockAllInternet) details.push('<span class="badge blocked">Khóa toàn bộ Internet</span>');
               if (r.blockedServices?.length) details.push(`<span class="badge warn">Dịch vụ: ${esc(r.blockedServices.join(', '))}</span>`);
@@ -3441,8 +3598,118 @@
             .join('')
         : '<div class="stat-label">Không tìm thấy IP LAN</div>';
 
-      document.getElementById('upstreamInput').value = (s.config.upstreamDns || []).join(', ');
+      const upEl = document.getElementById('upstreamInput');
+      if (document.activeElement !== upEl) {
+        upEl.value = (s.config.upstreamDns || []).join(', ');
+      }
       document.getElementById('blockModeSelect').value = s.config.blockResponseMode || 'zero';
+
+      const sec = s.config.security || {};
+      document.getElementById('secRebindingGuard').checked = sec.dnsRebindingGuard !== false;
+      document.getElementById('secCnameGuard').checked = sec.cnameCloakingGuard !== false;
+      document.getElementById('secAntiBypass').checked = sec.antiBypass !== false;
+      document.getElementById('secServeStale').checked = sec.serveStaleCache !== false;
+      const rebindWlEl = document.getElementById('rebindingWhitelistInput');
+      if (document.activeElement !== rebindWlEl) {
+        rebindWlEl.value = (sec.rebindingWhitelist || []).join(', ');
+      }
+
+      const healthBox = document.getElementById('upstreamHealthBox');
+      const healthList = s.upstreamHealth || [];
+      healthBox.innerHTML = healthList.length
+        ? healthList
+            .map((h) => {
+              const badgeCls =
+                h.status === 'circuit_open' ? 'blocked' : h.status === 'degraded' ? 'warn' : 'allowed';
+              const statusTxt =
+                h.status === 'circuit_open'
+                  ? `Tạm ngắt (${h.retryInSec}s)`
+                  : h.lastLatencyMs != null
+                    ? `${h.lastLatencyMs} ms`
+                    : 'Sẵn sàng';
+              return `
+                <div class="iface-row">
+                  <div class="row" style="gap: 0.45rem;">
+                    <span class="badge ${h.protocol === 'DoH' ? 'allowed' : 'cached'}">${esc(h.protocol)}</span>
+                    <span class="mono" style="font-size: 0.82rem;">${esc(h.upstream)}</span>
+                  </div>
+                  <span class="badge ${badgeCls}">${esc(statusTxt)}</span>
+                </div>
+              `;
+            })
+            .join('')
+        : '';
+
+      // Security Alerts card (Overview)
+      const alertsSum = s.alertsSummary || { total: 0, unacknowledged: 0, recent: [] };
+      const alertsCard = document.getElementById('securityAlertsCard');
+      if (alertsSum.total > 0) {
+        alertsCard.style.display = '';
+        document.getElementById('alertUnackBadge').textContent = `${alertsSum.unacknowledged} chưa xử lý`;
+        document.getElementById('securityAlertsList').innerHTML = (alertsSum.recent || [])
+          .map((a) => {
+            const sevCls = a.severity === 'high' ? 'blocked' : a.severity === 'medium' ? 'warn' : 'muted';
+            const sevLbl = a.severity === 'high' ? 'NGHIÊM TRỌNG' : a.severity === 'medium' ? 'CẢNH BÁO' : 'THÔNG TIN';
+            const tStr = new Date(a.timestamp).toLocaleTimeString('vi-VN');
+            return `
+              <div class="iface-row" style="${a.acknowledged ? 'opacity: 0.58;' : ''}">
+                <div style="display:flex;flex-direction:column;gap:0.2rem;">
+                  <div class="row" style="gap:0.45rem;">
+                    <span class="badge ${sevCls}">${sevLbl}</span>
+                    <strong>${esc(a.title)}</strong>
+                    <span class="stat-sub mono">${esc(tStr)}</span>
+                  </div>
+                  <div class="stat-sub">${esc(a.message)}</div>
+                </div>
+                ${a.acknowledged ? '<span class="badge allowed">Đã xử lý</span>' : `<button type="button" class="btn sm" onclick="ackAlert('${esc(a.id)}')">Đã xử lý</button>`}
+              </div>
+            `;
+          })
+          .join('');
+      } else {
+        alertsCard.style.display = 'none';
+      }
+
+      // Alerts settings (Setup tab)
+      const acfg = s.config.alerts || {};
+      document.getElementById('alertEnabled').checked = acfg.enabled !== false;
+      document.getElementById('alertRogueDevice').checked = acfg.rogueDeviceEnabled !== false;
+      document.getElementById('alertIgnorePrivMac').checked = acfg.ignorePrivateMacPush !== false;
+      document.getElementById('alertThreatHit').checked = acfg.threatHitEnabled !== false;
+      document.getElementById('alertAnomaly').checked = acfg.anomalyEnabled !== false;
+      const tgTokEl = document.getElementById('alertTelegramToken');
+      if (document.activeElement !== tgTokEl) tgTokEl.value = acfg.telegramBotToken || '';
+      const tgChatEl = document.getElementById('alertTelegramChatId');
+      if (document.activeElement !== tgChatEl) tgChatEl.value = acfg.telegramChatId || '';
+      const whEl = document.getElementById('alertWebhookUrl');
+      if (document.activeElement !== whEl) whEl.value = acfg.webhookUrl || '';
+
+      // Local DNS records (Setup tab)
+      const localRecs = s.config.localRecords || [];
+      document.getElementById('localDnsList').innerHTML = localRecs.length
+        ? localRecs
+            .map((r) => {
+              const ipsStr = (Array.isArray(r.ips) && r.ips.length ? r.ips : [r.ip]).filter(Boolean).join(', ');
+              return `
+                <div class="iface-row">
+                  <div class="row" style="gap: 0.5rem;">
+                    <strong class="mono">${esc(r.domain)}</strong>
+                    <span class="stat-sub">→</span>
+                    <span class="badge cached mono">${esc(ipsStr)}</span>
+                  </div>
+                  <button type="button" class="btn icon-btn danger-hover" onclick="deleteLocalDns('${esc(r.domain)}')" title="Xóa">${SVG_TRASH}</button>
+                </div>
+              `;
+            })
+            .join('')
+        : '<div class="stat-sub">Chưa có tên miền nội bộ nào. Gợi ý: <code>netshield.lan → 192.168.1.210</code></div>';
+
+      // SQLite Forensics stats
+      const dbSt = s.dbStats || { enabled: false, totalRows: 0, dbSizeBytes: 0, retentionDays: 14 };
+      document.getElementById('dbStatsBox').textContent = dbSt.enabled
+        ? `SQLite WAL đang hoạt động: ${dbSt.totalRows.toLocaleString('vi-VN')} dòng log • Dung lượng ${formatBytes(dbSt.dbSizeBytes)} • Tự xóa sau ${dbSt.retentionDays} ngày`
+        : 'SQLite đang tắt (chỉ lưu log trong RAM).';
+      document.getElementById('retentionDaysSelect').value = String(dbSt.retentionDays || 14);
     }
 
     // ================= LOGS =================
@@ -3526,7 +3793,18 @@
     }
 
     async function loadLogs() {
-      const res = await api('/api/logs?limit=200');
+      const rangeVal = document.getElementById('logRangeSelect')?.value || 'live';
+      const filter = document.getElementById('logFilter')?.value || 'all';
+      const severity = document.getElementById('logSeverityFilter')?.value || '';
+      const search = document.getElementById('logSearch')?.value.trim() || '';
+      const params = new URLSearchParams({ limit: rangeVal === 'live' ? '200' : '500', filter });
+      if (severity) params.set('severity', severity);
+      if (search) params.set('search', search);
+      if (rangeVal !== 'live') {
+        params.set('source', 'db');
+        params.set('sinceHours', rangeVal);
+      }
+      const res = await api(`/api/logs?${params.toString()}`);
       state.logs = res.items || [];
       renderLogs();
     }
@@ -3864,12 +4142,68 @@
     ruleBypassEl.addEventListener('change', syncBypassState);
     syncBypassState();
 
+    const ruleModeSelectEl = document.getElementById('ruleModeSelect');
+    const syncRuleModeUi = () => {
+      const isAllowlist = ruleModeSelectEl.value !== 'block';
+      document.getElementById('ruleAllowlistBox').style.display = isAllowlist ? '' : 'none';
+      document.getElementById('ruleBlockFields').style.display = isAllowlist ? 'none' : '';
+    };
+    ruleModeSelectEl.addEventListener('change', syncRuleModeUi);
+    syncRuleModeUi();
+
+    document.querySelectorAll('[data-iot-preset]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = btn.getAttribute('data-iot-preset');
+        const preset = state.status?.iotAllowlistPresets?.[key];
+        if (!preset?.domains?.length) return;
+        const input = document.getElementById('ruleAllowedDomains');
+        const current = input.value
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+        const merged = [...new Set([...current, ...preset.domains])];
+        input.value = merged.join(', ');
+        showToast(`Đã thêm preset ${preset.label}`);
+      });
+    });
+
+    document.getElementById('loadObservedDomainsBtn').addEventListener('click', async () => {
+      const groupId = document.getElementById('ruleGroupId').value;
+      if (!groupId) {
+        showToast('Hãy chọn Nhóm thiết bị trước');
+        return;
+      }
+      try {
+        const res = await api(`/api/groups/${encodeURIComponent(groupId)}/observed-domains`);
+        const observed = (res.domains || []).map((d) => d.domain);
+        if (!observed.length) {
+          showToast('Chưa ghi nhận tên miền nào từ nhóm này trong phiên hiện tại');
+          return;
+        }
+        const input = document.getElementById('ruleAllowedDomains');
+        const current = input.value
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+        input.value = [...new Set([...current, ...observed])].join(', ');
+        showToast(`Đã nạp ${observed.length} tên miền thực tế từ nhóm`);
+      } catch (err) {
+        showToast('Lỗi lấy domain nhóm: ' + err.message);
+      }
+    });
+
     document.getElementById('saveRuleBtn').addEventListener('click', async () => {
       const targetType = ruleTargetTypeEl.value;
+      const ruleMode = ruleModeSelectEl.value;
       const blockedServices = [...document.querySelectorAll('#serviceCheckboxes input:checked')].map((i) => i.value);
       const days = [...document.querySelectorAll('#daysCheckboxes input:checked')].map((i) => Number(i.value));
       const blockedDomains = document
         .getElementById('ruleDomains')
+        .value.split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const allowedDomains = document
+        .getElementById('ruleAllowedDomains')
         .value.split(',')
         .map((s) => s.trim())
         .filter(Boolean);
@@ -3878,12 +4212,14 @@
         await api('/api/clients', 'POST', {
           name: document.getElementById('ruleName').value,
           targetType,
+          ruleMode,
           groupId: targetType === 'group' ? document.getElementById('ruleGroupId').value : '',
           clientIp: targetType === 'ip' ? document.getElementById('ruleIp').value : '',
           bypassProtection: document.getElementById('ruleBypass').checked,
           blockAllInternet: document.getElementById('ruleBlockAll').checked,
           blockedServices,
           blockedDomains,
+          allowedDomains,
           schedule: {
             enabled: document.getElementById('ruleScheduleEnabled').checked,
             start: document.getElementById('ruleStart').value,
@@ -3894,10 +4230,93 @@
         document.getElementById('ruleName').value = '';
         document.getElementById('ruleIp').value = '';
         document.getElementById('ruleDomains').value = '';
+        document.getElementById('ruleAllowedDomains').value = '';
         await loadAll();
         showToast('Đã lưu quy tắc');
       } catch (err) {
         showToast(err.message);
+      }
+    });
+
+    window.ackAlert = async (id) => {
+      await api(`/api/alerts/${encodeURIComponent(id)}/ack`, 'POST');
+      await loadAll();
+    };
+
+    document.getElementById('ackAllAlertsBtn').addEventListener('click', async () => {
+      await api('/api/alerts/ack-all', 'POST');
+      await loadAll();
+      showToast('Đã xác nhận toàn bộ cảnh báo');
+    });
+
+    document.getElementById('clearAlertsBtn').addEventListener('click', async () => {
+      await api('/api/alerts', 'DELETE');
+      await loadAll();
+      showToast('Đã xóa lịch sử cảnh báo');
+    });
+
+    document.getElementById('saveAlertsBtn').addEventListener('click', async () => {
+      const alerts = {
+        enabled: document.getElementById('alertEnabled').checked,
+        rogueDeviceEnabled: document.getElementById('alertRogueDevice').checked,
+        ignorePrivateMacPush: document.getElementById('alertIgnorePrivMac').checked,
+        threatHitEnabled: document.getElementById('alertThreatHit').checked,
+        anomalyEnabled: document.getElementById('alertAnomaly').checked,
+        telegramBotToken: document.getElementById('alertTelegramToken').value.trim(),
+        telegramChatId: document.getElementById('alertTelegramChatId').value.trim(),
+        webhookUrl: document.getElementById('alertWebhookUrl').value.trim(),
+      };
+      await api('/api/settings', 'POST', { alerts });
+      await loadAll();
+      showToast('Đã lưu cấu hình cảnh báo bảo mật');
+    });
+
+    document.getElementById('testAlertsBtn').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      btn.textContent = 'Đang gửi thử...';
+      try {
+        const res = await api('/api/alerts/test', 'POST', {
+          telegramBotToken: document.getElementById('alertTelegramToken').value.trim(),
+          telegramChatId: document.getElementById('alertTelegramChatId').value.trim(),
+          webhookUrl: document.getElementById('alertWebhookUrl').value.trim(),
+        });
+        showToast(res.ok ? 'Đã gửi cảnh báo thử thành công!' : `Lỗi gửi thử: ${res.error || 'Kiểm tra Token/Chat ID'}`);
+      } catch (err) {
+        showToast('Lỗi gửi thử: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Gửi cảnh báo thử';
+      }
+    });
+
+    document.getElementById('applyDohPresetBtn').addEventListener('click', () => {
+      document.getElementById('upstreamInput').value =
+        'https://1.1.1.2/dns-query, https://9.9.9.9/dns-query, 203.113.131.1';
+      showToast('Đã điền bộ Upstream DoH mã hóa — bấm "Lưu cài đặt" để áp dụng');
+    });
+
+    document.getElementById('testUpstreamsBtn').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      const upstreamDns = document
+        .getElementById('upstreamInput')
+        .value.split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      btn.disabled = true;
+      btn.textContent = 'Đang đo tốc độ...';
+      try {
+        const res = await api('/api/settings/test-upstreams', 'POST', { upstreamDns });
+        const summary = (res.results || [])
+          .map((r) => `${r.protocol} ${r.ok ? `${r.latencyMs}ms` : `LỖI (${r.error})`}`)
+          .join(' • ');
+        await loadAll();
+        showToast(`Kết quả đo Upstream: ${summary}`);
+      } catch (err) {
+        showToast('Lỗi đo Upstream: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Kiểm tra tốc độ Upstream';
       }
     });
 
@@ -3908,9 +4327,20 @@
         .map((s) => s.trim())
         .filter(Boolean);
       const blockResponseMode = document.getElementById('blockModeSelect').value;
-      await api('/api/settings', 'POST', { upstreamDns, blockResponseMode, clearCache: true });
+      const security = {
+        dnsRebindingGuard: document.getElementById('secRebindingGuard').checked,
+        cnameCloakingGuard: document.getElementById('secCnameGuard').checked,
+        antiBypass: document.getElementById('secAntiBypass').checked,
+        serveStaleCache: document.getElementById('secServeStale').checked,
+        rebindingWhitelist: document
+          .getElementById('rebindingWhitelistInput')
+          .value.split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
+      };
+      await api('/api/settings', 'POST', { upstreamDns, blockResponseMode, security, clearCache: true });
       await loadAll();
-      showToast('Đã lưu cài đặt DNS');
+      showToast('Đã lưu cài đặt DNS & Bảo mật');
     });
 
     document.getElementById('clearCacheBtn').addEventListener('click', async () => {
@@ -3920,12 +4350,77 @@
     });
 
     document.getElementById('logSearch').addEventListener('input', renderLogs);
-    document.getElementById('logFilter').addEventListener('change', renderLogs);
+    document.getElementById('logFilter').addEventListener('change', () => {
+      if (document.getElementById('logRangeSelect').value !== 'live') loadLogs();
+      else renderLogs();
+    });
+    document.getElementById('logSeverityFilter').addEventListener('change', loadLogs);
+    document.getElementById('logRangeSelect').addEventListener('change', loadLogs);
     document.getElementById('reloadLogsBtn').addEventListener('click', loadLogs);
     document.getElementById('clearLogFilterBtn').addEventListener('click', () => {
       document.getElementById('logSearch').value = '';
       document.getElementById('logFilter').value = 'all';
-      renderLogs();
+      document.getElementById('logSeverityFilter').value = '';
+      document.getElementById('logRangeSelect').value = 'live';
+      loadLogs();
+    });
+
+    document.getElementById('exportCsvBtn').addEventListener('click', () => {
+      const rangeVal = document.getElementById('logRangeSelect').value;
+      const params = new URLSearchParams({
+        filter: document.getElementById('logFilter').value || 'all',
+        severity: document.getElementById('logSeverityFilter').value || '',
+        search: document.getElementById('logSearch').value.trim(),
+        sinceHours: rangeVal === 'live' ? '24' : rangeVal,
+      });
+      window.location.href = `/api/logs/export.csv?${params.toString()}`;
+    });
+
+    document.getElementById('addLocalDnsBtn').addEventListener('click', async () => {
+      const domain = document.getElementById('localDnsDomain').value.trim();
+      const ip = document.getElementById('localDnsIp').value.trim();
+      try {
+        await api('/api/local-dns', 'POST', { domain, ip });
+        document.getElementById('localDnsDomain').value = '';
+        document.getElementById('localDnsIp').value = '';
+        await loadAll();
+        showToast(`Đã thêm Local DNS: ${domain} → ${ip}`);
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+
+    window.deleteLocalDns = async (domain) => {
+      await api(`/api/local-dns/${encodeURIComponent(domain)}`, 'DELETE');
+      await loadAll();
+      showToast(`Đã xóa Local DNS: ${domain}`);
+    };
+
+    document.getElementById('saveStorageBtn').addEventListener('click', async () => {
+      const retentionDays = Number(document.getElementById('retentionDaysSelect').value) || 14;
+      await api('/api/settings', 'POST', { storage: { retentionDays, sqliteEnabled: true } });
+      await loadAll();
+      showToast(`Đã lưu chính sách lưu trữ ${retentionDays} ngày`);
+    });
+
+    document.getElementById('exportBackupBtn').addEventListener('click', () => {
+      window.location.href = '/api/config/export';
+    });
+
+    document.getElementById('importBackupFile').addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        const res = await api('/api/config/import', 'POST', parsed);
+        await loadAll();
+        showToast(`Đã khôi phục cấu hình thành công (${res.devicesCount || 0} thiết bị)`);
+      } catch (err) {
+        showToast('Lỗi khôi phục backup: ' + err.message);
+      } finally {
+        e.target.value = '';
+      }
     });
 
     // Live SSE stream
