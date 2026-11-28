@@ -10,7 +10,7 @@
     "mac": "E0:D5:5E:16:EA:08",
     "domain": "4amyzsg2limcr4s7z2kh8wykvuyx5nuin3y4hotyu4k1ru65m7-h1023759661.scf.usercontent.goog",
     "reason": "DNS Tunneling suspicion",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795834423928-psh3",
