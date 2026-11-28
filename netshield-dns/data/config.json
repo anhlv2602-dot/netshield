@@ -262,8 +262,8 @@
     {
       "id": "mac:FC:03:9F:EB:67:90",
       "ip": "192.168.1.190",
-      "name": "",
-      "groupId": "",
+      "name": "Samsung",
+      "groupId": "mobile",
       "mac": "FC:03:9F:EB:67:90"
     },
     {
@@ -468,6 +468,34 @@
       "name": "Máy in Canon (.246)",
       "groupId": "iot",
       "mac": "6C:3C:7C:E8:62:AB"
+    },
+    {
+      "id": "mac:0A:46:6A:DD:5B:A5",
+      "ip": "192.168.1.203",
+      "name": "Thiết bị Apple",
+      "groupId": "mobile",
+      "mac": "0A:46:6A:DD:5B:A5"
+    },
+    {
+      "id": "mac:62:C6:B7:E1:50:9B",
+      "ip": "192.168.1.74",
+      "name": "Thiết bị Apple",
+      "groupId": "mobile",
+      "mac": "62:C6:B7:E1:50:9B"
+    },
+    {
+      "id": "mac:E8:D8:D1:CD:12:D8",
+      "ip": "192.168.1.198",
+      "name": "Máy tính Windows",
+      "groupId": "computer",
+      "mac": "E8:D8:D1:CD:12:D8"
+    },
+    {
+      "id": "mac:00:1D:43:30:07:73",
+      "ip": "192.168.1.234",
+      "name": "Máy tính Windows",
+      "groupId": "computer",
+      "mac": "00:1D:43:30:07:73"
     }
   ],
   "clientRules": []

@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%232563eb'/%3E%3Cstop offset='100%25' stop-color='%230ea5e9'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M16 6l8 3v6c0 5.2-3.4 9.7-8 11-4.6-1.3-8-5.8-8-11V9l8-3z' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linejoin='round'/%3E%3Cpath d='M12.5 16l2.3 2.3 4.7-4.8' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
   <script>
     try {
       const saved = localStorage.getItem('color-scheme');
@@ -471,6 +472,7 @@
     }
     @media (max-width: 680px) {
       .kpi-grid, .kpi-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .kpi-grid .kpi-card:last-child { grid-column: 1 / -1; }
     }
 
     .grid-2 {
@@ -623,6 +625,110 @@
 
     button.btn.sm { padding: 0.28rem 0.62rem; font-size: 0.77rem; border-radius: 7px; }
     button.btn:disabled { opacity: 0.48; cursor: not-allowed; }
+
+    /* Subtle 1-click log row action buttons */
+    button.btn.log-action {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--muted);
+      padding: 0.24rem 0.6rem;
+      font-size: 0.75rem;
+      border-radius: 7px;
+    }
+    button.btn.log-action.block:hover:not(:disabled) {
+      background: var(--danger-soft);
+      border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+      color: var(--danger);
+      box-shadow: none;
+    }
+    button.btn.log-action.allow:hover:not(:disabled) {
+      background: var(--success-soft);
+      border-color: color-mix(in srgb, var(--success) 35%, transparent);
+      color: var(--success);
+      box-shadow: none;
+    }
+
+    /* Rules 2-column layout & empty state */
+    .rules-split {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+      gap: 1.15rem;
+      align-items: start;
+    }
+    @media (max-width: 1120px) {
+      .rules-split { grid-template-columns: 1fr; }
+    }
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2.2rem 1.2rem;
+      border-radius: var(--radius-md);
+      border: 1px dashed var(--border-strong);
+      background: var(--surface-alt);
+      color: var(--muted);
+      gap: 0.45rem;
+    }
+    .empty-state-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      margin-bottom: 0.2rem;
+    }
+    .empty-state strong { color: var(--text); font-size: 0.88rem; }
+    .empty-state span { font-size: 0.79rem; max-width: 320px; }
+
+    .fieldset-muted {
+      opacity: 0.48;
+      pointer-events: none;
+      transition: opacity 150ms ease;
+    }
+
+    /* Native Modal Confirm Dialog (modern-web-guidance: dialog) */
+    dialog.confirm-dialog {
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      color: var(--text);
+      padding: 1.35rem 1.45rem;
+      max-width: min(420px, calc(100vw - 2rem));
+      width: 100%;
+      box-shadow: var(--shadow-md);
+    }
+    dialog:modal {
+      overscroll-behavior: contain;
+    }
+    dialog::backdrop {
+      background: rgba(15, 23, 42, 0.48);
+      backdrop-filter: blur(2px);
+      overflow: hidden;
+      overscroll-behavior: contain;
+    }
+    dialog.confirm-dialog h1 {
+      margin: 0 0 0.4rem;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    dialog.confirm-dialog p {
+      margin: 0 0 1.2rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    dialog.confirm-dialog .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    button.btn.mobile-theme-btn { display: none; }
 
     input[type="text"], input[type="url"], input[type="time"], select, textarea {
       width: 100%;
@@ -1477,6 +1583,7 @@
         gap: 0.6rem;
       }
       .nav-section-label, .sidebar-footer { display: none; }
+      button.btn.mobile-theme-btn { display: inline-flex; margin-left: auto; }
       nav.tabs { flex-direction: row; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 0.15rem; }
       nav.tabs button { width: auto; white-space: nowrap; scroll-snap-align: start; padding: 0.48rem 0.75rem; }
       nav.tabs button[aria-selected="true"]::before { display: none; }
@@ -1500,6 +1607,9 @@
           <h1>NetShield DNS</h1>
           <div class="brand-sub">Bảo vệ mạng LAN</div>
         </div>
+        <button id="mobileThemeBtn" type="button" class="btn icon-btn mobile-theme-btn" title="Đổi chế độ Sáng / Tối" aria-label="Đổi chế độ Sáng / Tối">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        </button>
       </div>
 
       <nav class="tabs" role="tablist" aria-label="Điều hướng chính">
@@ -1681,6 +1791,7 @@
                 <option value="blocked">Chỉ mục Đã chặn</option>
                 <option value="allowed">Chỉ mục Cho phép</option>
               </select>
+              <button id="clearLogFilterBtn" type="button" class="btn" style="display: none;">× Xóa lọc</button>
               <button id="toggleStreamBtn" type="button" class="btn">
                 <span id="streamDot" class="live-dot" style="margin:0;"></span>
                 <span id="streamLabel">Tạm dừng luồng</span>
@@ -1902,89 +2013,93 @@
             </div>
           </div>
 
-          <!-- SUBTAB 4B: RULES & SCHEDULES -->
+          <!-- SUBTAB 4B: RULES & SCHEDULES (2-column split on desktop) -->
           <div id="subtab-rules" class="sub-panel">
-            <div class="card" style="margin-bottom: 1.15rem;">
-              <div class="card-head">
-                <div>
-                  <h2>Danh sách quy tắc đang áp dụng</h2>
-                  <p class="card-desc">Quy tắc chặn theo nhóm thiết bị hoặc địa chỉ IP cụ thể</p>
-                </div>
-              </div>
-              <div id="clientRulesList" class="stat-label">Chưa có quy tắc thiết bị nào.</div>
-            </div>
-
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h2>Tạo quy tắc mới</h2>
-                  <p class="card-desc">Chặn dịch vụ, chặn tên miền riêng, khóa Internet hoặc miễn trừ lọc quảng cáo</p>
-                </div>
-              </div>
-
-              <div class="grid-2" style="margin-bottom: 0.85rem;">
-                <div class="field">
-                  <label for="ruleTargetType">Áp dụng quy tắc cho</label>
-                  <select id="ruleTargetType">
-                    <option value="group">Nhóm thiết bị (Camera, Máy tính, Di động, IoT...)</option>
-                    <option value="ip">Địa chỉ IP cụ thể / Toàn mạng (*)</option>
-                  </select>
-                </div>
-                <div id="ruleGroupWrap" class="field">
-                  <label for="ruleGroupId">Chọn nhóm thiết bị</label>
-                  <select id="ruleGroupId"></select>
-                </div>
-                <div id="ruleIpWrap" class="field" style="display: none;">
-                  <label for="ruleIp">IP thiết bị (nhập <code>*</code> cho toàn mạng LAN)</label>
-                  <input id="ruleIp" type="text" placeholder="192.168.1.55 hoặc *" />
-                </div>
-              </div>
-
-              <div class="field" style="margin-bottom: 0.85rem;">
-                <label for="ruleName">Tên quy tắc (không bắt buộc)</label>
-                <input id="ruleName" type="text" placeholder="Ví dụ: Khóa Internet nhóm Camera, Chặn TikTok giờ làm việc" />
-              </div>
-
-              <div class="field" style="margin-bottom: 0.85rem;">
-                <label>Chọn nhanh nhóm dịch vụ muốn chặn</label>
-                <div id="serviceCheckboxes" class="checkbox-grid"></div>
-              </div>
-
-              <div class="field" style="margin-bottom: 0.9rem;">
-                <label for="ruleDomains">Hoặc nhập thêm tên miền riêng (cách nhau bởi dấu phẩy)</label>
-                <input id="ruleDomains" type="text" placeholder="vd: vnexpress.net, twitch.tv" />
-              </div>
-
-              <div class="checkbox-grid" style="margin-bottom: 0.85rem;">
-                <label><input type="checkbox" id="ruleBypass" /> Miễn trừ lọc quảng cáo (Bypass)</label>
-                <label><input type="checkbox" id="ruleBlockAll" /> Khóa toàn bộ Internet trong khung giờ</label>
-                <label><input type="checkbox" id="ruleScheduleEnabled" checked /> Áp dụng theo khung giờ</label>
-              </div>
-
-              <div id="scheduleBox" class="row" style="margin: 0.75rem 0 1rem; padding: 0.85rem; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 10px;">
-                <div class="field" style="min-width: 120px;">
-                  <label for="ruleStart">Từ giờ</label>
-                  <input id="ruleStart" type="time" value="08:00" style="background: var(--surface);" />
-                </div>
-                <div class="field" style="min-width: 120px;">
-                  <label for="ruleEnd">Đến giờ</label>
-                  <input id="ruleEnd" type="time" value="17:30" style="background: var(--surface);" />
-                </div>
-                <div class="field" style="flex: 1;">
-                  <label>Ngày áp dụng</label>
-                  <div class="checkbox-grid" id="daysCheckboxes" style="margin: 0;">
-                    <label><input type="checkbox" value="1" checked /> T2</label>
-                    <label><input type="checkbox" value="2" checked /> T3</label>
-                    <label><input type="checkbox" value="3" checked /> T4</label>
-                    <label><input type="checkbox" value="4" checked /> T5</label>
-                    <label><input type="checkbox" value="5" checked /> T6</label>
-                    <label><input type="checkbox" value="6" /> T7</label>
-                    <label><input type="checkbox" value="0" /> CN</label>
+            <div class="rules-split">
+              <div class="card">
+                <div class="card-head">
+                  <div>
+                    <h2>Danh sách quy tắc đang áp dụng</h2>
+                    <p class="card-desc">Quy tắc chặn theo nhóm thiết bị hoặc địa chỉ IP cụ thể</p>
                   </div>
                 </div>
+                <div id="clientRulesList" class="stat-label">Chưa có quy tắc thiết bị nào.</div>
               </div>
 
-              <button id="saveRuleBtn" type="button" class="btn primary">Lưu quy tắc</button>
+              <div class="card">
+                <div class="card-head">
+                  <div>
+                    <h2>Tạo quy tắc mới</h2>
+                    <p class="card-desc">Chặn dịch vụ, chặn tên miền riêng, khóa Internet hoặc miễn trừ lọc quảng cáo</p>
+                  </div>
+                </div>
+
+                <div class="grid-2" style="margin-bottom: 0.85rem;">
+                  <div class="field">
+                    <label for="ruleTargetType">Áp dụng quy tắc cho</label>
+                    <select id="ruleTargetType">
+                      <option value="group">Nhóm thiết bị (Camera, Máy tính, Di động, IoT...)</option>
+                      <option value="ip">Địa chỉ IP cụ thể / Toàn mạng (*)</option>
+                    </select>
+                  </div>
+                  <div id="ruleGroupWrap" class="field">
+                    <label for="ruleGroupId">Chọn nhóm thiết bị</label>
+                    <select id="ruleGroupId"></select>
+                  </div>
+                  <div id="ruleIpWrap" class="field" style="display: none;">
+                    <label for="ruleIp">IP thiết bị (nhập <code>*</code> cho toàn mạng LAN)</label>
+                    <input id="ruleIp" type="text" placeholder="192.168.1.55 hoặc *" />
+                  </div>
+                </div>
+
+                <div class="field" style="margin-bottom: 0.85rem;">
+                  <label for="ruleName">Tên quy tắc (không bắt buộc)</label>
+                  <input id="ruleName" type="text" placeholder="Ví dụ: Khóa Internet nhóm Camera, Chặn TikTok giờ làm việc" />
+                </div>
+
+                <div id="ruleBlockFields">
+                  <div class="field" style="margin-bottom: 0.85rem;">
+                    <label>Chọn nhanh nhóm dịch vụ muốn chặn</label>
+                    <div id="serviceCheckboxes" class="checkbox-grid"></div>
+                  </div>
+
+                  <div class="field" style="margin-bottom: 0.9rem;">
+                    <label for="ruleDomains">Hoặc nhập thêm tên miền riêng (cách nhau bởi dấu phẩy)</label>
+                    <input id="ruleDomains" type="text" placeholder="vd: vnexpress.net, twitch.tv" />
+                  </div>
+                </div>
+
+                <div class="checkbox-grid" style="margin-bottom: 0.85rem;">
+                  <label><input type="checkbox" id="ruleBypass" /> Miễn trừ lọc quảng cáo (Bypass)</label>
+                  <label id="ruleBlockAllLabel"><input type="checkbox" id="ruleBlockAll" /> Khóa toàn bộ Internet trong khung giờ</label>
+                  <label><input type="checkbox" id="ruleScheduleEnabled" checked /> Áp dụng theo khung giờ</label>
+                </div>
+
+                <div id="scheduleBox" class="row" style="margin: 0.75rem 0 1rem; padding: 0.85rem; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 10px;">
+                  <div class="field" style="min-width: 115px;">
+                    <label for="ruleStart">Từ giờ</label>
+                    <input id="ruleStart" type="time" value="08:00" style="background: var(--surface);" />
+                  </div>
+                  <div class="field" style="min-width: 115px;">
+                    <label for="ruleEnd">Đến giờ</label>
+                    <input id="ruleEnd" type="time" value="17:30" style="background: var(--surface);" />
+                  </div>
+                  <div class="field" style="flex: 1;">
+                    <label>Ngày áp dụng</label>
+                    <div class="checkbox-grid" id="daysCheckboxes" style="margin: 0;">
+                      <label><input type="checkbox" value="1" checked /> T2</label>
+                      <label><input type="checkbox" value="2" checked /> T3</label>
+                      <label><input type="checkbox" value="3" checked /> T4</label>
+                      <label><input type="checkbox" value="4" checked /> T5</label>
+                      <label><input type="checkbox" value="5" checked /> T6</label>
+                      <label><input type="checkbox" value="6" /> T7</label>
+                      <label><input type="checkbox" value="0" /> CN</label>
+                    </div>
+                  </div>
+                </div>
+
+                <button id="saveRuleBtn" type="button" class="btn primary">Lưu quy tắc</button>
+              </div>
             </div>
           </div>
         </section>
@@ -2063,6 +2178,16 @@
       </main>
     </div>
   </div>
+
+  <!-- Native Modal Confirm Dialog (modern-web-guidance: dialog) -->
+  <dialog id="confirmDialog" class="confirm-dialog" closedby="any" aria-labelledby="confirmTitle">
+    <h1 id="confirmTitle">Xác nhận thao tác</h1>
+    <p id="confirmMessage"></p>
+    <form method="dialog" class="dialog-actions">
+      <button type="submit" value="cancel" class="btn" autofocus>Hủy</button>
+      <button type="submit" value="confirm" id="confirmOkBtn" class="btn danger">Xóa</button>
+    </form>
+  </dialog>
 
   <!-- Toast region (modern-web-guidance: persistent-toast-notifications) -->
   <div id="toastRegion" class="toast-region" role="region" aria-label="Thông báo"></div>
@@ -2233,11 +2358,49 @@
     document.querySelectorAll('#themeSegmented button').forEach((btn) => {
       btn.addEventListener('click', () => applyTheme(btn.dataset.themeVal));
     });
-    document.getElementById('quickThemeBtn').addEventListener('click', () => {
+    function toggleQuickTheme() {
       const target = getResolvedTheme() === 'dark' ? 'light' : 'dark';
       const sys = darkMql.matches ? 'dark' : 'light';
       applyTheme(target === sys ? 'system' : target);
-    });
+    }
+    document.getElementById('quickThemeBtn').addEventListener('click', toggleQuickTheme);
+    document.getElementById('mobileThemeBtn')?.addEventListener('click', toggleQuickTheme);
+
+    // ================= NATIVE MODAL CONFIRM DIALOG (modern-web-guidance: dialog) =================
+    const confirmDialogEl = document.getElementById('confirmDialog');
+    if (confirmDialogEl && !('closedBy' in HTMLDialogElement.prototype)) {
+      const isOutside = (e, d) => {
+        const r = d.getBoundingClientRect();
+        return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+      };
+      let pressedOutside = false;
+      confirmDialogEl.addEventListener('pointerdown', (e) => { pressedOutside = isOutside(e, confirmDialogEl); });
+      confirmDialogEl.addEventListener('pointerup', (e) => {
+        if (pressedOutside && isOutside(e, confirmDialogEl)) confirmDialogEl.close();
+      });
+    }
+
+    function confirmAction(title, message, okLabel = 'Xóa') {
+      if (!confirmDialogEl || typeof confirmDialogEl.showModal !== 'function') {
+        return Promise.resolve(window.confirm(`${title}\n${message}`));
+      }
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMessage').textContent = message;
+      document.getElementById('confirmOkBtn').textContent = okLabel;
+      confirmDialogEl.returnValue = '';
+      return new Promise((resolve) => {
+        confirmDialogEl.addEventListener(
+          'close',
+          () => {
+            const accepted = confirmDialogEl.returnValue === 'confirm';
+            confirmDialogEl.returnValue = '';
+            resolve(accepted);
+          },
+          { once: true }
+        );
+        confirmDialogEl.showModal();
+      });
+    }
     window.addEventListener('storage', (e) => {
       if (e.key === 'color-scheme') {
         const stored = getStoredTheme();
@@ -2719,40 +2882,66 @@
       return data;
     }
 
-    // ================= NAVIGATION =================
-    function switchTab(tabId) {
-      state.activeTab = tabId;
+    // ================= NAVIGATION (URL hash persistence) =================
+    function switchSubtab(subId, updateHash = true) {
+      const valid = subId === 'rules' ? 'rules' : 'devices';
+      document.querySelectorAll('[data-subtab]').forEach((b) =>
+        b.setAttribute('aria-selected', String(b.dataset.subtab === valid))
+      );
+      document.querySelectorAll('.sub-panel').forEach((p) =>
+        p.classList.toggle('active', p.id === `subtab-${valid}`)
+      );
+      if (updateHash && state.activeTab === 'clients') {
+        const nextHash = valid === 'rules' ? '#clients/rules' : '#clients';
+        if (location.hash !== nextHash) history.replaceState(null, '', nextHash);
+      }
+    }
+
+    function switchTab(tabId, updateHash = true) {
+      const valid = TAB_META[tabId] ? tabId : 'overview';
+      state.activeTab = valid;
       document.querySelectorAll('nav.tabs button').forEach((b) => {
-        b.setAttribute('aria-selected', String(b.dataset.tab === tabId));
+        b.setAttribute('aria-selected', String(b.dataset.tab === valid));
       });
       document.querySelectorAll('.panel').forEach((p) => {
-        p.classList.toggle('active', p.id === `tab-${tabId}`);
+        p.classList.toggle('active', p.id === `tab-${valid}`);
       });
-      const meta = TAB_META[tabId];
+      const meta = TAB_META[valid];
       if (meta) {
         document.getElementById('pageTitle').textContent = meta.title;
         document.getElementById('pageSubtitle').textContent = meta.sub;
+      }
+      if (updateHash) {
+        const nextHash = `#${valid}`;
+        if (location.hash !== nextHash && !(valid === 'clients' && location.hash === '#clients/rules')) {
+          history.replaceState(null, '', nextHash);
+        }
+      }
+    }
+
+    function applyHashRoute() {
+      const raw = location.hash.replace(/^#/, '');
+      if (!raw) return;
+      const [tab, sub] = raw.split('/');
+      if (TAB_META[tab]) {
+        switchTab(tab, false);
+        if (tab === 'clients' && sub) switchSubtab(sub, false);
       }
     }
 
     document.querySelectorAll('nav.tabs button').forEach((btn) => {
       btn.addEventListener('click', () => {
-        switchTab(btn.dataset.tab);
+        switchTab(btn.dataset.tab, true);
         btn.blur();
       });
     });
 
     document.querySelectorAll('[data-subtab]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const target = btn.dataset.subtab;
-        document.querySelectorAll('[data-subtab]').forEach((b) =>
-          b.setAttribute('aria-selected', String(b === btn))
-        );
-        document.querySelectorAll('.sub-panel').forEach((p) =>
-          p.classList.toggle('active', p.id === `subtab-${target}`)
-        );
-      });
+      btn.addEventListener('click', () => switchSubtab(btn.dataset.subtab, true));
     });
+
+    window.addEventListener('hashchange', applyHashRoute);
+    applyHashRoute();
 
     window.filterLogsBy = (term, onlyBlocked = false) => {
       document.getElementById('logSearch').value = term;
@@ -3196,7 +3385,13 @@
                 </div>`;
             })
             .join('')
-        : 'Chưa có quy tắc thiết bị nào.';
+        : `<div class="empty-state">
+             <div class="empty-state-icon" aria-hidden="true">
+               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+             </div>
+             <strong>Chưa có quy tắc chặn riêng</strong>
+             <span>Bạn có thể tạo quy tắc chặn dịch vụ, tên miền riêng hoặc khóa Internet theo khung giờ ở cột bên phải.</span>
+           </div>`;
 
       // Setup info (prioritize real LAN IP, show per-interface copy button)
       const lanIps = s.lanIps || [];
@@ -3229,8 +3424,29 @@
     }
 
     // ================= LOGS =================
+    function formatQtype(qtype) {
+      const q = String(qtype || '').toUpperCase();
+      if (q === 'UNKNOWN_65' || q === 'TYPE65') return 'HTTPS';
+      if (q === 'UNKNOWN_64' || q === 'TYPE64') return 'SVCB';
+      return q || 'A';
+    }
+
+    function resolveLogDeviceName(ip) {
+      const s = state.status;
+      if (!s) return '';
+      const saved = (s.config?.devices || []).find((d) => d.ip === ip);
+      if (saved?.name) return saved.name;
+      const disc = s.discoveredDevices?.[ip];
+      return disc?.suggestedName || '';
+    }
+
     function renderLogRow(item) {
       const time = new Date(item.timestamp).toLocaleTimeString('vi-VN');
+      const devName = resolveLogDeviceName(item.clientIp);
+      const clientHtml = devName
+        ? `<div style="font-weight:600;font-size:0.82rem;">${esc(devName)}</div><div class="stat-sub mono">${esc(item.clientIp)}</div>`
+        : `<span class="mono">${esc(item.clientIp)}</span>`;
+
       const statusHtml = item.blocked
         ? `<span class="badge blocked">Đã chặn</span> <small class="stat-sub">${esc(item.reason)}</small>`
         : item.cached
@@ -3238,13 +3454,13 @@
         : `<span class="badge allowed">Cho phép</span> <small class="stat-sub tabular">${item.latencyMs}ms</small>`;
 
       const actionBtn = item.blocked
-        ? `<button type="button" class="btn success sm" onclick="quickList('whitelist','${esc(item.domain)}')">Bỏ chặn</button>`
-        : `<button type="button" class="btn danger sm" onclick="quickList('blacklist','${esc(item.domain)}')">Chặn ngay</button>`;
+        ? `<button type="button" class="btn log-action allow" onclick="quickList('whitelist','${esc(item.domain)}')">Bỏ chặn</button>`
+        : `<button type="button" class="btn log-action block" onclick="quickList('blacklist','${esc(item.domain)}')">Chặn</button>`;
 
       return `<tr>
         <th>${esc(item.domain)}</th>
-        <td class="mono">${esc(item.clientIp)}</td>
-        <td><span class="badge muted">${esc(item.qtype)}</span></td>
+        <td>${clientHtml}</td>
+        <td><span class="badge muted">${esc(formatQtype(item.qtype))}</span></td>
         <td>${statusHtml}</td>
         <td class="tabular">${time}</td>
         <td>${actionBtn}</td>
@@ -3252,18 +3468,27 @@
     }
 
     function renderLogs() {
-      const search = document.getElementById('logSearch').value.trim().toLowerCase();
-      const filter = document.getElementById('logFilter').value;
+      const searchEl = document.getElementById('logSearch');
+      const filterEl = document.getElementById('logFilter');
+      const clearBtn = document.getElementById('clearLogFilterBtn');
+      const search = searchEl.value.trim().toLowerCase();
+      const filter = filterEl.value;
+      if (clearBtn) {
+        clearBtn.style.display = search || filter !== 'all' ? '' : 'none';
+      }
       let items = state.logs;
       if (filter === 'blocked') items = items.filter((i) => i.blocked);
       if (filter === 'allowed') items = items.filter((i) => !i.blocked);
       if (search) {
-        items = items.filter(
-          (i) =>
+        items = items.filter((i) => {
+          const devName = resolveLogDeviceName(i.clientIp).toLowerCase();
+          return (
             i.domain.includes(search) ||
             i.clientIp.includes(search) ||
+            devName.includes(search) ||
             (i.reason || '').toLowerCase().includes(search)
-        );
+          );
+        });
       }
       const slice = items.slice(0, 150);
       document.getElementById('logsShownCount').textContent = slice.length.toLocaleString('vi-VN');
@@ -3275,6 +3500,7 @@
     async function loadAll() {
       state.status = await api('/api/status');
       renderStatus();
+      if (state.logs.length > 0 && !state.streamPaused) renderLogs();
     }
 
     async function loadLogs() {
@@ -3343,6 +3569,13 @@
     });
 
     window.deleteBlocklist = async (id) => {
+      const item = (state.status?.config?.blocklists || []).find((b) => b.id === id);
+      const ok = await confirmAction(
+        'Xóa danh sách chặn?',
+        `Nguồn "${item?.name || id}" sẽ bị gỡ khỏi cấu hình lọc DNS. Bạn có thể thêm lại bất cứ lúc nào.`,
+        'Xóa danh sách'
+      );
+      if (!ok) return;
       await api(`/api/blocklists/${encodeURIComponent(id)}`, 'DELETE');
       await loadAll();
       showToast('Đã xóa danh sách chặn');
@@ -3361,12 +3594,26 @@
     };
 
     window.deleteClientRule = async (id) => {
+      const item = (state.status?.config?.clientRules || []).find((r) => r.id === id);
+      const ok = await confirmAction(
+        'Xóa quy tắc thiết bị?',
+        `Quy tắc "${item?.name || id}" sẽ ngừng áp dụng ngay lập tức cho mạng LAN.`,
+        'Xóa quy tắc'
+      );
+      if (!ok) return;
       await api(`/api/clients/${encodeURIComponent(id)}`, 'DELETE');
       await loadAll();
       showToast('Đã xóa quy tắc thiết bị');
     };
 
     window.deleteDeviceGroup = async (id) => {
+      const grp = (state.status?.config?.deviceGroups || []).find((g) => g.id === id);
+      const ok = await confirmAction(
+        'Xóa nhóm thiết bị?',
+        `Nhóm "${grp?.name || id}" và các quy tắc gắn riêng với nhóm này sẽ bị xóa. Các thiết bị trong nhóm sẽ chuyển về "Chưa phân nhóm".`,
+        'Xóa nhóm'
+      );
+      if (!ok) return;
       try {
         await api(`/api/groups/${encodeURIComponent(id)}`, 'DELETE');
         await loadAll();
@@ -3584,6 +3831,17 @@
     ruleSchedEl.addEventListener('change', syncScheduleVisibility);
     syncScheduleVisibility();
 
+    const ruleBypassEl = document.getElementById('ruleBypass');
+    const ruleBlockAllEl = document.getElementById('ruleBlockAll');
+    const syncBypassState = () => {
+      const isBypass = ruleBypassEl.checked;
+      document.getElementById('ruleBlockFields').classList.toggle('fieldset-muted', isBypass);
+      document.getElementById('ruleBlockAllLabel').classList.toggle('fieldset-muted', isBypass);
+      if (isBypass) ruleBlockAllEl.checked = false;
+    };
+    ruleBypassEl.addEventListener('change', syncBypassState);
+    syncBypassState();
+
     document.getElementById('saveRuleBtn').addEventListener('click', async () => {
       const targetType = ruleTargetTypeEl.value;
       const blockedServices = [...document.querySelectorAll('#serviceCheckboxes input:checked')].map((i) => i.value);
@@ -3642,6 +3900,11 @@
     document.getElementById('logSearch').addEventListener('input', renderLogs);
     document.getElementById('logFilter').addEventListener('change', renderLogs);
     document.getElementById('reloadLogsBtn').addEventListener('click', loadLogs);
+    document.getElementById('clearLogFilterBtn').addEventListener('click', () => {
+      document.getElementById('logSearch').value = '';
+      document.getElementById('logFilter').value = 'all';
+      renderLogs();
+    });
 
     // Live SSE stream
     const es = new EventSource('/api/logs/stream');
