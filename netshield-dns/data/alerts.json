@@ -1,5 +1,161 @@
 [
   {
+    "id": "alt-1795833302402-pl94",
+    "timestamp": "2026-11-28T02:35:02.402Z",
+    "type": "threat_hit",
+    "severity": "high",
+    "title": "Chặn truy cập Mã độc / Lừa đảo",
+    "message": "Máy tính Windows (192.168.1.198) đã gọi tới beacons5.gvt2.com (StevenBlack Unified (Ads + Malware))",
+    "clientIp": "192.168.1.198",
+    "mac": "E8:D8:D1:CD:12:D8",
+    "domain": "beacons5.gvt2.com",
+    "reason": "StevenBlack Unified (Ads + Malware)",
+    "acknowledged": false
+  },
+  {
+    "id": "alt-1795833302384-6sy6",
+    "timestamp": "2026-11-28T02:35:02.384Z",
+    "type": "threat_hit",
+    "severity": "high",
+    "title": "Chặn truy cập Mã độc / Lừa đảo",
+    "message": "Máy tính Windows (192.168.1.198) đã gọi tới beacons4.gvt2.com (StevenBlack Unified (Ads + Malware))",
+    "clientIp": "192.168.1.198",
+    "mac": "E8:D8:D1:CD:12:D8",
+    "domain": "beacons4.gvt2.com",
+    "reason": "StevenBlack Unified (Ads + Malware)",
+    "acknowledged": false
+  },
+  {
+    "id": "alt-1795833302361-dqh2",
+    "timestamp": "2026-11-28T02:35:02.361Z",
+    "type": "threat_hit",
+    "severity": "high",
+    "title": "Chặn truy cập Mã độc / Lừa đảo",
+    "message": "Máy tính Windows (192.168.1.198) đã gọi tới beacons2.gvt2.com (StevenBlack Unified (Ads + Malware))",
+    "clientIp": "192.168.1.198",
+    "mac": "E8:D8:D1:CD:12:D8",
+    "domain": "beacons2.gvt2.com",
+    "reason": "StevenBlack Unified (Ads + Malware)",
+    "acknowledged": false
+  },
+  {
+    "id": "alt-1795833302353-8f8y",
+    "timestamp": "2026-11-28T02:35:02.353Z",
+    "type": "threat_hit",
+    "severity": "high",
+    "title": "Chặn truy cập Mã độc / Lừa đảo",
+    "message": "Máy tính Windows (192.168.1.198) đã gọi tới beacons3.gvt2.com (StevenBlack Unified (Ads + Malware))",
+    "clientIp": "192.168.1.198",
+    "mac": "E8:D8:D1:CD:12:D8",
+    "domain": "beacons3.gvt2.com",
+    "reason": "StevenBlack Unified (Ads + Malware)",
+    "acknowledged": false
+  },
+  {
+    "id": "alt-1795833278535-rdbl",
+    "timestamp": "2026-11-28T02:34:38.535Z",
+    "type": "threat_hit",
+    "severity": "high",
+    "title": "Chặn truy cập Mã độc / Lừa đảo",
+    "message": "Máy tính Windows (192.168.1.129) đã gọi tới mail-ads.google.com (StevenBlack Unified (Ads + Malware))",
+    "clientIp": "192.168.1.129",
+    "mac": "94:C6:91:56:43:2F",
+    "domain": "mail-ads.google.com",
+    "reason": "StevenBlack Unified (Ads + Malware)",
+    "acknowledged": true
+  },
+  {
+    "id": "alt-1795833242311-lr4u",
+    "timestamp": "2026-11-28T02:34:02.311Z",
+    "type": "threat_hit",
+    "severity": "high",
+    "title": "Chặn truy cập Mã độc / Lừa đảo",
+    "message": "Máy tính Windows (192.168.1.198) đã gọi tới beacons.gvt2.com (StevenBlack Unified (Ads + Malware))",
+    "clientIp": "192.168.1.198",
+    "mac": "E8:D8:D1:CD:12:D8",
+    "domain": "beacons.gvt2.com",
+    "reason": "StevenBlack Unified (Ads + Malware)",
+    "acknowledged": true
+  },
+  {
+    "id": "alt-1795833242219-vdv4",
+    "timestamp": "2026-11-28T02:34:02.219Z",
+    "type": "threat_hit",
+    "severity": "high",
+    "title": "Chặn truy cập Mã độc / Lừa đảo",
+    "message": "Máy tính Windows (192.168.1.198) đã gọi tới beacons.gcp.gvt2.com (StevenBlack Unified (Ads + Malware))",
+    "clientIp": "192.168.1.198",
+    "mac": "E8:D8:D1:CD:12:D8",
+    "domain": "beacons.gcp.gvt2.com",
+    "reason": "StevenBlack Unified (Ads + Malware)",
+    "acknowledged": true
+  },
+  {
+    "id": "alt-1795833200739-9nnq",
+    "timestamp": "2026-11-28T02:33:20.739Z",
+    "type": "threat_hit",
+    "severity": "high",
+    "title": "Chặn truy cập Mã độc / Lừa đảo",
+    "message": "iQOO Z9 Turbo (192.168.1.175) đã gọi tới firebaselogging.googleapis.com (StevenBlack Unified (Ads + Malware))",
+    "clientIp": "192.168.1.175",
+    "mac": "66:BE:2A:8C:CA:ED",
+    "domain": "firebaselogging.googleapis.com",
+    "reason": "StevenBlack Unified (Ads + Malware)",
+    "acknowledged": true
+  },
+  {
+    "id": "alt-1795833200679-amst",
+    "timestamp": "2026-11-28T02:33:20.679Z",
+    "type": "threat_hit",
+    "severity": "high",
+    "title": "Chặn truy cập Mã độc / Lừa đảo",
+    "message": "iQOO Z9 Turbo (192.168.1.175) đã gọi tới firebaselogging-pa.googleapis.com (StevenBlack Unified (Ads + Malware))",
+    "clientIp": "192.168.1.175",
+    "mac": "66:BE:2A:8C:CA:ED",
+    "domain": "firebaselogging-pa.googleapis.com",
+    "reason": "StevenBlack Unified (Ads + Malware)",
+    "acknowledged": true
+  },
+  {
+    "id": "alt-1795833200446-5q8r",
+    "timestamp": "2026-11-28T02:33:20.446Z",
+    "type": "threat_hit",
+    "severity": "high",
+    "title": "Chặn truy cập Mã độc / Lừa đảo",
+    "message": "Samsung (192.168.1.190) đã gọi tới nrdp.logs.netflix.com (StevenBlack Unified (Ads + Malware))",
+    "clientIp": "192.168.1.190",
+    "mac": "FC:03:9F:EB:67:90",
+    "domain": "nrdp.logs.netflix.com",
+    "reason": "StevenBlack Unified (Ads + Malware)",
+    "acknowledged": true
+  },
+  {
+    "id": "alt-1795833168615-lcgz",
+    "timestamp": "2026-11-28T02:32:48.615Z",
+    "type": "threat_hit",
+    "severity": "high",
+    "title": "Chặn truy cập Mã độc / Lừa đảo",
+    "message": "Máy tính Windows (192.168.1.107) đã gọi tới mobile.pipe.aria.microsoft.com (StevenBlack Unified (Ads + Malware))",
+    "clientIp": "192.168.1.107",
+    "mac": "18:60:24:F9:CC:85",
+    "domain": "mobile.pipe.aria.microsoft.com",
+    "reason": "StevenBlack Unified (Ads + Malware)",
+    "acknowledged": true
+  },
+  {
+    "id": "alt-1795833168216-esxi",
+    "timestamp": "2026-11-28T02:32:48.216Z",
+    "type": "threat_hit",
+    "severity": "high",
+    "title": "Chặn truy cập Mã độc / Lừa đảo",
+    "message": "Máy tính Windows (192.168.1.129) đã gọi tới trk-pcweb.api.zaloapp.com (StevenBlack Unified (Ads + Malware))",
+    "clientIp": "192.168.1.129",
+    "mac": "94:C6:91:56:43:2F",
+    "domain": "trk-pcweb.api.zaloapp.com",
+    "reason": "StevenBlack Unified (Ads + Malware)",
+    "acknowledged": true
+  },
+  {
     "id": "alt-1795833109218-kxtm",
     "timestamp": "2026-11-28T02:31:49.218Z",
     "type": "threat_hit",
@@ -10,7 +166,7 @@
     "mac": "E8:D8:D1:CD:12:D8",
     "domain": "media1.admicro.vn",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833109032-rv6m",
@@ -23,7 +179,7 @@
     "mac": "E8:D8:D1:CD:12:D8",
     "domain": "securepubads.g.doubleclick.net",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833109029-qwlj",
@@ -36,7 +192,7 @@
     "mac": "E8:D8:D1:CD:12:D8",
     "domain": "ads.tvpl.vn",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833109023-vdk0",
@@ -49,7 +205,7 @@
     "mac": "E8:D8:D1:CD:12:D8",
     "domain": "pagead2.googlesyndication.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833109016-lo6j",
@@ -62,7 +218,7 @@
     "mac": "E8:D8:D1:CD:12:D8",
     "domain": "jsc.mgid.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833109002-7sg4",
@@ -75,7 +231,7 @@
     "mac": "E8:D8:D1:CD:12:D8",
     "domain": "cdn.adbro.me",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833108993-ativ",
@@ -88,7 +244,7 @@
     "mac": "E8:D8:D1:CD:12:D8",
     "domain": "apis.adbro.me",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833108852-9miu",
@@ -101,7 +257,7 @@
     "mac": "E8:D8:D1:CD:12:D8",
     "domain": "www.googletagmanager.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833108688-i4kk",
@@ -114,7 +270,7 @@
     "mac": "E8:D8:D1:CD:12:D8",
     "domain": "tag.adbro.me",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833108682-unxa",
@@ -127,7 +283,7 @@
     "mac": "E8:D8:D1:CD:12:D8",
     "domain": "get.optad360.io",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833108662-jh4m",
@@ -140,7 +296,7 @@
     "mac": "E8:D8:D1:CD:12:D8",
     "domain": "static.cloudflareinsights.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833093666-wsrb",
@@ -153,7 +309,7 @@
     "mac": "66:BE:2A:8C:CA:ED",
     "domain": "log.api.zaloapp.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833073468-qv9r",
@@ -166,7 +322,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "beacons5.gvt2.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833073442-3shv",
@@ -179,7 +335,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "beacons4.gvt2.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833073429-k7xf",
@@ -192,7 +348,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "beacons3.gvt2.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833067476-8g5n",
@@ -205,7 +361,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "beacons2.gvt2.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833066149-aq35",
@@ -218,7 +374,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "beacons.gvt2.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833065212-ahvw",
@@ -231,7 +387,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "beacons.gcp.gvt2.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833043833-31ij",
@@ -244,7 +400,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "adservice.google.com.vn",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833043826-sycy",
@@ -257,7 +413,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "partner.googleadservices.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833043820-5kb3",
@@ -270,7 +426,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "googleads.g.doubleclick.net",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833043804-d4va",
@@ -283,7 +439,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "pagead2.googlesyndication.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833041741-lkhx",
@@ -296,7 +452,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "www.google-analytics.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833041733-xlu8",
@@ -309,7 +465,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "stats.g.doubleclick.net",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833041725-arf6",
@@ -322,7 +478,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "analytics.google.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833041623-26y8",
@@ -335,7 +491,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "servicer.mgid.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833034327-yewc",
@@ -348,7 +504,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "get.optad360.io",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833034313-z35c",
@@ -361,7 +517,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "jsc.mgid.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833033774-ciwq",
@@ -374,7 +530,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "www.googletagmanager.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833028971-bguf",
@@ -387,7 +543,7 @@
     "mac": "66:BE:2A:8C:CA:ED",
     "domain": "onrt-stsdk.vivo.com.cn",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833028551-yhov",
@@ -400,7 +556,7 @@
     "mac": "94:C6:91:56:43:2F",
     "domain": "beacons5.gvt2.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833027974-yzbl",
@@ -413,7 +569,7 @@
     "mac": "94:C6:91:56:43:2F",
     "domain": "beacons4.gvt2.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833027837-8cbk",
@@ -426,7 +582,7 @@
     "mac": "94:C6:91:56:43:2F",
     "domain": "beacons3.gvt2.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833027350-z4bb",
@@ -439,7 +595,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "securepubads.g.doubleclick.net",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833027293-lsyu",
@@ -452,7 +608,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "static.cloudflareinsights.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833027281-deel",
@@ -465,7 +621,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "fundingchoicesmessages.google.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833027276-npmo",
@@ -478,7 +634,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "ads.tvpl.vn",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795833025777-rysz",
@@ -491,7 +647,7 @@
     "mac": "A4:BB:6D:BE:2B:F9",
     "domain": "www.googleadservices.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832987360-vvgn",
@@ -504,7 +660,7 @@
     "mac": "D0:11:E5:D2:F6:37",
     "domain": "trk-pcweb.api.zaloapp.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832979682-sf0x",
@@ -517,7 +673,7 @@
     "mac": "94:C6:91:56:43:2F",
     "domain": "beacons2.gvt2.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832976543-19qc",
@@ -530,7 +686,7 @@
     "mac": "66:BE:2A:8C:CA:ED",
     "domain": "app-measurement.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832974968-1zc7",
@@ -543,7 +699,7 @@
     "mac": "18:60:24:F9:CC:85",
     "domain": "www.google-analytics.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832944712-e2yz",
@@ -556,7 +712,7 @@
     "mac": "94:C6:91:56:43:2F",
     "domain": "beacons.gvt2.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832944626-kdec",
@@ -569,7 +725,7 @@
     "mac": "94:C6:91:56:43:2F",
     "domain": "beacons.gcp.gvt2.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832937337-wxso",
@@ -582,7 +738,7 @@
     "mac": "18:60:24:F9:CC:85",
     "domain": "ncc.avast.com",
     "reason": "StevenBlack Unified (Ads + Malware)",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832930896-c0om",
@@ -595,7 +751,7 @@
     "mac": "80:A5:89:EF:C6:83",
     "domain": "",
     "reason": "MAC thật chưa có trong danh sách thiết bị",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832930896-v4fu",
@@ -608,7 +764,7 @@
     "mac": "9E:53:20:79:FD:BD",
     "domain": "",
     "reason": "Private MAC chưa duyệt",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832930896-zoik",
@@ -621,7 +777,7 @@
     "mac": "3C:55:76:6E:99:AF",
     "domain": "",
     "reason": "MAC thật chưa có trong danh sách thiết bị",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832930896-5l2r",
@@ -634,7 +790,7 @@
     "mac": "9E:CD:55:5A:0C:85",
     "domain": "",
     "reason": "Private MAC chưa duyệt",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832930896-7mq8",
@@ -647,7 +803,7 @@
     "mac": "1A:7E:3F:71:85:FA",
     "domain": "",
     "reason": "Private MAC chưa duyệt",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832930896-ngmk",
@@ -660,7 +816,7 @@
     "mac": "8E:3B:29:69:E7:99",
     "domain": "",
     "reason": "Private MAC chưa duyệt",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832930896-ga2u",
@@ -673,7 +829,7 @@
     "mac": "48:5F:99:A6:D4:3D",
     "domain": "",
     "reason": "MAC thật chưa có trong danh sách thiết bị",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832930896-qadh",
@@ -686,7 +842,7 @@
     "mac": "00:08:22:24:FE:FB",
     "domain": "",
     "reason": "MAC thật chưa có trong danh sách thiết bị",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832930896-qjlb",
@@ -699,7 +855,7 @@
     "mac": "92:AD:71:40:BF:D3",
     "domain": "",
     "reason": "Private MAC chưa duyệt",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832930896-dl55",
@@ -712,7 +868,7 @@
     "mac": "FE:35:DD:A9:2C:32",
     "domain": "",
     "reason": "Private MAC chưa duyệt",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832930891-q5h0",
@@ -725,7 +881,7 @@
     "mac": "70:B3:06:36:DE:E3",
     "domain": "",
     "reason": "MAC thật chưa có trong danh sách thiết bị",
-    "acknowledged": false
+    "acknowledged": true
   },
   {
     "id": "alt-1795832930891-wdl5",
@@ -738,6 +894,6 @@
     "mac": "36:4F:7C:8B:CA:C0",
     "domain": "",
     "reason": "Private MAC chưa duyệt",
-    "acknowledged": false
+    "acknowledged": true
   }
 ]
