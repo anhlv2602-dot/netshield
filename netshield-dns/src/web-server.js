@@ -10,12 +10,14 @@ import {
   DEFAULT_ALERTS_CONFIG,
   DEFAULT_STORAGE_CONFIG,
   DEFAULT_ENCRYPTED_DNS_CONFIG,
+  DEFAULT_HA_SYNC_CONFIG,
   normalizeDomain,
   store,
 } from './store.js';
 import { blocklistEngine } from './blocklist.js';
 import { dnsCache, getUpstreamHealth, resetUpstreamHealth, testAllUpstreams } from './dns-server.js';
 import { buildIosMobileConfig, normalizePublicHostname } from './encrypted-dns.js';
+import { haSyncManager, normalizeHaSyncConfig } from './ha-sync.js';
 import { deviceDiscovery, normalizeMac } from './discovery.js';
 import { alertEngine } from './alerts.js';
 import { forensicsDb } from './db.js';
@@ -117,6 +119,7 @@ export function startWebServer({
           webPort: port,
           lanIps: getLanIps(),
           encryptedDnsStatus,
+          haSyncStatus: haSyncManager.getStatus(),
           cacheSize: dnsCache.size,
           totalBlockedDomains: blocklistEngine.getTotalBlockedDomains(),
           isUpdatingBlocklists: blocklistEngine.isUpdating,
@@ -688,6 +691,8 @@ export function startWebServer({
         if (!incoming || typeof incoming !== 'object' || !Array.isArray(incoming.upstreamDns)) {
           return sendJson(res, 400, { error: 'File sao lưu không hợp lệ (thiếu cấu trúc cấu hình NetShield)' });
         }
+        // Tự động sao lưu config.prev.json trước khi ghi đè để dễ khôi phục
+        await store.backupCurrentConfig();
         const prevToken = store.config.alerts?.telegramBotToken || '';
         const mergedAlerts = {
           ...DEFAULT_ALERTS_CONFIG,
@@ -708,6 +713,11 @@ export function startWebServer({
             ...DEFAULT_STORAGE_CONFIG,
             ...(incoming.storage && typeof incoming.storage === 'object' ? incoming.storage : {}),
           },
+          haSync: normalizeHaSyncConfig(
+            incoming.haSync && typeof incoming.haSync === 'object'
+              ? incoming.haSync
+              : store.config.haSync || DEFAULT_HA_SYNC_CONFIG
+          ),
           upstreamStrategy: normalizeUpstreamStrategy(
             incoming.upstreamStrategy ?? store.config.upstreamStrategy
           ),
@@ -844,6 +854,13 @@ export function startWebServer({
           }
           store.config.encryptedDns = curE;
         }
+        if (body.haSync && typeof body.haSync === 'object') {
+          store.config.haSync = normalizeHaSyncConfig({
+            ...(store.config.haSync || {}),
+            ...body.haSync,
+          });
+          haSyncManager.reconfigure();
+        }
         if (body.clearCache) {
           dnsCache.clear();
         }
@@ -884,6 +901,25 @@ export function startWebServer({
         } catch (err) {
           return sendJson(res, 400, { error: err.message });
         }
+      }
+
+      // 8c. HA Secondary Sync API (đồng bộ nóng sang .209 & kiểm tra sức khỏe)
+      if (method === 'POST' && pathname === '/api/ha/sync') {
+        const body = await readJsonBody(req).catch(() => ({}));
+        const syncBlocklistCache = body.syncBlocklistCache !== false;
+        const result = await haSyncManager.syncNow({ syncBlocklistCache, trigger: 'manual' });
+        return sendJson(res, result.ok ? 200 : 502, {
+          ...result,
+          haSyncStatus: haSyncManager.getStatus(),
+        });
+      }
+
+      if (method === 'POST' && pathname === '/api/ha/health') {
+        const result = await haSyncManager.checkSecondaryHealth();
+        return sendJson(res, 200, {
+          ...result,
+          haSyncStatus: haSyncManager.getStatus(),
+        });
       }
 
       // 9. Static UI

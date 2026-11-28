@@ -2349,6 +2349,59 @@
             <div class="card" style="margin-bottom: 1rem;">
               <div class="card-head">
                 <div>
+                  <h2>Đồng bộ dự phòng HA (Secondary Node)</h2>
+                  <p class="card-desc">Tự động đẩy nóng cấu hình &amp; blocklist sang máy phụ (0ms downtime, không cần sudo) và giám sát sống/chết mỗi 60 giây</p>
+                </div>
+                <div id="haSyncBadge" class="row" style="gap: 0.4rem;"></div>
+              </div>
+
+              <div class="setting-list" style="margin-bottom: 0.85rem;">
+                <label class="setting-row" for="haSyncEnabled">
+                  <div>
+                    <strong>Bật chế độ HA Sync &amp; Giám sát node phụ</strong>
+                    <div class="stat-label">Chỉ bật trên máy chính (.210); máy phụ (.209) luôn tự khóa tắt để tránh vòng lặp</div>
+                  </div>
+                  <input id="haSyncEnabled" type="checkbox" class="toggle" />
+                </label>
+                <label class="setting-row" for="haAutoSyncOnSave">
+                  <div>
+                    <strong>Tự động đồng bộ tức thì khi lưu cấu hình (5 giây)</strong>
+                    <div class="stat-label">Mọi thay đổi Whitelist / Blacklist / Luật Camera sẽ tự cập nhật sang node phụ</div>
+                  </div>
+                  <input id="haAutoSyncOnSave" type="checkbox" class="toggle" checked />
+                </label>
+                <label class="setting-row" for="haAlertOnOffline">
+                  <div>
+                    <strong>Gửi cảnh báo khi node phụ ngoại tuyến</strong>
+                    <div class="stat-label">Chỉ báo 1 lần sau 2 lần kiểm tra lỗi liên tiếp (chống spam), tự đồng bộ lại khi hồi phục</div>
+                  </div>
+                  <input id="haAlertOnOffline" type="checkbox" class="toggle" checked />
+                </label>
+              </div>
+
+              <div class="grid-2" style="margin-bottom: 0.85rem;">
+                <div class="field">
+                  <label for="haSecondaryHostInput">IP máy phụ (Secondary Host)</label>
+                  <input id="haSecondaryHostInput" type="text" placeholder="192.168.1.209" />
+                </div>
+                <div class="field">
+                  <label for="haSecondaryUserInput">Tài khoản SSH máy phụ</label>
+                  <input id="haSecondaryUserInput" type="text" placeholder="server-mac" />
+                </div>
+              </div>
+
+              <div id="haSyncSummaryBox" class="iface-list" style="margin-bottom: 0.85rem;"></div>
+
+              <div class="row card-footer-actions" style="gap: 0.55rem; flex-wrap: wrap;">
+                <button id="saveHaSyncBtn" type="button" class="btn primary">Lưu cấu hình HA</button>
+                <button id="runHaSyncNowBtn" type="button" class="btn">Đồng bộ ngay sang máy phụ</button>
+                <button id="checkHaHealthBtn" type="button" class="btn">Kiểm tra sức khỏe</button>
+              </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 1rem;">
+              <div class="card-head">
+                <div>
                   <h2>Thiết lập Mobile (Android &amp; iOS) — DoH / DoT &amp; Hồ sơ iOS</h2>
                   <p class="card-desc">Chặn quảng cáo trên điện thoại cả khi ra ngoài dùng 4G/5G mà không cần bật VPN</p>
                 </div>
@@ -3992,6 +4045,55 @@
       }
 
       const enc = s.config.encryptedDns || {};
+      const ha = s.haSyncStatus || {};
+      const haCfg = ha.config || s.config.haSync || {};
+      const haEnEl = document.getElementById('haSyncEnabled');
+      if (haEnEl) haEnEl.checked = Boolean(haCfg.enabled);
+      const haAutoEl = document.getElementById('haAutoSyncOnSave');
+      if (haAutoEl) haAutoEl.checked = haCfg.autoSyncOnSave !== false;
+      const haAlertEl = document.getElementById('haAlertOnOffline');
+      if (haAlertEl) haAlertEl.checked = haCfg.alertOnOffline !== false;
+      const haHostEl = document.getElementById('haSecondaryHostInput');
+      if (haHostEl && document.activeElement !== haHostEl) {
+        haHostEl.value = haCfg.secondaryHost || '192.168.1.209';
+      }
+      const haUserEl = document.getElementById('haSecondaryUserInput');
+      if (haUserEl && document.activeElement !== haUserEl) {
+        haUserEl.value = haCfg.secondaryUser || 'server-mac';
+      }
+      const haBadge = document.getElementById('haSyncBadge');
+      if (haBadge) {
+        const healthTag =
+          ha.secondaryHealthy === true
+            ? '<span class="badge ok">Node phụ Online</span>'
+            : ha.secondaryHealthy === false
+              ? '<span class="badge danger">Node phụ Offline</span>'
+              : '<span class="badge">Chưa kiểm tra</span>';
+        const syncTag = ha.isSyncing
+          ? '<span class="badge">Đang đồng bộ...</span>'
+          : ha.state === 'ok'
+            ? `<span class="badge ok">Đã sync (${ha.syncCount || 0})</span>`
+            : ha.state === 'error'
+              ? '<span class="badge danger">Sync lỗi</span>'
+              : '';
+        haBadge.innerHTML = `${healthTag}${syncTag}`;
+      }
+      const haBox = document.getElementById('haSyncSummaryBox');
+      if (haBox) {
+        const lastSyncStr = ha.lastSyncAt
+          ? `${new Date(ha.lastSyncAt).toLocaleTimeString('vi-VN')} (${ha.lastSyncDurationMs ?? 0}ms, ${ha.lastSyncTrigger || 'manual'})`
+          : 'Chưa đồng bộ lần nào';
+        const secDomains = Number.isFinite(ha.secondaryBlockedDomains)
+          ? `${ha.secondaryBlockedDomains.toLocaleString('vi-VN')} tên miền chặn`
+          : 'Chưa rõ';
+        haBox.innerHTML = `
+          <div class="iface-item">
+            <div><strong>Đích đồng bộ</strong><div class="stat-label">${escapeHtml(haCfg.secondaryUser || 'server-mac')}@${escapeHtml(haCfg.secondaryHost || '192.168.1.209')} · ${secDomains}</div></div>
+            <span class="stat-label">Lần sync cuối: ${escapeHtml(lastSyncStr)}</span>
+          </div>
+          ${ha.lastError ? `<div class="iface-item"><div><strong>Lỗi gần nhất</strong><div class="stat-label" style="color:var(--danger)">${escapeHtml(ha.lastError)}</div></div></div>` : ''}
+        `;
+      }
       const encStatus = s.encryptedDnsStatus || {};
       const pubHostEl = document.getElementById('mobilePublicHostInput');
       if (pubHostEl && document.activeElement !== pubHostEl) {
@@ -4841,6 +4943,56 @@
 
     document.getElementById('saveSecurityBtn')?.addEventListener('click', () => {
       document.getElementById('saveSettingsBtn')?.click();
+    });
+
+    document.getElementById('saveHaSyncBtn')?.addEventListener('click', async () => {
+      const haSync = {
+        enabled: Boolean(document.getElementById('haSyncEnabled')?.checked),
+        autoSyncOnSave: Boolean(document.getElementById('haAutoSyncOnSave')?.checked),
+        alertOnOffline: Boolean(document.getElementById('haAlertOnOffline')?.checked),
+        secondaryHost: (document.getElementById('haSecondaryHostInput')?.value || '').trim(),
+        secondaryUser: (document.getElementById('haSecondaryUserInput')?.value || '').trim(),
+      };
+      try {
+        await api('/api/settings', {
+          method: 'POST',
+          body: JSON.stringify({ haSync }),
+        });
+        await loadStatus();
+        showToast('Đã lưu cấu hình HA Sync');
+      } catch (err) {
+        showToast('Lỗi lưu HA Sync: ' + err.message);
+      }
+    });
+
+    document.getElementById('runHaSyncNowBtn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('runHaSyncNowBtn');
+      btn.disabled = true;
+      btn.textContent = 'Đang đồng bộ...';
+      try {
+        const res = await api('/api/ha/sync', {
+          method: 'POST',
+          body: JSON.stringify({ syncBlocklistCache: true }),
+        });
+        await loadStatus();
+        showToast(`Đã đồng bộ nóng sang máy phụ (${res.durationMs || 0}ms)`);
+      } catch (err) {
+        await loadStatus();
+        showToast('Đồng bộ thất bại: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Đồng bộ ngay sang máy phụ';
+      }
+    });
+
+    document.getElementById('checkHaHealthBtn')?.addEventListener('click', async () => {
+      try {
+        const res = await api('/api/ha/health', { method: 'POST', body: '{}' });
+        await loadStatus();
+        showToast(res.ok ? `Node phụ Online (${(res.totalBlockedDomains || 0).toLocaleString('vi-VN')} domain)` : 'Node phụ Offline: ' + (res.error || ''));
+      } catch (err) {
+        showToast('Lỗi kiểm tra sức khỏe: ' + err.message);
+      }
     });
 
     document.getElementById('saveMobileDnsBtn')?.addEventListener('click', async () => {

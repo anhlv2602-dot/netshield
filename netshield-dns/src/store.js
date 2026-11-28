@@ -308,6 +308,19 @@ export const DEFAULT_ENCRYPTED_DNS_CONFIG = {
   iosExcludeSsids: [],
 };
 
+export const DEFAULT_HA_SYNC_CONFIG = {
+  enabled: false,
+  autoSyncOnSave: true,
+  debounceSec: 5,
+  healthCheckIntervalSec: 60,
+  secondaryHost: '192.168.1.209',
+  secondaryUser: 'server-mac',
+  secondaryAppDir: '~/Apps/netshield/netshield-dns',
+  sshKeyPath: '/Users/anhlv2602/.ssh/id_ed25519',
+  sshKnownHostsPath: '/Users/anhlv2602/.ssh/known_hosts',
+  alertOnOffline: true,
+};
+
 export const DEFAULT_CONFIG = {
   protectionEnabled: true,
   upstreamDns: [
@@ -321,6 +334,7 @@ export const DEFAULT_CONFIG = {
   alerts: { ...DEFAULT_ALERTS_CONFIG },
   storage: { ...DEFAULT_STORAGE_CONFIG },
   encryptedDns: { ...DEFAULT_ENCRYPTED_DNS_CONFIG },
+  haSync: { ...DEFAULT_HA_SYNC_CONFIG },
   localRecords: [],
   blocklists: [
     {
@@ -522,6 +536,10 @@ class Store extends EventEmitter {
             ? parsed.encryptedDns.iosExcludeSsids.map((s) => String(s || '').trim()).filter(Boolean)
             : [],
         },
+        haSync: {
+          ...DEFAULT_HA_SYNC_CONFIG,
+          ...(parsed.haSync && typeof parsed.haSync === 'object' ? parsed.haSync : {}),
+        },
         upstreamStrategy: normalizeUpstreamStrategy(parsed.upstreamStrategy),
         localRecords: Array.isArray(parsed.localRecords)
           ? parsed.localRecords
@@ -677,11 +695,23 @@ class Store extends EventEmitter {
     }
   }
 
+  async backupCurrentConfig() {
+    try {
+      await fs.mkdir(DATA_DIR, { recursive: true });
+      const prevPath = path.join(DATA_DIR, 'config.prev.json');
+      await fs.writeFile(prevPath, JSON.stringify(this.config, null, 2), { encoding: 'utf8', mode: 0o600 });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async save() {
     await fs.mkdir(DATA_DIR, { recursive: true });
     const tmpPath = `${CONFIG_PATH}.tmp`;
     await fs.writeFile(tmpPath, JSON.stringify(this.config, null, 2), { encoding: 'utf8', mode: 0o600 });
     await fs.rename(tmpPath, CONFIG_PATH);
+    this.emit('config_saved', this.config);
   }
 
   recordQuery(entry) {

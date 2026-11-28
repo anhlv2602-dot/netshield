@@ -7,6 +7,7 @@ import { deviceDiscovery } from './discovery.js';
 import { alertEngine } from './alerts.js';
 import { forensicsDb } from './db.js';
 import { localDnsLB } from './load-balancer.js';
+import { haSyncManager } from './ha-sync.js';
 
 const DNS_PORT = Number(process.env.DNS_PORT || 5335);
 const WEB_PORT = Number(process.env.WEB_PORT || 8080);
@@ -121,6 +122,14 @@ async function main() {
   // Khởi chạy bộ kiểm tra sức khỏe TCP/HTTP cho Local DNS Round-Robin
   localDnsLB.startHealthChecks(() => store.config.localRecords || []);
 
+  // Khởi chạy bộ đồng bộ dự phòng HA (Primary -> Secondary) nếu được bật
+  haSyncManager.start(store, alertEngine);
+  if (store.config.haSync?.enabled) {
+    console.log(
+      `🔁 HA Auto-Sync đang bật → ${store.config.haSync.secondaryUser}@${store.config.haSync.secondaryHost}`
+    );
+  }
+
   // Khởi chạy bộ nhận diện thiết bị LAN ở nền (không làm chậm luồng DNS chính)
   deviceDiscovery.start(store, {
     onMigration: () => dnsCache.clear(),
@@ -149,6 +158,7 @@ async function main() {
     alertEngine.stop();
     forensicsDb.stop();
     localDnsLB.stopHealthChecks();
+    haSyncManager.stop();
     deviceDiscovery.stop();
     await Promise.allSettled([
       store.saveStats({ force: true }),
