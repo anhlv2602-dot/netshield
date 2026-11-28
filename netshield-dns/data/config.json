@@ -433,6 +433,13 @@
       "name": "Công tắc Hunonic (IoT)",
       "groupId": "iot",
       "mac": "4C:A0:3D:4B:42:87"
+    },
+    {
+      "id": "mac:18:60:24:F9:CC:85",
+      "ip": "192.168.1.107",
+      "name": "Máy tính Windows",
+      "groupId": "computer",
+      "mac": "18:60:24:F9:CC:85"
     }
   ],
   "clientRules": []
