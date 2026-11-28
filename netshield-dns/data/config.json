@@ -5,7 +5,7 @@
     "https://9.9.9.9/dns-query",
     "https://8.8.8.8/dns-query"
   ],
-  "upstreamStrategy": "failover",
+  "upstreamStrategy": "lowest_latency",
   "blockResponseMode": "zero",
   "security": {
     "dnsRebindingGuard": true,
@@ -148,7 +148,7 @@
       "id": "oisd-small",
       "name": "OISD Small (Quảng cáo & Tracker quốc tế)",
       "url": "https://small.oisd.nl/domainswild2",
-      "enabled": true,
+      "enabled": false,
       "count": 63317,
       "lastUpdated": "2026-11-27T08:15:24.597Z",
       "lastError": null
