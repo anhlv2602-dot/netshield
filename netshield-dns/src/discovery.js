@@ -317,6 +317,71 @@ export function lookupVendor(mac) {
   return OUI_TABLE[prefix] || null;
 }
 
+const SWEEP_MIN_INTERVAL_MS = 5 * 60 * 1000;
+const SWEEP_BATCH_SIZE = 32;
+const SWEEP_BATCH_DELAY_MS = 20;
+const SWEEP_SETTLE_MS = 250;
+
+function isPrivateLanPrefix(ip) {
+  const parts = String(ip || '').split('.').map(Number);
+  if (parts.length !== 4 || parts.some((n) => Number.isNaN(n))) return false;
+  const [a, b] = parts;
+  return a === 10 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31);
+}
+
+/**
+ * Quét chủ động nhẹ không cần quyền root:
+ * Gửi gói UDP 1 byte tới cổng 9 (Discard) cho dải /24 để hệ điều hành tự phát ARP Request,
+ * giúp bảng `arp -an` phát hiện cả thiết bị lạ không dùng DNS của NetShield (đặt cứng 8.8.8.8 / DoH).
+ */
+export async function sweepLanArp(localIps) {
+  if (process.env.NETSHIELD_DISABLE_SWEEP === '1') return 0;
+  const prefixes = [];
+  for (const ip of localIps || []) {
+    if (!isPrivateLanPrefix(ip)) continue;
+    const prefix = ip.split('.').slice(0, 3).join('.');
+    if (!prefixes.includes(prefix)) prefixes.push(prefix);
+    if (prefixes.length >= 2) break;
+  }
+  if (prefixes.length === 0) return 0;
+
+  let sock;
+  let sent = 0;
+  try {
+    sock = dgram.createSocket('udp4');
+    sock.on('error', () => {});
+    const payload = Buffer.from([0]);
+    const selfSet = new Set(localIps || []);
+
+    for (const prefix of prefixes) {
+      for (let start = 1; start <= 254; start += SWEEP_BATCH_SIZE) {
+        const end = Math.min(254, start + SWEEP_BATCH_SIZE - 1);
+        for (let last = start; last <= end; last += 1) {
+          const targetIp = `${prefix}.${last}`;
+          if (selfSet.has(targetIp)) continue;
+          try {
+            sock.send(payload, 9, targetIp, () => {});
+            sent += 1;
+          } catch {
+            // Bỏ qua lỗi từng IP
+          }
+        }
+        await new Promise((r) => setTimeout(r, SWEEP_BATCH_DELAY_MS));
+      }
+    }
+    await new Promise((r) => setTimeout(r, SWEEP_SETTLE_MS));
+  } catch {
+    // Không để lỗi sweep ảnh hưởng luồng discovery
+  } finally {
+    if (sock) {
+      try {
+        sock.close();
+      } catch {}
+    }
+  }
+  return sent;
+}
+
 function getLocalLanIps() {
   const set = new Set();
   const ifaces = os.networkInterfaces();
@@ -580,6 +645,7 @@ class DeviceDiscovery {
     this.isScanning = false;
     this.isRefreshingArp = false;
     this.lastScanAt = null;
+    this.lastSweepAt = 0;
     this.debounceTimer = null;
     this.arpTimer = null;
     this.periodicTimer = null;
@@ -949,6 +1015,12 @@ class DeviceDiscovery {
     this.isScanning = true;
     try {
       this.localIps = getLocalLanIps();
+      const activeSweepEnabled = this.store?.config?.security?.activeLanSweep !== false;
+      const now = Date.now();
+      if (activeSweepEnabled && (force || now - this.lastSweepAt >= SWEEP_MIN_INTERVAL_MS)) {
+        this.lastSweepAt = now;
+        await sweepLanArp(this.localIps);
+      }
       const [gatewayIp, arp] = await Promise.all([getDefaultGateway(), readArpTable()]);
       if (gatewayIp) this.gatewayIp = gatewayIp;
       this._updateArpMaps(arp.byIp, arp.sharedMacs);

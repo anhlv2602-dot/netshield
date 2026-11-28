@@ -169,6 +169,31 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
         return sendJson(res, 200, { ok: true, summary: alertEngine.getSummary() });
       }
 
+      // 2c. DNS Quarantine API (cách ly tạm thời thiết bị bất thường)
+      if (method === 'GET' && pathname === '/api/quarantine') {
+        return sendJson(res, 200, { items: alertEngine.getQuarantinedClients() });
+      }
+
+      if (method === 'POST' && pathname === '/api/quarantine') {
+        const body = await readJsonBody(req);
+        const ip = String(body.ip || '').trim();
+        if (!ip) return sendJson(res, 400, { error: 'Thiếu địa chỉ IP cần cách ly' });
+        const entry = alertEngine.quarantineClient(ip, {
+          reason: String(body.reason || 'Cách ly thủ công bởi quản trị viên').slice(0, 120),
+          durationMin: Number(body.durationMin) || store.config.security?.quarantineDurationMin || 15,
+        });
+        if (!entry) {
+          return sendJson(res, 400, { error: 'Không thể cách ly IP loopback, chính máy chủ NetShield hoặc Router gateway' });
+        }
+        return sendJson(res, 200, { ok: true, entry, items: alertEngine.getQuarantinedClients() });
+      }
+
+      if (method === 'DELETE' && pathname.startsWith('/api/quarantine/')) {
+        const ip = decodeURIComponent(pathname.slice('/api/quarantine/'.length)).trim();
+        const removed = alertEngine.unquarantineClient(ip);
+        return sendJson(res, 200, { ok: removed, items: alertEngine.getQuarantinedClients() });
+      }
+
       // 3. Query logs (hỗ trợ cả RAM trực tiếp & lịch sử dài hạn SQLite + Xuất CSV)
       if (method === 'GET' && pathname === '/api/logs/export.csv') {
         const search = (url.searchParams.get('search') || '').trim().toLowerCase();
@@ -722,10 +747,22 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
         }
         if (body.security && typeof body.security === 'object') {
           const cur = { ...DEFAULT_SECURITY_CONFIG, ...(store.config.security || {}) };
-          for (const key of ['dnsRebindingGuard', 'cnameCloakingGuard', 'antiBypass', 'serveStaleCache', 'enableIpv6']) {
+          for (const key of [
+            'dnsRebindingGuard',
+            'cnameCloakingGuard',
+            'antiBypass',
+            'blockDnsTunneling',
+            'autoQuarantineOnAnomaly',
+            'activeLanSweep',
+            'serveStaleCache',
+            'enableIpv6',
+          ]) {
             if (typeof body.security[key] === 'boolean') {
               cur[key] = body.security[key];
             }
+          }
+          if (Number.isFinite(Number(body.security.quarantineDurationMin))) {
+            cur.quarantineDurationMin = Math.max(1, Math.min(1440, Number(body.security.quarantineDurationMin)));
           }
           if (Array.isArray(body.security.rebindingWhitelist)) {
             cur.rebindingWhitelist = [...new Set(body.security.rebindingWhitelist.map(normalizeDomain).filter(Boolean))];

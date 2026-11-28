@@ -245,16 +245,47 @@ export function inferBlocklistMeta(list) {
 }
 
 export const ANTI_BYPASS_DOMAINS = [
+  // Canary / Private Relay / DDR
   'use-application-dns.net', // Firefox DoH canary
   'mask.icloud.com',         // Apple iCloud Private Relay
   'mask-h2.icloud.com',      // Apple iCloud Private Relay (HTTP/2)
   '_dns.resolver.arpa',      // DDR (Discovery of Designated Resolvers)
+  // Public DoH / DoT resolvers (chống trình duyệt & thiết bị tự chuyển sang DNS mã hóa ngoài)
+  'dns.google',
+  'dns.google.com',
+  'dns64.dns.google',
+  'cloudflare-dns.com',
+  'mozilla.cloudflare-dns.com',
+  'chrome.cloudflare-dns.com',
+  'one.one.one.one',
+  'security.cloudflare-dns.com',
+  'family.cloudflare-dns.com',
+  'dns.quad9.net',
+  'dns9.quad9.net',
+  'dns10.quad9.net',
+  'dns11.quad9.net',
+  'doh.opendns.com',
+  'dns.opendns.com',
+  'doh.umbrella.com',
+  'dns.adguard.com',
+  'dns.adguard-dns.com',
+  'unfiltered.adguard-dns.com',
+  'family.adguard-dns.com',
+  'dns.nextdns.io',
+  'doh.cleanbrowsing.org',
+  'doh.dns.sb',
+  'dns.alidns.com',
+  'doh.pub',
 ];
 
 export const DEFAULT_SECURITY_CONFIG = {
   dnsRebindingGuard: true,
   cnameCloakingGuard: true,
   antiBypass: true,
+  blockDnsTunneling: true,
+  autoQuarantineOnAnomaly: false,
+  quarantineDurationMin: 15,
+  activeLanSweep: true,
   serveStaleCache: true,
   enableIpv6: true,
   rebindingWhitelist: [],

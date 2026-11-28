@@ -5,6 +5,7 @@ import dnsPacket from 'dns-packet';
 import { store, normalizeDomain } from './store.js';
 import { blocklistEngine } from './blocklist.js';
 import { upstreamLB, localDnsLB, normalizeUpstreamStrategy } from './load-balancer.js';
+import { alertEngine, hasLongDnsLabel } from './alerts.js';
 
 const MAX_CACHE_SIZE = 5000;
 const MIN_TTL_SEC = 30;
@@ -615,6 +616,26 @@ async function handleDnsPayload(rawBuffer, clientIp) {
     return localResp;
   }
 
+  // 0.5. Kiểm tra Cách ly DNS (Auto-Quarantine / Cách ly thủ công)
+  if (store.config.protectionEnabled) {
+    const qEntry = alertEngine.isQuarantined(ip);
+    if (qEntry) {
+      const resp = buildBlockedResponse(query, { forceNxdomain: true });
+      store.recordQuery({
+        clientIp: ip,
+        domain,
+        qtype,
+        blocked: true,
+        cached: false,
+        quarantined: true,
+        severity: 'high',
+        reason: `Đang cách ly DNS (${qEntry.reason})`,
+        latencyMs: Number((performance.now() - startMs).toFixed(2)),
+      });
+      return resp;
+    }
+  }
+
   // 1. Kiểm tra bộ lọc (Whitelist, Client/Group Rules, Anti-Bypass, Blacklist, Blocklists)
   const decision = blocklistEngine.evaluate(domain, ip);
   if (decision.blocked) {
@@ -634,6 +655,30 @@ async function handleDnsPayload(rawBuffer, clientIp) {
   }
 
   const bypassProtection = typeof decision.reason === 'string' && decision.reason.startsWith('bypass:');
+
+  // 1.5. Chặn chủ động nghi vấn DNS Tunneling (nhãn tên miền dài bất thường)
+  if (
+    store.config.protectionEnabled &&
+    !bypassProtection &&
+    decision.reason !== 'whitelist' &&
+    store.config.security?.blockDnsTunneling === true
+  ) {
+    const maxLabelLen = Number(store.config.alerts?.tunnelingLabelLength) || 60;
+    if (hasLongDnsLabel(domain, maxLabelLen)) {
+      const resp = buildBlockedResponse(query, { forceNxdomain: true });
+      store.recordQuery({
+        clientIp: ip,
+        domain,
+        qtype,
+        blocked: true,
+        cached: false,
+        severity: 'high',
+        reason: 'Chặn nghi vấn DNS Tunneling',
+        latencyMs: Number((performance.now() - startMs).toFixed(2)),
+      });
+      return resp;
+    }
+  }
 
   // 2. Kiểm tra Cache tươi
   const cacheKey = `${domain}:${qtype}`;

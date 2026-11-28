@@ -297,10 +297,14 @@ class BlocklistEngine {
 
     const suffixes = getDomainSuffixes(domain);
 
-    // 0. Chống vượt mặt DNS (Firefox DoH canary, Apple iCloud Private Relay, DDR)
+    // 0. Chống vượt mặt DNS (Firefox DoH canary, Apple iCloud Private Relay, DDR, và Public DoH/DoT resolvers)
     // Đặt trước Whitelist suffix để không bị 'icloud.com' miễn trừ 'mask.icloud.com',
-    // nhưng vẫn tôn trọng nếu người dùng whitelist đích danh chính canary domain đó.
-    if (store.config.security?.antiBypass !== false && ANTI_BYPASS_SET.has(domain) && !this.whitelistSet.has(domain)) {
+    // nhưng vẫn tôn trọng nếu người dùng whitelist đích danh chính domain DoH/canary đó.
+    if (
+      store.config.security?.antiBypass !== false &&
+      suffixes.some((s) => ANTI_BYPASS_SET.has(s)) &&
+      !this.whitelistSet.has(domain)
+    ) {
       return {
         blocked: true,
         forceNxdomain: true,

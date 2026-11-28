@@ -2390,10 +2390,34 @@
 
                 <label class="setting-row" for="secAntiBypass">
                   <span class="setting-row-text">
-                    <span class="setting-row-title">Chống vượt mặt DNS (Anti-Bypass)</span>
-                    <span class="setting-row-desc">Chặn tín hiệu canary của Firefox DoH và Apple Private Relay để thiết bị không tự bỏ qua bộ lọc LAN</span>
+                    <span class="setting-row-title">Chống vượt mặt DNS (Anti-Bypass DoH/DoT)</span>
+                    <span class="setting-row-desc">Chặn tín hiệu canary (Firefox DoH, Apple Private Relay) và tên miền DoH/DoT công cộng (dns.google, cloudflare-dns.com, quad9, nextdns...) để ngăn thiết bị tự bỏ qua bộ lọc LAN</span>
                   </span>
                   <input type="checkbox" class="switch" role="switch" id="secAntiBypass" checked />
+                </label>
+
+                <label class="setting-row" for="secBlockTunneling">
+                  <span class="setting-row-text">
+                    <span class="setting-row-title">Chặn chủ động DNS Tunneling</span>
+                    <span class="setting-row-desc">Tự động chặn (NXDOMAIN) các truy vấn có nhãn tên miền dài bất thường nghi vấn tuồn dữ liệu qua DNS (miễn trừ PTR/DKIM và Whitelist)</span>
+                  </span>
+                  <input type="checkbox" class="switch" role="switch" id="secBlockTunneling" checked />
+                </label>
+
+                <label class="setting-row" for="secAutoQuarantine">
+                  <span class="setting-row-text">
+                    <span class="setting-row-title">Tự động cách ly DNS khi bùng phát bất thường (Auto-Quarantine)</span>
+                    <span class="setting-row-desc">Tạm khóa phân giải DNS trong 15 phút với thiết bị phát sinh bão NXDOMAIN (nghi nhiễm DGA/Botnet) cho tới khi bạn gỡ cách ly</span>
+                  </span>
+                  <input type="checkbox" class="switch" role="switch" id="secAutoQuarantine" />
+                </label>
+
+                <label class="setting-row" for="secActiveLanSweep">
+                  <span class="setting-row-text">
+                    <span class="setting-row-title">Quét LAN chủ động nhẹ (Active ARP Sweep)</span>
+                    <span class="setting-row-desc">Gửi gói thăm dò UDP nhẹ trong dải mạng nội bộ để phát hiện cả thiết bị lạ không dùng DNS của NetShield (đặt cứng 8.8.8.8 / DoH)</span>
+                  </span>
+                  <input type="checkbox" class="switch" role="switch" id="secActiveLanSweep" checked />
                 </label>
 
                 <label class="setting-row" for="secServeStale">
@@ -3929,6 +3953,9 @@
       document.getElementById('secRebindingGuard').checked = sec.dnsRebindingGuard !== false;
       document.getElementById('secCnameGuard').checked = sec.cnameCloakingGuard !== false;
       document.getElementById('secAntiBypass').checked = sec.antiBypass !== false;
+      document.getElementById('secBlockTunneling').checked = sec.blockDnsTunneling !== false;
+      document.getElementById('secAutoQuarantine').checked = sec.autoQuarantineOnAnomaly === true;
+      document.getElementById('secActiveLanSweep').checked = sec.activeLanSweep !== false;
       document.getElementById('secServeStale').checked = sec.serveStaleCache !== false;
       const rebindWlEl = document.getElementById('rebindingWhitelistInput');
       if (document.activeElement !== rebindWlEl) {
@@ -3987,8 +4014,28 @@
       }
       const alertsListEl = document.getElementById('securityAlertsList');
       if (alertsListEl) {
+        const qList = alertsSum.quarantined || [];
+        const qHtml = qList
+          .map((q) => {
+            const minsLeft = Math.max(1, Math.ceil((q.remainingSec || 0) / 60));
+            return `
+              <div class="iface-row" style="border-color: var(--danger, #dc2626); background: rgba(220, 38, 38, 0.06);">
+                <div style="display:flex;flex-direction:column;gap:0.2rem;">
+                  <div class="row" style="gap:0.45rem;">
+                    <span class="badge blocked">ĐANG CÁCH LY DNS</span>
+                    <strong>${esc(q.deviceLabel || q.ip)}</strong>
+                    <span class="stat-sub mono">Còn ~${minsLeft} phút</span>
+                  </div>
+                  <div class="stat-sub">${esc(q.reason || 'Bất thường DNS')}</div>
+                </div>
+                <button type="button" class="btn sm primary" onclick="unquarantineIp('${esc(q.ip)}')">Gỡ cách ly</button>
+              </div>
+            `;
+          })
+          .join('');
         alertsListEl.innerHTML =
-          alertsSum.recent && alertsSum.recent.length
+          qHtml +
+          (alertsSum.recent && alertsSum.recent.length
             ? alertsSum.recent
                 .map((a) => {
                   const sevCls = a.severity === 'high' ? 'blocked' : a.severity === 'medium' ? 'warn' : 'muted';
@@ -4009,10 +4056,12 @@
                   `;
                 })
                 .join('')
-            : `<div class="empty-state">
+            : qHtml
+              ? ''
+              : `<div class="empty-state">
                  <strong>Không có cảnh báo bảo mật nào</strong>
                  <span>Mạng nội bộ đang sạch. Khi phát hiện thiết bị lạ (MAC thật), truy cập mã độc/lừa đảo hoặc bất thường DNS, cảnh báo sẽ hiện tại đây.</span>
-               </div>`;
+               </div>`);
       }
 
       // Alerts settings (Setup tab)
@@ -4639,6 +4688,12 @@
       await loadAll();
     };
 
+    window.unquarantineIp = async (ip) => {
+      await api(`/api/quarantine/${encodeURIComponent(ip)}`, 'DELETE');
+      await loadAll();
+      showToast(`Đã gỡ cách ly DNS cho ${ip}`);
+    };
+
     document.getElementById('ackAllAlertsBtn').addEventListener('click', async () => {
       await api('/api/alerts/ack-all', 'POST');
       await loadAll();
@@ -4732,6 +4787,9 @@
         dnsRebindingGuard: document.getElementById('secRebindingGuard').checked,
         cnameCloakingGuard: document.getElementById('secCnameGuard').checked,
         antiBypass: document.getElementById('secAntiBypass').checked,
+        blockDnsTunneling: document.getElementById('secBlockTunneling').checked,
+        autoQuarantineOnAnomaly: document.getElementById('secAutoQuarantine').checked,
+        activeLanSweep: document.getElementById('secActiveLanSweep').checked,
         serveStaleCache: document.getElementById('secServeStale').checked,
         rebindingWhitelist: document
           .getElementById('rebindingWhitelistInput')

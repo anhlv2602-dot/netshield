@@ -17,10 +17,15 @@ function formatDeviceLabel(ip, mac, devices = []) {
   return ip || 'unknown';
 }
 
-function hasLongDnsLabel(domain, maxLabelLen = 60) {
+export function hasLongDnsLabel(domain, maxLabelLen = 60) {
   if (!domain) return false;
-  if (domain.length > 150) return true;
-  const labels = domain.split('.');
+  const low = domain.toLowerCase();
+  // Loại trừ các truy vấn hợp lệ vốn có nhãn dài (reverse PTR, DKIM email)
+  if (low.endsWith('.in-addr.arpa') || low.endsWith('.ip6.arpa') || low.includes('._domainkey.')) {
+    return false;
+  }
+  if (low.length > 150) return true;
+  const labels = low.split('.');
   for (const lbl of labels) {
     if (lbl.length > maxLabelLen) return true;
   }
@@ -34,6 +39,7 @@ class AlertEngine extends EventEmitter {
     this.alerts = [];
     this.dedupeMap = new Map(); // fingerprint -> lastTriggeredMs
     this.nxdomainMap = new Map(); // clientIp -> { windowStart, domains: Set<string> }
+    this.quarantineMap = new Map(); // clientIp -> { ip, mac, deviceLabel, reason, quarantinedAt, expiresAt }
     this._saveTimer = null;
     this._saving = false;
     this._onQuery = null;
@@ -181,11 +187,12 @@ class AlertEngine extends EventEmitter {
     const mac = deviceDiscovery.getMacForIp(clientIp) || '';
     const devLabel = formatDeviceLabel(clientIp, mac, devices);
 
-    // 1. Chạm Threat Intelligence / Malware / Phishing / DNS Rebinding
-    if (cfg.threatHitEnabled && record.blocked && record.severity === 'high') {
+    // 1. Chạm Threat Intelligence / Malware / Phishing / DNS Rebinding / DNS Tunneling
+    if (cfg.threatHitEnabled && record.blocked && !record.quarantined && record.severity === 'high') {
       const rLow = String(record.reason || '').toLowerCase();
       let title = 'Chặn truy cập Nguy hiểm';
       if (rLow.includes('rebinding')) title = 'Chặn tấn công DNS Rebinding';
+      else if (rLow.includes('tunnel')) title = 'Chặn nghi vấn DNS Tunneling';
       else if (rLow.includes('phish')) title = 'Chặn trang Lừa đảo (Phishing)';
       else if (rLow.includes('urlhaus') || rLow.includes('malware')) title = 'Chặn tên miền Mã độc (Malware)';
       else if (rLow.includes('tif') || rLow.includes('threat')) title = 'Chặn tên miền Độc hại (Threat Intel)';
@@ -223,7 +230,7 @@ class AlertEngine extends EventEmitter {
     // 3. Phát hiện bất thường (DNS Tunneling & NXDOMAIN Spike)
     if (cfg.anomalyEnabled) {
       const maxLabelLen = Number(cfg.tunnelingLabelLength) || 60;
-      if (hasLongDnsLabel(domain, maxLabelLen)) {
+      if (!record.blocked && hasLongDnsLabel(domain, maxLabelLen)) {
         this.createAlert({
           type: 'dns_anomaly',
           severity: 'high',
@@ -248,11 +255,24 @@ class AlertEngine extends EventEmitter {
         entry.domains.add(domain);
         const threshold = Number(cfg.nxdomainThresholdPerMin) || 30;
         if (entry.domains.size >= threshold) {
+          const sec = this.store?.config?.security || {};
+          let quarantinedNote = '';
+          if (sec.autoQuarantineOnAnomaly === true) {
+            const durMin = Math.max(1, Math.min(1440, Number(sec.quarantineDurationMin) || 15));
+            const q = this.quarantineClient(clientIp, {
+              reason: `Bùng phát NXDOMAIN (${entry.domains.size}/phút)`,
+              durationMin: durMin,
+            });
+            if (q) {
+              quarantinedNote = ` — Đã tự động cách ly DNS ${durMin} phút`;
+            }
+          }
+
           this.createAlert({
             type: 'dns_anomaly',
             severity: 'high',
             title: 'Bùng phát NXDOMAIN bất thường (Nghi vấn DGA / Botnet)',
-            message: `${devLabel} phát sinh ${entry.domains.size} tên miền không tồn tại trong 60 giây (mới nhất: ${domain})`,
+            message: `${devLabel} phát sinh ${entry.domains.size} tên miền không tồn tại trong 60 giây (mới nhất: ${domain})${quarantinedNote}`,
             clientIp,
             mac,
             domain,
@@ -407,6 +427,65 @@ class AlertEngine extends EventEmitter {
     return list.slice(0, limit);
   }
 
+  quarantineClient(clientIp, { reason = 'Cách ly DNS bất thường', durationMin = 15 } = {}) {
+    const ip = String(clientIp || '').trim();
+    if (!ip || ip === '127.0.0.1' || ip === '::1') return null;
+    if (deviceDiscovery.localIps?.has(ip)) return null;
+    if (deviceDiscovery.gatewayIp && ip === deviceDiscovery.gatewayIp) return null;
+
+    const dur = Math.max(1, Math.min(1440, Number(durationMin) || 15));
+    const now = Date.now();
+    const devices = this.store?.config?.devices || [];
+    const mac = deviceDiscovery.getMacForIp(ip) || '';
+    const entry = {
+      ip,
+      mac,
+      deviceLabel: formatDeviceLabel(ip, mac, devices),
+      reason,
+      quarantinedAt: new Date(now).toISOString(),
+      expiresAt: now + dur * 60 * 1000,
+    };
+    this.quarantineMap.set(ip, entry);
+    return entry;
+  }
+
+  isQuarantined(clientIp) {
+    if (!clientIp || this.quarantineMap.size === 0) return null;
+    const entry = this.quarantineMap.get(clientIp);
+    if (!entry) return null;
+    if (Date.now() >= entry.expiresAt) {
+      this.quarantineMap.delete(clientIp);
+      return null;
+    }
+    return entry;
+  }
+
+  unquarantineClient(clientIp) {
+    const ip = String(clientIp || '').trim();
+    if (!ip) return false;
+    return this.quarantineMap.delete(ip);
+  }
+
+  getQuarantinedClients() {
+    const now = Date.now();
+    const active = [];
+    for (const [ip, entry] of this.quarantineMap.entries()) {
+      if (now >= entry.expiresAt) {
+        this.quarantineMap.delete(ip);
+        continue;
+      }
+      active.push({
+        ...entry,
+        remainingSec: Math.max(0, Math.ceil((entry.expiresAt - now) / 1000)),
+      });
+    }
+    return active.sort((a, b) => a.expiresAt - b.expiresAt);
+  }
+
+  clearQuarantine() {
+    this.quarantineMap.clear();
+  }
+
   getSummary() {
     let unacknowledged = 0;
     let highUnacknowledged = 0;
@@ -416,10 +495,13 @@ class AlertEngine extends EventEmitter {
         if (a.severity === 'high') highUnacknowledged += 1;
       }
     }
+    const quarantined = this.getQuarantinedClients();
     return {
       total: this.alerts.length,
       unacknowledged,
       highUnacknowledged,
+      quarantinedCount: quarantined.length,
+      quarantined,
       recent: this.alerts.slice(0, 50),
     };
   }

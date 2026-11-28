@@ -9,7 +9,7 @@ process.env.NETSHIELD_DATA_DIR = tmpDataDir;
 
 const { store, inferBlocklistMeta, DEFAULT_ALERTS_CONFIG } = await import('../src/store.js');
 const { blocklistEngine } = await import('../src/blocklist.js');
-const { alertEngine } = await import('../src/alerts.js');
+const { alertEngine, hasLongDnsLabel } = await import('../src/alerts.js');
 
 await store.load();
 await blocklistEngine.loadFromCache();
@@ -267,4 +267,57 @@ test('AlertEngine: Webhook gửi đủ trường content (Discord) và text (Sla
   } finally {
     alertEngine._sendWebhook = origSendWebhook;
   }
+});
+
+test('Phương án A: Anti-Bypass chặn DoH/DoT công cộng nhưng không chặn domain thường', () => {
+  store.config.protectionEnabled = true;
+  store.config.security.antiBypass = true;
+
+  assert.equal(blocklistEngine.evaluate('dns.google', '192.168.1.50').blocked, true);
+  assert.equal(blocklistEngine.evaluate('cloudflare-dns.com', '192.168.1.50').blocked, true);
+  assert.equal(blocklistEngine.evaluate('abc123.dns.nextdns.io', '192.168.1.50').blocked, true);
+
+  assert.equal(blocklistEngine.evaluate('google.com', '192.168.1.50').blocked, false);
+  assert.equal(blocklistEngine.evaluate('nextdns.io', '192.168.1.50').blocked, false);
+});
+
+test('Phương án A: hasLongDnsLabel miễn trừ PTR/DKIM và Auto-Quarantine cách ly đúng IP bất thường', () => {
+  assert.equal(hasLongDnsLabel('a'.repeat(61) + '.evil.example', 60), true);
+  assert.equal(hasLongDnsLabel('1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa', 60), false);
+  assert.equal(hasLongDnsLabel('selector-' + 'a'.repeat(60) + '._domainkey.example.com', 60), false);
+
+  alertEngine.clearAll();
+  alertEngine.clearQuarantine();
+  store.config.security.autoQuarantineOnAnomaly = true;
+  store.config.security.quarantineDurationMin = 15;
+  store.config.alerts = {
+    ...DEFAULT_ALERTS_CONFIG,
+    enabled: true,
+    anomalyEnabled: true,
+    nxdomainThresholdPerMin: 3,
+  };
+
+  // Không bao giờ cách ly loopback
+  assert.equal(alertEngine.quarantineClient('127.0.0.1'), null);
+
+  // 3 NXDOMAIN khác nhau từ 192.168.1.222 -> tự động cách ly
+  for (let i = 1; i <= 3; i++) {
+    store.recordQuery({
+      clientIp: '192.168.1.222',
+      domain: `botnet-dga-${i}.invalid.test`,
+      qtype: 'A',
+      blocked: false,
+      cached: false,
+      rcode: 'NXDOMAIN',
+      reason: 'allowed',
+      latencyMs: 10,
+    });
+  }
+
+  const q = alertEngine.isQuarantined('192.168.1.222');
+  assert.ok(q, 'IP phát sinh bão NXDOMAIN phải bị Auto-Quarantine');
+  assert.equal(alertEngine.getQuarantinedClients().length, 1);
+
+  assert.equal(alertEngine.unquarantineClient('192.168.1.222'), true);
+  assert.equal(alertEngine.isQuarantined('192.168.1.222'), null);
 });
