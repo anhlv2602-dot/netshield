@@ -500,9 +500,23 @@
     {
       "id": "mac:22:48:4D:06:CB:A9",
       "ip": "192.168.1.199",
-      "name": "",
+      "name": "Máy tính Windows",
       "groupId": "computer",
       "mac": "22:48:4D:06:CB:A9"
+    },
+    {
+      "id": "mac:10:E7:C6:AE:92:D3",
+      "ip": "192.168.1.137",
+      "name": "Máy tính Windows",
+      "groupId": "computer",
+      "mac": "10:E7:C6:AE:92:D3"
+    },
+    {
+      "id": "mac:A4:BB:6D:BE:2B:F9",
+      "ip": "192.168.1.160",
+      "name": "Máy tính Windows",
+      "groupId": "computer",
+      "mac": "A4:BB:6D:BE:2B:F9"
     }
   ],
   "clientRules": []
