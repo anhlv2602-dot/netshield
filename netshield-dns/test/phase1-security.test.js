@@ -108,6 +108,22 @@ test('DNS Rebinding Guard chặn IP LAN từ upstream nhưng miễn trừ Whitel
   const pub = inspectUpstreamResponse(makeAResp('example.com', '93.184.216.34'), 'example.com', '192.168.1.107');
   assert.equal(pub.blocked, false);
   assert.equal(pub.ttl, 120);
+
+  // Windows NCSI IPv6 hợp lệ (đúng cặp dns.msftncsi.com + fd3e:4f5a:5b81::1) -> CHO PHÉP
+  const ncsiIpv6Resp = dnsPacket.encode({
+    type: 'response',
+    id: 1235,
+    flags: dnsPacket.RECURSION_DESIRED | dnsPacket.RECURSION_AVAILABLE,
+    questions: [{ type: 'AAAA', name: 'dns.msftncsi.com' }],
+    answers: [{ type: 'AAAA', class: 'IN', name: 'dns.msftncsi.com', ttl: 60, data: 'fd3e:4f5a:5b81::1' }],
+  });
+  const ncsiAllowed = inspectUpstreamResponse(ncsiIpv6Resp, 'dns.msftncsi.com', '192.168.1.244');
+  assert.equal(ncsiAllowed.blocked, false);
+
+  // Nhưng dns.msftncsi.com trỏ về IP nội bộ khác (VD modem hijack 192.168.2.1) -> VẪN CHẶN
+  const ncsiHijack = inspectUpstreamResponse(makeAResp('dns.msftncsi.com', '192.168.2.1'), 'dns.msftncsi.com', '192.168.1.244');
+  assert.equal(ncsiHijack.blocked, true);
+  assert.equal(ncsiHijack.forceNxdomain, true);
 });
 
 test('CNAME Cloaking Guard chặn domain sạch trỏ CNAME tới tracker bị chặn', () => {

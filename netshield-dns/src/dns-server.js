@@ -211,6 +211,21 @@ function isRebindingWhitelisted(domain) {
 }
 
 /**
+ * Các cặp (tên miền, IP nội bộ) hợp lệ theo chuẩn hệ điều hành/RFC, không phải DNS Rebinding:
+ * - dns.msftncsi.com -> fd3e:4f5a:5b81::1 (Windows NCSI kiểm tra kết nối IPv6)
+ */
+const KNOWN_BENIGN_PRIVATE_ANSWERS = new Map([
+  ['dns.msftncsi.com', new Set(['fd3e:4f5a:5b81::1'])],
+]);
+
+export function isKnownBenignPrivateAnswer(domain, rawIp) {
+  if (!domain || !rawIp) return false;
+  const allowedIps = KNOWN_BENIGN_PRIVATE_ANSWERS.get(String(domain).toLowerCase());
+  if (!allowedIps) return false;
+  return allowedIps.has(String(rawIp).trim().toLowerCase());
+}
+
+/**
  * Giải mã 1 lần duy nhất phản hồi từ upstream để:
  * 1. Lấy minTTL cho cache
  * 2. Kiểm tra DNS Rebinding (IP private từ upstream công cộng)
@@ -256,7 +271,7 @@ export function inspectUpstreamResponse(responseBuffer, originalDomain, clientIp
   if (sec.dnsRebindingGuard !== false && !domainWhitelisted && !isRebindingWhitelisted(originalDomain)) {
     for (const ans of answers) {
       if ((ans.type === 'A' || ans.type === 'AAAA') && typeof ans.data === 'string') {
-        if (isPrivateOrReservedIp(ans.data)) {
+        if (isPrivateOrReservedIp(ans.data) && !isKnownBenignPrivateAnswer(originalDomain, ans.data)) {
           return {
             ttl: minTtl,
             rcode: result.rcode,

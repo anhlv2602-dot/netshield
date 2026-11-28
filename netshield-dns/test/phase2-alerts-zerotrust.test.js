@@ -231,6 +231,81 @@ test('AlertEngine: phát hiện Threat Hit, DNS Tunneling và NXDOMAIN Spike', (
   assert.equal(alertEngine.getSummary().unacknowledged, 0);
 });
 
+test('AlertEngine: miễn trừ PTR/mDNS/single-label khỏi NXDOMAIN Spike và gộp alert DNS Rebinding theo IP đích', () => {
+  alertEngine.clearAll();
+  store.config.alerts = {
+    ...DEFAULT_ALERTS_CONFIG,
+    enabled: true,
+    nxdomainThresholdPerMin: 5,
+  };
+  store.config.security = {
+    ...(store.config.security || {}),
+    autoQuarantineOnAnomaly: true,
+  };
+
+  // 1. Bắn 8 truy vấn NXDOMAIN hợp lệ (PTR, mDNS, LAN, single-label Chrome probe) -> KHÔNG báo động, KHÔNG cách ly
+  const benignNx = [
+    '225.128.181.220.in-addr.arpa',
+    '1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.e.f.ip6.arpa',
+    'my-printer.local',
+    'nas.lan',
+    'router.home.arpa',
+    '_services._dns-sd._udp.local',
+    'wpad',
+    'xjklqwezxc',
+  ];
+  for (const d of benignNx) {
+    store.recordQuery({
+      clientIp: '192.168.1.175',
+      domain: d,
+      qtype: 'PTR',
+      blocked: false,
+      cached: false,
+      rcode: 'NXDOMAIN',
+      reason: 'allowed',
+      latencyMs: 5,
+    });
+  }
+  assert.equal(
+    alertEngine.getAlerts().some((a) => a.type === 'dns_anomaly' && /NXDOMAIN/.test(a.title)),
+    false,
+    'Không được báo động NXDOMAIN spike với PTR/mDNS/single-label'
+  );
+  assert.equal(alertEngine.isQuarantined('192.168.1.175'), null, 'Không được cách ly oan thiết bị');
+
+  // 2. Gộp cảnh báo DNS Rebinding theo IP đích (192.168.2.1 bị modem hijack cho nhiều domain/client -> chỉ 1 alert)
+  for (const [ip, dom] of [
+    ['192.168.1.87', 'z-m-gateway.facebook.com'],
+    ['192.168.1.87', 'clientservices.googleapis.com'],
+    ['192.168.1.5', 'edge-mqtt.facebook.com'],
+  ]) {
+    store.recordQuery({
+      clientIp: ip,
+      domain: dom,
+      qtype: 'A',
+      blocked: true,
+      cached: false,
+      severity: 'high',
+      reason: 'Chống DNS Rebinding (192.168.2.1)',
+      latencyMs: 8,
+    });
+  }
+  // Một IP đích khác (192.168.1.1) vẫn tạo cảnh báo riêng
+  store.recordQuery({
+    clientIp: '192.168.1.87',
+    domain: 'evil-rebind.example',
+    qtype: 'A',
+    blocked: true,
+    cached: false,
+    severity: 'high',
+    reason: 'Chống DNS Rebinding (192.168.1.1)',
+    latencyMs: 8,
+  });
+
+  const rebindAlerts = alertEngine.getAlerts().filter((a) => a.title === 'Chặn tấn công DNS Rebinding');
+  assert.equal(rebindAlerts.length, 2, 'Phải gộp thành 1 alert cho 192.168.2.1 và 1 alert riêng cho 192.168.1.1');
+});
+
 test('AlertEngine: Webhook gửi đủ trường content (Discord) và text (Slack/n8n)', async () => {
   const payloads = [];
   const origSendWebhook = alertEngine._sendWebhook.bind(alertEngine);
