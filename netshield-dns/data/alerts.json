@@ -1,5 +1,18 @@
 [
   {
+    "id": "alt-1795862443374-3zub",
+    "timestamp": "2026-11-28T10:40:43.374Z",
+    "type": "threat_hit",
+    "severity": "high",
+    "title": "Chặn trang Giả mạo thương hiệu VN",
+    "message": "iQOO Z9 Turbo (192.168.1.175) đã gọi tới pushnotificationtpbank.firebaseio.com (Giả mạo thương hiệu VN (TPBank))",
+    "clientIp": "192.168.1.175",
+    "mac": "66:BE:2A:8C:CA:ED",
+    "domain": "pushnotificationtpbank.firebaseio.com",
+    "reason": "Giả mạo thương hiệu VN (TPBank)",
+    "acknowledged": false
+  },
+  {
     "id": "alt-1795861844196-mdbm",
     "timestamp": "2026-11-28T10:30:44.196Z",
     "type": "c2_beaconing",
