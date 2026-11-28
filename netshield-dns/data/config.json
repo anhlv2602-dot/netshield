@@ -47,7 +47,7 @@
     "iosExcludeSsids": []
   },
   "haSync": {
-    "enabled": false,
+    "enabled": true,
     "autoSyncOnSave": true,
     "debounceSec": 5,
     "healthCheckIntervalSec": 60,
