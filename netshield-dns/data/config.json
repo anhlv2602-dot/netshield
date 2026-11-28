@@ -517,6 +517,34 @@
       "name": "Máy tính Windows",
       "groupId": "computer",
       "mac": "A4:BB:6D:BE:2B:F9"
+    },
+    {
+      "id": "mac:E0:D5:5E:16:EA:08",
+      "ip": "192.168.1.76",
+      "name": "Máy tính Windows",
+      "groupId": "computer",
+      "mac": "E0:D5:5E:16:EA:08"
+    },
+    {
+      "id": "mac:6C:02:E0:64:A9:CD",
+      "ip": "192.168.1.243",
+      "name": "Máy tính Windows",
+      "groupId": "computer",
+      "mac": "6C:02:E0:64:A9:CD"
+    },
+    {
+      "id": "mac:F2:D5:6A:7D:E3:BE",
+      "ip": "192.168.1.208",
+      "name": "Thiết bị Apple",
+      "groupId": "",
+      "mac": "F2:D5:6A:7D:E3:BE"
+    },
+    {
+      "id": "mac:28:F3:66:F4:AD:5A",
+      "ip": "192.168.1.244",
+      "name": "Máy tính Windows",
+      "groupId": "computer",
+      "mac": "28:F3:66:F4:AD:5A"
     }
   ],
   "clientRules": []
