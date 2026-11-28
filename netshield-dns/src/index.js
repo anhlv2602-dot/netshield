@@ -1,6 +1,7 @@
 import { store } from './store.js';
 import { blocklistEngine } from './blocklist.js';
 import { startDnsServer, dnsCache } from './dns-server.js';
+import { startDohServer, startDotServer } from './encrypted-dns.js';
 import { startWebServer } from './web-server.js';
 import { deviceDiscovery } from './discovery.js';
 import { alertEngine } from './alerts.js';
@@ -34,7 +35,69 @@ async function main() {
     `🌐 DNS Server đang chạy tại ${dnsSrv.host}:${dnsSrv.port} (UDP + TCP${dnsSrv.ipv6Enabled ? ' + IPv6' : ''})`
   );
 
-  // Hạ quyền khỏi root ngay sau khi mở xong cổng 53
+  // Khởi chạy DoT (cổng 853 cần mở trước khi hạ quyền root) & DoH (/dns-query)
+  const encCfg = store.config.encryptedDns || {};
+  const tlsCertPath = process.env.TLS_CERT_PATH || encCfg.tlsCertPath || '';
+  const tlsKeyPath = process.env.TLS_KEY_PATH || encCfg.tlsKeyPath || '';
+  const dohEnabled = process.env.DOH_ENABLED !== undefined
+    ? process.env.DOH_ENABLED !== '0'
+    : encCfg.dohEnabled !== false;
+  const dohHost = process.env.DOH_HOST || encCfg.dohHost || '127.0.0.1';
+  const dohPort = Number(process.env.DOH_PORT || encCfg.dohPort || 8053);
+  const dotEnabled = process.env.DOT_ENABLED !== undefined
+    ? process.env.DOT_ENABLED === '1'
+    : Boolean(encCfg.dotEnabled);
+  const dotPort = Number(process.env.DOT_PORT || encCfg.dotPort || 853);
+
+  let dotSrv = null;
+  let dotError = null;
+  if (dotEnabled && tlsCertPath && tlsKeyPath) {
+    try {
+      dotSrv = await startDotServer({
+        host: BIND_HOST,
+        port: dotPort,
+        certPath: tlsCertPath,
+        keyPath: tlsKeyPath,
+      });
+      console.log(`🔐 DoT Server đang chạy tại ${dotSrv.host}:${dotSrv.port} (TLS)`);
+    } catch (err) {
+      dotError = err.message;
+      console.warn(`⚠️  Không thể khởi động DoT (cổng ${dotPort}): ${err.message}`);
+    }
+  }
+
+  let dohSrv = null;
+  let dohError = null;
+  if (dohEnabled && dohPort > 0) {
+    try {
+      dohSrv = await startDohServer({
+        host: dohHost,
+        port: dohPort,
+        certPath: tlsCertPath,
+        keyPath: tlsKeyPath,
+      });
+      console.log(
+        `🔐 DoH Server đang chạy tại ${dohSrv.tlsEnabled ? 'https' : 'http'}://${dohSrv.host}:${dohSrv.port}${dohSrv.endpoint}`
+      );
+    } catch (err) {
+      dohError = err.message;
+      console.warn(`⚠️  Không thể khởi động DoH (cổng ${dohPort}): ${err.message}`);
+    }
+  }
+
+  const encryptedDnsStatus = {
+    dohRunning: Boolean(dohSrv),
+    dohHost: dohSrv?.host || dohHost,
+    dohPort: dohSrv?.port || dohPort,
+    dohTls: Boolean(dohSrv?.tlsEnabled),
+    dohEndpoint: dohSrv?.endpoint || '/dns-query',
+    dohError,
+    dotRunning: Boolean(dotSrv),
+    dotPort: dotSrv?.port || dotPort,
+    dotError,
+  };
+
+  // Hạ quyền khỏi root ngay sau khi mở xong cổng 53 / 853
   dropRootPrivileges();
 
   // Tự động lưu snapshot thống kê 24h mỗi 60 giây (sau khi hạ quyền để file thuộc user thường)
@@ -47,7 +110,12 @@ async function main() {
     console.log(`🗄️  SQLite Forensics đang bật (lưu lịch sử ${store.config.storage?.retentionDays || 14} ngày).`);
   }
 
-  const webSrv = await startWebServer({ host: WEB_HOST, port: WEB_PORT, dnsPort: DNS_PORT });
+  const webSrv = await startWebServer({
+    host: WEB_HOST,
+    port: WEB_PORT,
+    dnsPort: DNS_PORT,
+    encryptedDnsStatus,
+  });
   console.log(`🖥️  Giao diện quản trị (chỉ máy Mac Mini): http://${webSrv.host}:${webSrv.port}`);
 
   // Khởi chạy bộ kiểm tra sức khỏe TCP/HTTP cho Local DNS Round-Robin
@@ -86,6 +154,8 @@ async function main() {
       store.saveStats({ force: true }),
       alertEngine.save(),
       dnsSrv.close(),
+      dohSrv ? dohSrv.close() : Promise.resolve(),
+      dotSrv ? dotSrv.close() : Promise.resolve(),
       webSrv.close(),
     ]);
     process.exit(0);

@@ -296,6 +296,18 @@ export const DEFAULT_STORAGE_CONFIG = {
   retentionDays: 14,
 };
 
+export const DEFAULT_ENCRYPTED_DNS_CONFIG = {
+  dohEnabled: true,
+  dohHost: '127.0.0.1',
+  dohPort: 8053,
+  dotEnabled: false,
+  dotPort: 853,
+  publicHostname: '',
+  tlsCertPath: '',
+  tlsKeyPath: '',
+  iosExcludeSsids: [],
+};
+
 export const DEFAULT_CONFIG = {
   protectionEnabled: true,
   upstreamDns: [
@@ -308,6 +320,7 @@ export const DEFAULT_CONFIG = {
   security: { ...DEFAULT_SECURITY_CONFIG },
   alerts: { ...DEFAULT_ALERTS_CONFIG },
   storage: { ...DEFAULT_STORAGE_CONFIG },
+  encryptedDns: { ...DEFAULT_ENCRYPTED_DNS_CONFIG },
   localRecords: [],
   blocklists: [
     {
@@ -501,6 +514,13 @@ class Store extends EventEmitter {
         storage: {
           ...DEFAULT_STORAGE_CONFIG,
           ...(parsed.storage && typeof parsed.storage === 'object' ? parsed.storage : {}),
+        },
+        encryptedDns: {
+          ...DEFAULT_ENCRYPTED_DNS_CONFIG,
+          ...(parsed.encryptedDns && typeof parsed.encryptedDns === 'object' ? parsed.encryptedDns : {}),
+          iosExcludeSsids: Array.isArray(parsed.encryptedDns?.iosExcludeSsids)
+            ? parsed.encryptedDns.iosExcludeSsids.map((s) => String(s || '').trim()).filter(Boolean)
+            : [],
         },
         upstreamStrategy: normalizeUpstreamStrategy(parsed.upstreamStrategy),
         localRecords: Array.isArray(parsed.localRecords)

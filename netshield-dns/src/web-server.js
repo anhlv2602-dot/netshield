@@ -9,11 +9,13 @@ import {
   DEFAULT_SECURITY_CONFIG,
   DEFAULT_ALERTS_CONFIG,
   DEFAULT_STORAGE_CONFIG,
+  DEFAULT_ENCRYPTED_DNS_CONFIG,
   normalizeDomain,
   store,
 } from './store.js';
 import { blocklistEngine } from './blocklist.js';
 import { dnsCache, getUpstreamHealth, resetUpstreamHealth, testAllUpstreams } from './dns-server.js';
+import { buildIosMobileConfig, normalizePublicHostname } from './encrypted-dns.js';
 import { deviceDiscovery, normalizeMac } from './discovery.js';
 import { alertEngine } from './alerts.js';
 import { forensicsDb } from './db.js';
@@ -65,7 +67,12 @@ function isLocalClient(req) {
   return ip === '127.0.0.1' || ip === '::1';
 }
 
-export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335 } = {}) {
+export function startWebServer({
+  host = '127.0.0.1',
+  port = 8080,
+  dnsPort = 5335,
+  encryptedDnsStatus = null,
+} = {}) {
   const sseClients = new Set();
 
   const onQuery = (record) => {
@@ -109,6 +116,7 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
           dnsPort,
           webPort: port,
           lanIps: getLanIps(),
+          encryptedDnsStatus,
           cacheSize: dnsCache.size,
           totalBlockedDomains: blocklistEngine.getTotalBlockedDomains(),
           isUpdatingBlocklists: blocklistEngine.isUpdating,
@@ -802,6 +810,40 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
           store.config.storage = curS;
           forensicsDb.cleanupOldLogs(curS.retentionDays);
         }
+        if (body.encryptedDns && typeof body.encryptedDns === 'object') {
+          const curE = { ...DEFAULT_ENCRYPTED_DNS_CONFIG, ...(store.config.encryptedDns || {}) };
+          if (typeof body.encryptedDns.dohEnabled === 'boolean') {
+            curE.dohEnabled = body.encryptedDns.dohEnabled;
+          }
+          if (typeof body.encryptedDns.dotEnabled === 'boolean') {
+            curE.dotEnabled = body.encryptedDns.dotEnabled;
+          }
+          if (typeof body.encryptedDns.dohHost === 'string' && body.encryptedDns.dohHost.trim()) {
+            curE.dohHost = body.encryptedDns.dohHost.trim();
+          }
+          if (Number.isFinite(Number(body.encryptedDns.dohPort))) {
+            curE.dohPort = Math.max(1, Math.min(65535, Number(body.encryptedDns.dohPort)));
+          }
+          if (Number.isFinite(Number(body.encryptedDns.dotPort))) {
+            curE.dotPort = Math.max(1, Math.min(65535, Number(body.encryptedDns.dotPort)));
+          }
+          if (typeof body.encryptedDns.publicHostname === 'string') {
+            const rawHost = body.encryptedDns.publicHostname.trim();
+            curE.publicHostname = rawHost ? normalizePublicHostname(rawHost) || curE.publicHostname : '';
+          }
+          if (typeof body.encryptedDns.tlsCertPath === 'string') {
+            curE.tlsCertPath = body.encryptedDns.tlsCertPath.trim();
+          }
+          if (typeof body.encryptedDns.tlsKeyPath === 'string') {
+            curE.tlsKeyPath = body.encryptedDns.tlsKeyPath.trim();
+          }
+          if (Array.isArray(body.encryptedDns.iosExcludeSsids)) {
+            curE.iosExcludeSsids = [
+              ...new Set(body.encryptedDns.iosExcludeSsids.map((s) => String(s || '').trim()).filter(Boolean)),
+            ];
+          }
+          store.config.encryptedDns = curE;
+        }
         if (body.clearCache) {
           dnsCache.clear();
         }
@@ -811,6 +853,37 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
           cacheSize: dnsCache.size,
           upstreamHealth: getUpstreamHealth(),
         });
+      }
+
+      // 8b. Tải hồ sơ DNS mã hóa Apple (.mobileconfig) cho iOS / iPadOS / macOS
+      if (method === 'GET' && pathname === '/api/mobile/ios-profile') {
+        const enc = store.config.encryptedDns || {};
+        const hostname = url.searchParams.get('hostname') || enc.publicHostname || '';
+        const mode = url.searchParams.get('mode') === 'dot' ? 'dot' : 'doh';
+        const excludeParam = url.searchParams.get('excludeSsids');
+        const excludeSsids =
+          excludeParam !== null
+            ? excludeParam.split(',').map((s) => s.trim()).filter(Boolean)
+            : enc.iosExcludeSsids || [];
+        const addrsParam = url.searchParams.get('serverAddresses') || '';
+        const serverAddresses = addrsParam.split(',').map((s) => s.trim()).filter(Boolean);
+        try {
+          const xml = buildIosMobileConfig({
+            hostname,
+            mode,
+            excludeSsids,
+            serverAddresses,
+          });
+          res.writeHead(200, {
+            'Content-Type': 'application/x-apple-aspen-config; charset=utf-8',
+            'Content-Disposition': `attachment; filename="netshield-dns-${mode}.mobileconfig"`,
+            'Cache-Control': 'no-store',
+          });
+          res.end(xml);
+          return;
+        } catch (err) {
+          return sendJson(res, 400, { error: err.message });
+        }
       }
 
       // 9. Static UI
@@ -830,9 +903,11 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
   return new Promise((resolve, reject) => {
     server.once('error', reject);
     server.listen(port, host, () => {
+      const addr = server.address();
+      const actualPort = typeof addr === 'object' && addr ? addr.port : port;
       resolve({
         host,
-        port,
+        port: actualPort,
         close: () =>
           new Promise((done) => {
             store.off('query', onQuery);

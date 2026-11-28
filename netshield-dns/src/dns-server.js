@@ -577,7 +577,7 @@ export function resolveLocalDnsRecord(queryPacket, domain, qtype) {
   return resolved ? resolved.buffer : null;
 }
 
-async function handleDnsPayload(rawBuffer, clientIp) {
+export async function handleDnsPayload(rawBuffer, clientIp) {
   const ip = cleanClientIp(clientIp);
   if (isRateLimited(ip)) {
     store.emit('rate_limited', { clientIp: ip, limit: MAX_QPS_PER_IP });

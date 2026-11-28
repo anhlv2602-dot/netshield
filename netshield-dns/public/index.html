@@ -2346,6 +2346,35 @@
               </div>
             </div>
 
+            <div class="card" style="margin-bottom: 1rem;">
+              <div class="card-head">
+                <div>
+                  <h2>Thiết lập Mobile (Android &amp; iOS) — DoH / DoT &amp; Hồ sơ iOS</h2>
+                  <p class="card-desc">Chặn quảng cáo trên điện thoại cả khi ra ngoài dùng 4G/5G mà không cần bật VPN</p>
+                </div>
+                <div id="encryptedDnsBadge" class="row" style="gap: 0.4rem;"></div>
+              </div>
+
+              <div class="grid-2" style="margin-bottom: 0.85rem;">
+                <div class="field">
+                  <label for="mobilePublicHostInput">Tên miền công khai (trỏ về DoH/DoT của máy chủ này)</label>
+                  <input id="mobilePublicHostInput" type="text" placeholder="Ví dụ: dns.tenmien.vn (Cloudflare Tunnel / Caddy)" />
+                </div>
+                <div class="field">
+                  <label for="mobileExcludeSsidsInput">Bỏ qua khi ở Wi-Fi nhà (SSID, cách nhau bằng dấu phẩy)</label>
+                  <input id="mobileExcludeSsidsInput" type="text" placeholder="Ví dụ: NhaRieng_5G, VanPhong" />
+                </div>
+              </div>
+
+              <div id="mobileEndpointPreview" class="iface-list" style="margin-bottom: 0.85rem;"></div>
+
+              <div class="row card-footer-actions" style="gap: 0.55rem; flex-wrap: wrap;">
+                <button id="saveMobileDnsBtn" type="button" class="btn primary">Lưu cấu hình Mobile</button>
+                <button id="downloadIosDohBtn" type="button" class="btn">Tải hồ sơ iOS DoH (.mobileconfig)</button>
+                <button id="downloadIosDotBtn" type="button" class="btn">Tải hồ sơ iOS DoT (.mobileconfig)</button>
+              </div>
+            </div>
+
             <div class="card">
               <div class="appearance-bar">
                 <div>
@@ -3962,6 +3991,45 @@
         rebindWlEl.value = (sec.rebindingWhitelist || []).join(', ');
       }
 
+      const enc = s.config.encryptedDns || {};
+      const encStatus = s.encryptedDnsStatus || {};
+      const pubHostEl = document.getElementById('mobilePublicHostInput');
+      if (pubHostEl && document.activeElement !== pubHostEl) {
+        pubHostEl.value = enc.publicHostname || '';
+      }
+      const excludeSsidEl = document.getElementById('mobileExcludeSsidsInput');
+      if (excludeSsidEl && document.activeElement !== excludeSsidEl) {
+        excludeSsidEl.value = (enc.iosExcludeSsids || []).join(', ');
+      }
+      const encBadge = document.getElementById('encryptedDnsBadge');
+      if (encBadge) {
+        const dohTag = encStatus.dohRunning
+          ? `<span class="badge ok">DoH :${encStatus.dohPort || 8053}</span>`
+          : `<span class="badge">DoH tắt</span>`;
+        const dotTag = encStatus.dotRunning
+          ? `<span class="badge ok">DoT :${encStatus.dotPort || 853}</span>`
+          : `<span class="badge">DoT chưa bật TLS</span>`;
+        encBadge.innerHTML = `${dohTag}${dotTag}`;
+      }
+      const previewEl = document.getElementById('mobileEndpointPreview');
+      if (previewEl) {
+        const hostVal = (pubHostEl?.value || enc.publicHostname || '').trim();
+        const dohLocal = `${encStatus.dohTls ? 'https' : 'http'}://${encStatus.dohHost || '127.0.0.1'}:${encStatus.dohPort || 8053}${encStatus.dohEndpoint || '/dns-query'}`;
+        previewEl.innerHTML = `
+          <div class="iface-item">
+            <div><strong>DoH nội bộ (cho Cloudflare Tunnel / Caddy)</strong><div class="stat-label">${escapeHtml(dohLocal)}</div></div>
+            <span class="badge ${encStatus.dohRunning ? 'ok' : ''}">${encStatus.dohRunning ? 'Đang chạy' : 'Tắt'}</span>
+          </div>
+          <div class="iface-item">
+            <div><strong>Android Private DNS / iOS DoH</strong><div class="stat-label">${
+              hostVal
+                ? `DoH: https://${escapeHtml(hostVal)}/dns-query · Android DoT: ${escapeHtml(hostVal)}`
+                : 'Nhập tên miền công khai ở trên để tạo URL DoH & tải hồ sơ .mobileconfig cho iOS'
+            }</div></div>
+          </div>
+        `;
+      }
+
       const healthBox = document.getElementById('upstreamHealthBox');
       const healthList = s.upstreamHealth || [];
       healthBox.innerHTML = healthList.length
@@ -4774,6 +4842,40 @@
     document.getElementById('saveSecurityBtn')?.addEventListener('click', () => {
       document.getElementById('saveSettingsBtn')?.click();
     });
+
+    document.getElementById('saveMobileDnsBtn')?.addEventListener('click', async () => {
+      const publicHostname = (document.getElementById('mobilePublicHostInput')?.value || '').trim();
+      const iosExcludeSsids = (document.getElementById('mobileExcludeSsidsInput')?.value || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      try {
+        await api('/api/settings', {
+          method: 'POST',
+          body: JSON.stringify({ encryptedDns: { publicHostname, iosExcludeSsids } }),
+        });
+        await loadStatus();
+        showToast('Đã lưu cấu hình Mobile DoH/DoT');
+      } catch (err) {
+        showToast('Lỗi lưu cấu hình Mobile: ' + err.message);
+      }
+    });
+
+    function triggerIosProfileDownload(mode) {
+      const host = (document.getElementById('mobilePublicHostInput')?.value || '').trim();
+      if (!host) {
+        showToast('Hãy nhập Tên miền công khai (ví dụ: dns.tenmien.vn) trước khi tải hồ sơ iOS');
+        document.getElementById('mobilePublicHostInput')?.focus();
+        return;
+      }
+      const ssids = (document.getElementById('mobileExcludeSsidsInput')?.value || '').trim();
+      const params = new URLSearchParams({ hostname: host, mode });
+      if (ssids) params.set('excludeSsids', ssids);
+      window.location.href = `/api/mobile/ios-profile?${params.toString()}`;
+    }
+
+    document.getElementById('downloadIosDohBtn')?.addEventListener('click', () => triggerIosProfileDownload('doh'));
+    document.getElementById('downloadIosDotBtn')?.addEventListener('click', () => triggerIosProfileDownload('dot'));
 
     document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
       const upstreamDns = document
