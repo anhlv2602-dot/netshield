@@ -5,6 +5,7 @@ import { startWebServer } from './web-server.js';
 import { deviceDiscovery } from './discovery.js';
 import { alertEngine } from './alerts.js';
 import { forensicsDb } from './db.js';
+import { localDnsLB } from './load-balancer.js';
 
 const DNS_PORT = Number(process.env.DNS_PORT || 5335);
 const WEB_PORT = Number(process.env.WEB_PORT || 8080);
@@ -49,6 +50,9 @@ async function main() {
   const webSrv = await startWebServer({ host: WEB_HOST, port: WEB_PORT, dnsPort: DNS_PORT });
   console.log(`🖥️  Giao diện quản trị (chỉ máy Mac Mini): http://${webSrv.host}:${webSrv.port}`);
 
+  // Khởi chạy bộ kiểm tra sức khỏe TCP/HTTP cho Local DNS Round-Robin
+  localDnsLB.startHealthChecks(() => store.config.localRecords || []);
+
   // Khởi chạy bộ nhận diện thiết bị LAN ở nền (không làm chậm luồng DNS chính)
   deviceDiscovery.start(store, {
     onMigration: () => dnsCache.clear(),
@@ -76,6 +80,7 @@ async function main() {
     store.stopStatsAutosave();
     alertEngine.stop();
     forensicsDb.stop();
+    localDnsLB.stopHealthChecks();
     deviceDiscovery.stop();
     await Promise.allSettled([
       store.saveStats({ force: true }),

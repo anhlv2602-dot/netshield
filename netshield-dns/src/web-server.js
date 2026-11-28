@@ -1,5 +1,4 @@
 import http from 'node:http';
-import net from 'node:net';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -18,6 +17,12 @@ import { dnsCache, getUpstreamHealth, resetUpstreamHealth, testAllUpstreams } fr
 import { deviceDiscovery, normalizeMac } from './discovery.js';
 import { alertEngine } from './alerts.js';
 import { forensicsDb } from './db.js';
+import {
+  UPSTREAM_STRATEGIES,
+  normalizeUpstreamStrategy,
+  normalizeLocalRecord,
+  localDnsLB,
+} from './load-balancer.js';
 
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 
@@ -110,6 +115,8 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
           summary: store.getSummary(),
           config: store.config,
           upstreamHealth: getUpstreamHealth(),
+          upstreamStrategies: UPSTREAM_STRATEGIES,
+          localRecordsHealth: localDnsLB.annotateRecordsWithHealth(store.config.localRecords || []),
           alertsSummary: alertEngine.getSummary(),
           dbStats: await forensicsDb.getStats(),
           servicePresets: SERVICE_PRESETS,
@@ -571,29 +578,33 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
         return sendJson(res, 200, { clientRules: store.config.clientRules });
       }
 
-      // 8a. Local DNS Split-Horizon (tên miền nội bộ *.lan)
+      // 8a. Local DNS Split-Horizon & Round-Robin Load Balancing (tên miền nội bộ *.lan)
+      if (method === 'POST' && pathname === '/api/local-dns/check-health') {
+        await localDnsLB.triggerImmediateCheck(store.config.localRecords || []);
+        return sendJson(res, 200, {
+          localRecordsHealth: localDnsLB.annotateRecordsWithHealth(store.config.localRecords || []),
+        });
+      }
+
       if (method === 'POST' && pathname === '/api/local-dns') {
         const body = await readJsonBody(req);
-        const domain = normalizeDomain(body.domain);
-        const rawIps = Array.isArray(body.ips)
-          ? body.ips.map((s) => String(s || '').trim()).filter(Boolean)
-          : String(body.ip || '')
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean);
-        const validIps = rawIps.filter((ip) => net.isIPv4(ip) || net.isIPv6(ip));
-        if (!domain || validIps.length === 0) {
-          return sendJson(res, 400, { error: 'Cần nhập tên miền nội bộ (vd: netshield.lan) và IPv4/IPv6 hợp lệ' });
+        let rec;
+        try {
+          rec = normalizeLocalRecord(body);
+        } catch (err) {
+          return sendJson(res, 400, { error: err.message });
         }
-        const ttl = Number.isFinite(Number(body.ttl)) ? Math.max(10, Math.min(86400, Number(body.ttl))) : 60;
         if (!Array.isArray(store.config.localRecords)) store.config.localRecords = [];
-        const rec = { domain, ip: validIps[0], ips: [...new Set(validIps)], ttl };
-        const idx = store.config.localRecords.findIndex((r) => normalizeDomain(r.domain) === domain);
+        const idx = store.config.localRecords.findIndex((r) => normalizeDomain(r.domain) === rec.domain);
         if (idx >= 0) store.config.localRecords[idx] = rec;
         else store.config.localRecords.push(rec);
         await store.save();
         dnsCache.clear();
-        return sendJson(res, 200, { localRecords: store.config.localRecords });
+        localDnsLB.triggerImmediateCheck(store.config.localRecords).catch(() => {});
+        return sendJson(res, 200, {
+          localRecords: store.config.localRecords,
+          localRecordsHealth: localDnsLB.annotateRecordsWithHealth(store.config.localRecords),
+        });
       }
 
       if (method === 'DELETE' && pathname.startsWith('/api/local-dns/')) {
@@ -603,7 +614,10 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
         );
         await store.save();
         dnsCache.clear();
-        return sendJson(res, 200, { localRecords: store.config.localRecords });
+        return sendJson(res, 200, {
+          localRecords: store.config.localRecords,
+          localRecordsHealth: localDnsLB.annotateRecordsWithHealth(store.config.localRecords),
+        });
       }
 
       // 8b. Backup / Restore cấu hình (mặc định che Telegram Bot Token khi xuất)
@@ -655,12 +669,26 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
             ...DEFAULT_STORAGE_CONFIG,
             ...(incoming.storage && typeof incoming.storage === 'object' ? incoming.storage : {}),
           },
-          localRecords: Array.isArray(incoming.localRecords) ? incoming.localRecords : store.config.localRecords || [],
+          upstreamStrategy: normalizeUpstreamStrategy(
+            incoming.upstreamStrategy ?? store.config.upstreamStrategy
+          ),
+          localRecords: Array.isArray(incoming.localRecords)
+            ? incoming.localRecords
+                .map((r) => {
+                  try {
+                    return normalizeLocalRecord(r);
+                  } catch {
+                    return null;
+                  }
+                })
+                .filter(Boolean)
+            : store.config.localRecords || [],
         };
         await store.save();
         await blocklistEngine.loadFromCache();
         dnsCache.clear();
         resetUpstreamHealth();
+        localDnsLB.triggerImmediateCheck(store.config.localRecords).catch(() => {});
         return sendJson(res, 200, { ok: true, devicesCount: store.config.devices?.length || 0 });
       }
 
@@ -679,6 +707,9 @@ export function startWebServer({ host = '127.0.0.1', port = 8080, dnsPort = 5335
         if (Array.isArray(body.upstreamDns) && body.upstreamDns.length > 0) {
           store.config.upstreamDns = body.upstreamDns.map((s) => String(s || '').trim()).filter(Boolean);
           resetUpstreamHealth();
+        }
+        if (typeof body.upstreamStrategy === 'string' && UPSTREAM_STRATEGIES.includes(body.upstreamStrategy)) {
+          store.config.upstreamStrategy = body.upstreamStrategy;
         }
         if (body.blockResponseMode === 'zero' || body.blockResponseMode === 'nxdomain') {
           store.config.blockResponseMode = body.blockResponseMode;

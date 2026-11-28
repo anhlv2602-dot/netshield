@@ -183,10 +183,17 @@ class AlertEngine extends EventEmitter {
 
     // 1. Chạm Threat Intelligence / Malware / Phishing / DNS Rebinding
     if (cfg.threatHitEnabled && record.blocked && record.severity === 'high') {
+      const rLow = String(record.reason || '').toLowerCase();
+      let title = 'Chặn truy cập Nguy hiểm';
+      if (rLow.includes('rebinding')) title = 'Chặn tấn công DNS Rebinding';
+      else if (rLow.includes('phish')) title = 'Chặn trang Lừa đảo (Phishing)';
+      else if (rLow.includes('urlhaus') || rLow.includes('malware')) title = 'Chặn tên miền Mã độc (Malware)';
+      else if (rLow.includes('tif') || rLow.includes('threat')) title = 'Chặn tên miền Độc hại (Threat Intel)';
+
       this.createAlert({
         type: 'threat_hit',
         severity: 'high',
-        title: 'Chặn truy cập Mã độc / Lừa đảo',
+        title,
         message: `${devLabel} đã gọi tới ${domain} (${record.reason || 'Threat Intel'})`,
         clientIp,
         mac,

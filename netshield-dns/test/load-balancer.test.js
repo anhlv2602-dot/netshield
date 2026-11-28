@@ -1,12 +1,15 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import net from 'node:net';
+import http from 'node:http';
 import dnsPacket from 'dns-packet';
 import {
   UpstreamLoadBalancer,
   LocalDnsLoadBalancer,
   normalizeLocalRecord,
   probeTcpEndpoint,
+  probeHttpEndpoint,
+  isUpstreamErrorRcode,
 } from '../src/load-balancer.js';
 
 function makeQuery(domain, type = 'A', id = 1234) {
@@ -130,6 +133,107 @@ describe('UpstreamLoadBalancer (4 chế độ)', () => {
       },
     });
     assert.equal(resp.toString(), 'recovered-u2');
+  });
+
+  it('parallel: tự hủy request thua qua AbortSignal (không tính là failure) và bỏ qua SERVFAIL', async () => {
+    const lb = new UpstreamLoadBalancer();
+    const servfailBuf = dnsPacket.encode({
+      type: 'response',
+      id: 10,
+      flags: dnsPacket.RECURSION_DESIRED | dnsPacket.RECURSION_AVAILABLE | 2, // SERVFAIL
+      questions: [{ type: 'A', name: 'example.com' }],
+      answers: [],
+    });
+    const okBuf = dnsPacket.encode({
+      type: 'response',
+      id: 10,
+      flags: dnsPacket.RECURSION_DESIRED | dnsPacket.RECURSION_AVAILABLE,
+      questions: [{ type: 'A', name: 'example.com' }],
+      answers: [{ type: 'A', class: 'IN', name: 'example.com', ttl: 60, data: '93.184.216.34' }],
+    });
+    const nxdomainBuf = dnsPacket.encode({
+      type: 'response',
+      id: 10,
+      flags: dnsPacket.RECURSION_DESIRED | dnsPacket.RECURSION_AVAILABLE | 3, // NXDOMAIN
+      questions: [{ type: 'A', name: 'nope.invalid' }],
+      answers: [],
+    });
+
+    assert.equal(isUpstreamErrorRcode(servfailBuf), true);
+    assert.equal(isUpstreamErrorRcode(okBuf), false);
+    assert.equal(isUpstreamErrorRcode(nxdomainBuf), false);
+
+    let u3Aborted = false;
+    const failures = [];
+
+    const resp = await lb.forward(dummyQuery, {
+      upstreams: ['u1', 'u2', 'u3'],
+      strategy: 'parallel',
+      onFailure: (u, msg) => failures.push(`${u}:${msg}`),
+      forwardSingle: async (_q, u, { signal } = {}) => {
+        if (u === 'u1') return servfailBuf; // Trả SERVFAIL ngay lập tức
+        if (u === 'u2') {
+          await new Promise((r) => setTimeout(r, 15));
+          return okBuf;
+        }
+        // u3 chậm -> phải bị abort khi u2 thắng
+        return await new Promise((resolve, reject) => {
+          const t = setTimeout(() => resolve(okBuf), 200);
+          signal?.addEventListener('abort', () => {
+            clearTimeout(t);
+            u3Aborted = true;
+            const err = new Error('Aborted');
+            err.name = 'AbortError';
+            reject(err);
+          });
+        });
+      },
+    });
+
+    assert.equal(resp, okBuf);
+    assert.equal(u3Aborted, true);
+    assert.deepEqual(failures, ['u1:SERVFAIL']); // u3 bị abort KHÔNG bị tính là lỗi
+  });
+
+  it('Singleflight: gộp nhiều truy vấn trùng đang bay thành 1 lần gọi upstream và gắn lại đúng Transaction ID', async () => {
+    const lb = new UpstreamLoadBalancer();
+    let upstreamCalls = 0;
+
+    const makeRawQuery = (id) =>
+      dnsPacket.encode({
+        type: 'query',
+        id,
+        flags: dnsPacket.RECURSION_DESIRED,
+        questions: [{ type: 'A', name: 'coalesce.example' }],
+      });
+
+    const results = await Promise.all(
+      [101, 202, 303, 404].map((id) =>
+        lb.forward(makeRawQuery(id), {
+          upstreams: ['u1'],
+          strategy: 'failover',
+          coalesceKey: 'coalesce.example:A',
+          forwardSingle: async (rawQ) => {
+            upstreamCalls += 1;
+            await new Promise((r) => setTimeout(r, 20));
+            const decoded = dnsPacket.decode(rawQ);
+            return dnsPacket.encode({
+              type: 'response',
+              id: decoded.id,
+              flags: dnsPacket.RECURSION_DESIRED | dnsPacket.RECURSION_AVAILABLE,
+              questions: decoded.questions,
+              answers: [{ type: 'A', class: 'IN', name: 'coalesce.example', ttl: 60, data: '1.2.3.4' }],
+            });
+          },
+        })
+      )
+    );
+
+    assert.equal(upstreamCalls, 1);
+    assert.deepEqual(
+      results.map((buf) => dnsPacket.decode(buf).id),
+      [101, 202, 303, 404]
+    );
   });
 });
 
@@ -283,5 +387,62 @@ describe('LocalDnsLoadBalancer (Round-Robin, Weighted & TCP Health Check)', () =
     } finally {
       await new Promise((resolve) => aliveServer.close(resolve));
     }
+  });
+
+  it('Chống flapping (Timeout cần 2 lần liên tiếp), HTTP Health Check (/health) và singleAnswer', async () => {
+    // 1. Test HTTP health check thật: 200 OK vs 502 Bad Gateway
+    let httpStatus = 200;
+    const httpSrv = http.createServer((req, res) => {
+      res.writeHead(req.url === '/health' ? httpStatus : 404);
+      res.end('ok');
+    });
+    await new Promise((resolve) => httpSrv.listen(0, '127.0.0.1', resolve));
+    const httpPort = httpSrv.address().port;
+
+    try {
+      const okProbe = await probeHttpEndpoint('127.0.0.1', httpPort, '/health', 500);
+      assert.equal(okProbe.ok, true);
+
+      httpStatus = 502;
+      const failProbe = await probeHttpEndpoint('127.0.0.1', httpPort, '/health', 500);
+      assert.equal(failProbe.ok, false);
+      assert.equal(failProbe.error, 'HTTP 502');
+    } finally {
+      await new Promise((resolve) => httpSrv.close(resolve));
+    }
+
+    // 2. Test chống flapping cho Timeout (cần 2 lần liên tiếp mới loại) + singleAnswer: true
+    let timeoutActive = true;
+    const lb = new LocalDnsLoadBalancer({
+      timeoutFailureThreshold: 2,
+      probeFn: async (ip) => {
+        if (ip === '10.0.0.2' && timeoutActive) return { ok: false, latencyMs: null, error: 'Timeout' };
+        return { ok: true, latencyMs: 1.0, error: null };
+      },
+    });
+
+    const records = [
+      normalizeLocalRecord({
+        domain: 'flap.lan',
+        singleAnswer: true,
+        targets: [
+          { ip: '10.0.0.1', healthPort: 80 },
+          { ip: '10.0.0.2', healthPort: 80 },
+        ],
+      }),
+    ];
+
+    // Lần 1 Timeout -> CHƯA loại 10.0.0.2
+    await lb.runHealthChecks(records);
+    const first = lb.resolve(makeQuery('flap.lan', 'A', 1), records);
+    const second = lb.resolve(makeQuery('flap.lan', 'A', 2), records);
+    assert.equal(first.ips.length, 1); // singleAnswer: chỉ trả 1 IP
+    assert.deepEqual([first.ips[0], second.ips[0]], ['10.0.0.1', '10.0.0.2']);
+
+    // Lần 2 Timeout liên tiếp -> loại hẳn 10.0.0.2
+    await lb.runHealthChecks(records);
+    const after2 = lb.resolve(makeQuery('flap.lan', 'A', 3), records);
+    assert.deepEqual(after2.ips, ['10.0.0.1']);
+    assert.equal(after2.healthyCount, 1);
   });
 });

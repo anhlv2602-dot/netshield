@@ -4,6 +4,7 @@ import http2 from 'node:http2';
 import dnsPacket from 'dns-packet';
 import { store, normalizeDomain } from './store.js';
 import { blocklistEngine } from './blocklist.js';
+import { upstreamLB, localDnsLB, normalizeUpstreamStrategy } from './load-balancer.js';
 
 const MAX_CACHE_SIZE = 5000;
 const MIN_TTL_SEC = 30;
@@ -89,6 +90,8 @@ export function getUpstreamHealth() {
       consecutiveFailures: e.consecutiveFailures,
       retryInSec: circuitOpen ? Math.ceil((e.openUntil - now) / 1000) : 0,
       lastLatencyMs: e.lastLatencyMs,
+      ewmaLatencyMs: upstreamLB.getEwmaLatency(u),
+      queries: upstreamLB.getQueryCount(u),
       lastError: e.lastError,
       lastOkAt: e.lastOkAt,
     };
@@ -97,6 +100,7 @@ export function getUpstreamHealth() {
 
 export function resetUpstreamHealth() {
   upstreamHealthMap.clear();
+  upstreamLB.reset();
 }
 
 class DnsCache {
@@ -338,16 +342,41 @@ function parseUdpUpstream(entry) {
   return { host: entry, port: 53 };
 }
 
-function forwardUdp(rawQuery, upstreamEntry) {
+function forwardUdp(rawQuery, upstreamEntry, { signal } = {}) {
   const { host: upstreamIp, port: upstreamPort } = parseUdpUpstream(upstreamEntry);
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      const err = new Error('Aborted');
+      err.name = 'AbortError';
+      return reject(err);
+    }
     const socket = dgram.createSocket(net.isIPv6(upstreamIp) ? 'udp6' : 'udp4');
     let settled = false;
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      if (signal) signal.removeEventListener('abort', onAbort);
+      try {
+        socket.close();
+      } catch {}
+    };
+
+    const onAbort = () => {
+      if (!settled) {
+        settled = true;
+        cleanup();
+        const err = new Error('Aborted');
+        err.name = 'AbortError';
+        reject(err);
+      }
+    };
+
+    if (signal) signal.addEventListener('abort', onAbort, { once: true });
 
     const timer = setTimeout(() => {
       if (!settled) {
         settled = true;
-        socket.close();
+        cleanup();
         reject(new Error(`Upstream ${upstreamEntry} timeout`));
       }
     }, UPSTREAM_TIMEOUT_MS);
@@ -355,8 +384,7 @@ function forwardUdp(rawQuery, upstreamEntry) {
     socket.once('message', (msg) => {
       if (!settled) {
         settled = true;
-        clearTimeout(timer);
-        socket.close();
+        cleanup();
         resolve(msg);
       }
     });
@@ -364,8 +392,7 @@ function forwardUdp(rawQuery, upstreamEntry) {
     socket.once('error', (err) => {
       if (!settled) {
         settled = true;
-        clearTimeout(timer);
-        socket.close();
+        cleanup();
         reject(err);
       }
     });
@@ -374,8 +401,13 @@ function forwardUdp(rawQuery, upstreamEntry) {
   });
 }
 
-function forwardDohHttp2(rawQuery, urlStr) {
+function forwardDohHttp2(rawQuery, urlStr, { signal } = {}) {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      const err = new Error('Aborted');
+      err.name = 'AbortError';
+      return reject(err);
+    }
     const u = new URL(urlStr);
     const client = http2.connect(u.origin);
     let settled = false;
@@ -383,12 +415,20 @@ function forwardDohHttp2(rawQuery, urlStr) {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      if (signal) signal.removeEventListener('abort', onAbort);
       try {
         client.close();
       } catch {}
       if (err) reject(err);
       else resolve(buf);
     };
+
+    const onAbort = () => {
+      const err = new Error('Aborted');
+      err.name = 'AbortError';
+      done(err);
+    };
+    if (signal) signal.addEventListener('abort', onAbort, { once: true });
 
     const timer = setTimeout(() => done(new Error('DoH/H2 timeout')), UPSTREAM_TIMEOUT_MS);
     client.once('error', (err) => done(err));
@@ -420,10 +460,12 @@ function forwardDohHttp2(rawQuery, urlStr) {
 
 const h2RequiredUrls = new Set();
 
-async function forwardDoh(rawQuery, urlStr) {
+async function forwardDoh(rawQuery, urlStr, { signal } = {}) {
   if (h2RequiredUrls.has(urlStr)) {
-    return await forwardDohHttp2(rawQuery, urlStr);
+    return await forwardDohHttp2(rawQuery, urlStr, { signal });
   }
+  const timeoutSignal = AbortSignal.timeout(UPSTREAM_TIMEOUT_MS);
+  const combinedSignal = signal ? AbortSignal.any([timeoutSignal, signal]) : timeoutSignal;
   const res = await fetch(urlStr, {
     method: 'POST',
     headers: {
@@ -431,12 +473,12 @@ async function forwardDoh(rawQuery, urlStr) {
       Accept: 'application/dns-message',
     },
     body: rawQuery,
-    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+    signal: combinedSignal,
   });
   if (res.status === 505) {
     // Một số máy chủ DoH (như Quad9 9.9.9.9) yêu cầu HTTP/2 -> ghi nhớ để không lãng phí 1 round-trip
     h2RequiredUrls.add(urlStr);
-    return await forwardDohHttp2(rawQuery, urlStr);
+    return await forwardDohHttp2(rawQuery, urlStr, { signal });
   }
   if (!res.ok) {
     throw new Error(`DoH HTTP ${res.status}`);
@@ -449,45 +491,30 @@ async function forwardDoh(rawQuery, urlStr) {
   return buf;
 }
 
-export async function forwardSingleUpstream(rawQuery, upstreamEntry) {
+export async function forwardSingleUpstream(rawQuery, upstreamEntry, opts = {}) {
   const trimmed = String(upstreamEntry || '').trim();
   if (trimmed.startsWith('https://')) {
-    return await forwardDoh(rawQuery, trimmed);
+    return await forwardDoh(rawQuery, trimmed, opts);
   }
-  return await forwardUdp(rawQuery, trimmed);
+  return await forwardUdp(rawQuery, trimmed, opts);
 }
 
-async function forwardWithFailover(rawQuery) {
+async function forwardWithFailover(rawQuery, coalesceKey = null) {
   const upstreams = store.config.upstreamDns?.length
     ? store.config.upstreamDns
     : ['https://1.1.1.2/dns-query', 'https://9.9.9.9/dns-query', '203.113.131.1'];
-
+  const strategy = normalizeUpstreamStrategy(store.config.upstreamStrategy);
   const now = Date.now();
-  const healthy = [];
-  const openCircuit = [];
-  for (const u of upstreams) {
-    const entry = getHealthEntry(u);
-    if (entry.openUntil > now) openCircuit.push(u);
-    else healthy.push(u);
-  }
 
-  // Ưu tiên upstream khỏe trước; nếu tất cả đều đang mở circuit thì vẫn thử lại (half-open)
-  const ordered = healthy.length > 0 ? [...healthy, ...openCircuit] : upstreams;
-
-  let lastError = null;
-  for (const upstream of ordered) {
-    const t0 = performance.now();
-    try {
-      const resp = await forwardSingleUpstream(rawQuery, upstream);
-      recordUpstreamSuccess(upstream, performance.now() - t0);
-      return resp;
-    } catch (err) {
-      const msg = err.name === 'TimeoutError' ? 'Timeout' : err.message;
-      recordUpstreamFailure(upstream, msg);
-      lastError = new Error(`${upstream}: ${msg}`);
-    }
-  }
-  throw lastError || new Error('All upstream DNS failed');
+  return await upstreamLB.forward(rawQuery, {
+    upstreams,
+    strategy,
+    coalesceKey,
+    isCircuitOpen: (u) => getHealthEntry(u).openUntil > now,
+    forwardSingle: (q, u, opts) => forwardSingleUpstream(q, u, opts),
+    onSuccess: (u, ms) => recordUpstreamSuccess(u, ms),
+    onFailure: (u, msg) => recordUpstreamFailure(u, msg),
+  });
 }
 
 export async function testAllUpstreams(list = null) {
@@ -542,35 +569,11 @@ function cleanClientIp(ip) {
 export function resolveLocalDnsRecord(queryPacket, domain, qtype) {
   const records = store.config.localRecords || [];
   if (!records.length || !domain) return null;
-
-  const rec = records.find((r) => normalizeDomain(r.domain) === domain);
-  if (!rec) return null;
-
-  const rawIps = Array.isArray(rec.ips) && rec.ips.length ? rec.ips : rec.ip ? [rec.ip] : [];
-  const matchingIps =
-    qtype === 'A'
-      ? rawIps.filter((ip) => net.isIPv4(ip))
-      : qtype === 'AAAA'
-        ? rawIps.filter((ip) => net.isIPv6(ip))
-        : [];
-
-  const ttl = Number.isFinite(Number(rec.ttl)) ? Number(rec.ttl) : 60;
-  const answers = matchingIps.map((ip) => ({
-    type: qtype,
-    class: 'IN',
-    name: queryPacket.questions[0].name,
-    ttl,
-    data: ip,
-  }));
-
-  // Domain nội bộ tồn tại nhưng không có loại bản ghi yêu cầu (vd hỏi AAAA khi chỉ khai báo IPv4) -> NOERROR rỗng, không gửi ra upstream!
-  return dnsPacket.encode({
-    type: 'response',
-    id: queryPacket.id,
-    flags: dnsPacket.RECURSION_DESIRED | dnsPacket.RECURSION_AVAILABLE | dnsPacket.AUTHORITATIVE_ANSWER,
-    questions: queryPacket.questions,
-    answers,
-  });
+  const pkt = queryPacket?.questions?.length
+    ? queryPacket
+    : { id: queryPacket?.id || 0, questions: [{ type: qtype || 'A', name: domain }] };
+  const resolved = localDnsLB.resolve(pkt, records);
+  return resolved ? resolved.buffer : null;
 }
 
 async function handleDnsPayload(rawBuffer, clientIp) {
@@ -650,9 +653,9 @@ async function handleDnsPayload(rawBuffer, clientIp) {
     return patched;
   }
 
-  // 3. Forward lên Upstream DNS (DoH / UDP + Circuit Breaker)
+  // 3. Forward lên Upstream DNS (4 chế độ cân bằng tải + Singleflight + Circuit Breaker)
   try {
-    const upstreamResp = await forwardWithFailover(rawBuffer);
+    const upstreamResp = await forwardWithFailover(rawBuffer, cacheKey);
     const inspection = inspectUpstreamResponse(upstreamResp, domain, ip, { bypassProtection });
 
     if (inspection.blocked) {
