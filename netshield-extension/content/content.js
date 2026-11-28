@@ -27,6 +27,7 @@
   const IS_YOUTUBE = HOST === 'youtube.com' || HOST.endsWith('.youtube.com');
   const IS_ZINGMP3 = HOST === 'zingmp3.vn' || HOST.endsWith('.zingmp3.vn') || HOST === 'mp3.zing.vn';
   const IS_SPOTIFY = HOST === 'open.spotify.com' || HOST.endsWith('.spotify.com');
+  const IS_INVESTING = HOST === 'investing.com' || HOST.endsWith('.investing.com');
 
   let settings = {
     enabled: true,
@@ -34,6 +35,7 @@
     blockYoutube: true,
     blockMusic: true,
     blockVnNews: true,
+    defuseAntiAdblock: true,
     whitelist: [],
   };
 
@@ -54,11 +56,30 @@
     } catch (_) {}
   }
 
+  const IS_TOP_FRAME = window === window.top;
+
   function hideElement(el) {
     if (!el || el.dataset.nsHidden === '1') return false;
     el.dataset.nsHidden = '1';
+    el.dataset.nsOrigDisplay = el.style.getPropertyValue('display') || '';
     el.classList.add('ns-hidden');
+    el.style.setProperty('display', 'none', 'important');
+    el.style.setProperty('visibility', 'hidden', 'important');
     return true;
+  }
+
+  function unhideAll() {
+    document.querySelectorAll('[data-ns-hidden="1"]').forEach((el) => {
+      el.classList.remove('ns-hidden');
+      if (el.dataset.nsOrigDisplay) {
+        el.style.setProperty('display', el.dataset.nsOrigDisplay);
+      } else {
+        el.style.removeProperty('display');
+      }
+      el.style.removeProperty('visibility');
+      delete el.dataset.nsHidden;
+      delete el.dataset.nsOrigDisplay;
+    });
   }
 
   // Trích xuất chỉ chữ thực sự hiển thị (chống kỹ thuật chèn span ẩn của Facebook)
@@ -366,8 +387,202 @@
     if (blocked > 0) reportBlocked(blocked);
   }
 
+  // =========================================================================
+  // 4. VƯỢT MÀN HÌNH CHỐNG ADBLOCK (Investing.com & Google Funding Choices)
+  // =========================================================================
+  const ANTI_ADBLOCK_TEXT_RE =
+    /phần mềm chặn quảng cáo|trình chặn quảng cáo|cho phép miền này|ad\s*blocker|disable your adblock|turn off your ad\s*block|whitelist this site/i;
+
+  function unlockPageScroll() {
+    for (const root of [document.documentElement, document.body]) {
+      if (!root) continue;
+      const cs = getComputedStyle(root);
+      if (cs.overflow === 'hidden' || cs.overflowY === 'hidden') {
+        root.style.setProperty('overflow', 'auto', 'important');
+        root.style.setProperty('overflow-y', 'auto', 'important');
+      }
+      if (cs.position === 'fixed') {
+        root.style.setProperty('position', 'static', 'important');
+      }
+    }
+  }
+
+  function hideFullscreenBackdrops() {
+    let hidden = 0;
+    const vw = window.innerWidth || 1024;
+    const vh = window.innerHeight || 768;
+    document.querySelectorAll('body > div, body > section, body > aside').forEach((el) => {
+      if (el.dataset.nsHidden === '1') return;
+      const cs = getComputedStyle(el);
+      if (cs.position !== 'fixed' && cs.position !== 'absolute') return;
+      const z = parseInt(cs.zIndex, 10) || 0;
+      if (z < 10) return;
+      const r = el.getBoundingClientRect();
+      const coversScreen = r.width >= vw * 0.8 && r.height >= vh * 0.8;
+      const textLen = (el.innerText || '').trim().length;
+      if (coversScreen && textLen === 0) {
+        if (hideElement(el)) hidden++;
+      }
+    });
+    return hidden;
+  }
+
+  function findModalRoot(el) {
+    let target = el;
+    let cur = el.parentElement;
+    while (cur && cur !== document.body && cur !== document.documentElement) {
+      const txtLen = (cur.innerText || '').trim().length;
+      // Dừng nếu leo tới vùng chứa toàn bộ nội dung trang
+      if (txtLen > 2500 || cur.id === '__next' || cur.tagName === 'MAIN') break;
+      const cs = getComputedStyle(cur);
+      target = cur;
+      if (cs.position === 'fixed') {
+        // Nếu đã gặp container fixed ngoài cùng của modal thì lấy nó làm gốc
+        const parentCs = cur.parentElement && cur.parentElement !== document.body
+          ? getComputedStyle(cur.parentElement)
+          : null;
+        if (!parentCs || parentCs.position !== 'fixed') break;
+      }
+      cur = cur.parentElement;
+    }
+    return target;
+  }
+
+  function getShadowRootSafe(el) {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.dom && typeof chrome.dom.openOrClosedShadowRoot === 'function') {
+        return chrome.dom.openOrClosedShadowRoot(el);
+      }
+    } catch (_) {}
+    return el.shadowRoot || null;
+  }
+
+  // Nhận tín hiệu từ iframe con nếu popup anti-adblock nằm trong cross-origin iframe
+  if (IS_TOP_FRAME) {
+    window.addEventListener('message', (e) => {
+      if (!e.data || e.data.type !== 'NS_ADBLOCK_IFRAME') return;
+      if (!settings.enabled || !settings.defuseAntiAdblock || isWhitelisted(HOST, settings.whitelist)) return;
+      let blocked = 0;
+      document.querySelectorAll('iframe').forEach((frame) => {
+        if (frame.contentWindow === e.source) {
+          const target = findModalRoot(frame);
+          if (hideElement(target)) blocked++;
+        }
+      });
+      if (blocked > 0) {
+        blocked += hideFullscreenBackdrops();
+        unlockPageScroll();
+        reportBlocked(blocked);
+      }
+    });
+  }
+
+  function scanAntiAdblock() {
+    let blocked = 0;
+
+    // Nếu đang ở trong iframe con: chỉ kiểm tra xem chính iframe này có phải popup anti-adblock không
+    if (!IS_TOP_FRAME) {
+      const bodyText = (document.body?.innerText || '').trim();
+      if (bodyText.length > 0 && bodyText.length < 2500 && ANTI_ADBLOCK_TEXT_RE.test(bodyText)) {
+        try {
+          window.top.postMessage({ type: 'NS_ADBLOCK_IFRAME' }, '*');
+        } catch (_) {}
+        hideElement(document.documentElement);
+      }
+      return;
+    }
+
+    // 4A. Các khung anti-adblock nhận diện rõ ràng (Funding Choices + Investing.com)
+    const knownSelectors = IS_INVESTING
+      ? [
+          '.fc-ab-root',
+          '.fc-dialog-overlay',
+          '[id^="adNotification"]',
+          '[class^="ad-notification"]',
+          '[class*="adBlock"]',
+          '[class*="overlay_overlay"]',
+          '.ad-blockers-section',
+        ]
+      : ['.fc-ab-root', '.fc-dialog-overlay'];
+
+    for (const sel of knownSelectors) {
+      document.querySelectorAll(sel).forEach((el) => {
+        if (hideElement(el)) blocked++;
+      });
+    }
+
+    // 4B. Quét same-origin / about:blank / srcdoc iframes chứa popup anti-adblock
+    document.querySelectorAll('iframe').forEach((frame) => {
+      if (frame.dataset.nsHidden === '1' || frame.closest('[data-ns-hidden="1"]')) return;
+      try {
+        const fBody = frame.contentDocument?.body;
+        if (!fBody) return;
+        const fText = (fBody.innerText || '').trim();
+        if (fText.length > 0 && fText.length < 2500 && ANTI_ADBLOCK_TEXT_RE.test(fText)) {
+          const target = findModalRoot(frame);
+          if (hideElement(target)) blocked++;
+        }
+      } catch (_) {}
+    });
+
+    // 4C. Quét tổng quát mọi popup/overlay chứa thông điệp yêu cầu tắt Adblock
+    // (Hỗ trợ cả Open Shadow DOM lẫn Closed Shadow DOM qua chrome.dom.openOrClosedShadowRoot)
+    const rootsToScan = [document.body];
+    if (document.body) {
+      document.body.querySelectorAll('*').forEach((host) => {
+        const sr = getShadowRootSafe(host);
+        if (sr) rootsToScan.push(sr);
+      });
+    }
+
+    for (const root of rootsToScan) {
+      if (!root) continue;
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        const val = (node.nodeValue || '').trim();
+        if (val.length < 10 || val.length > 300) continue;
+        if (!ANTI_ADBLOCK_TEXT_RE.test(val)) continue;
+
+        const el = node.parentElement;
+        if (!el || el.dataset.nsHidden === '1' || el.closest('[data-ns-hidden="1"]')) continue;
+
+        // Nếu nằm trong Shadow DOM (open/closed) thì ẩn thẳng phần tử host ngoài light DOM
+        if (root !== document.body && root.host) {
+          const hostTarget = findModalRoot(root.host);
+          if (hostTarget !== document.body && hostTarget !== document.documentElement) {
+            if (hideElement(hostTarget)) blocked++;
+          }
+          continue;
+        }
+
+        // Xác nhận nằm trong một lớp nổi (fixed/absolute) hoặc container nhỏ của popup
+        const modalRoot = findModalRoot(el);
+        const cs = getComputedStyle(modalRoot);
+        const isFloating =
+          cs.position === 'fixed' ||
+          cs.position === 'absolute' ||
+          modalRoot.getAttribute('role') === 'dialog' ||
+          modalRoot.getAttribute('aria-modal') === 'true' ||
+          IS_INVESTING;
+
+        if (isFloating && modalRoot !== document.body && modalRoot !== document.documentElement) {
+          if (hideElement(modalRoot)) blocked++;
+        }
+      }
+    }
+
+    if (blocked > 0) {
+      blocked += hideFullscreenBackdrops();
+      unlockPageScroll();
+      reportBlocked(blocked);
+    }
+  }
+
   function runScan() {
     if (!settings.enabled || isWhitelisted(HOST, settings.whitelist)) return;
+    if (settings.defuseAntiAdblock) scanAntiAdblock();
+    if (!IS_TOP_FRAME) return;
     if (IS_FACEBOOK && settings.blockFacebook) scanFacebook();
     else if (IS_YOUTUBE && settings.blockYoutube) scanYoutube();
     else if (IS_ZINGMP3 && settings.blockMusic) scanZingMp3();
@@ -385,8 +600,11 @@
 
   function applyActivation() {
     const active = settings.enabled && !isWhitelisted(HOST, settings.whitelist);
+    const antiAdblockOn = active && settings.defuseAntiAdblock;
     if (active) {
       document.documentElement.classList.add('ns-active');
+      document.documentElement.classList.toggle('ns-anti-adblock', antiAdblockOn);
+      document.documentElement.classList.toggle('ns-investing', antiAdblockOn && IS_INVESTING);
       if (document.body) runScan();
       if (!observer) {
         observer = new MutationObserver(scheduleScan);
@@ -395,11 +613,11 @@
           subtree: true,
         });
       }
-      if ((IS_FACEBOOK || IS_YOUTUBE || IS_SPOTIFY) && !pollInterval) {
+      if ((IS_FACEBOOK || IS_YOUTUBE || IS_SPOTIFY || IS_INVESTING) && !pollInterval) {
         pollInterval = setInterval(runScan, 1500);
       }
     } else {
-      document.documentElement.classList.remove('ns-active');
+      document.documentElement.classList.remove('ns-active', 'ns-anti-adblock', 'ns-investing');
       if (observer) {
         observer.disconnect();
         observer = null;
@@ -408,16 +626,13 @@
         clearInterval(pollInterval);
         pollInterval = null;
       }
-      document.querySelectorAll('[data-ns-hidden="1"]').forEach((el) => {
-        el.classList.remove('ns-hidden');
-        delete el.dataset.nsHidden;
-      });
+      unhideAll();
     }
   }
 
   // Khởi tạo từ chrome.storage
   chrome.storage.local.get(
-    ['enabled', 'blockFacebook', 'blockYoutube', 'blockMusic', 'blockVnNews', 'whitelist'],
+    ['enabled', 'blockFacebook', 'blockYoutube', 'blockMusic', 'blockVnNews', 'defuseAntiAdblock', 'whitelist'],
     (res) => {
       settings = {
         enabled: res.enabled !== false,
@@ -425,6 +640,7 @@
         blockYoutube: res.blockYoutube !== false,
         blockMusic: res.blockMusic !== false,
         blockVnNews: res.blockVnNews !== false,
+        defuseAntiAdblock: res.defuseAntiAdblock !== false,
         whitelist: Array.isArray(res.whitelist) ? res.whitelist : [],
       };
       applyActivation();
@@ -438,6 +654,7 @@
     if (changes.blockYoutube) settings.blockYoutube = changes.blockYoutube.newValue;
     if (changes.blockMusic) settings.blockMusic = changes.blockMusic.newValue;
     if (changes.blockVnNews) settings.blockVnNews = changes.blockVnNews.newValue;
+    if (changes.defuseAntiAdblock) settings.defuseAntiAdblock = changes.defuseAntiAdblock.newValue;
     if (changes.whitelist) settings.whitelist = changes.whitelist.newValue || [];
     applyActivation();
   });

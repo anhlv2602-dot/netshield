@@ -6,9 +6,6 @@ html.ns-active .adm-ad,
 html.ns-active .admicro-ad,
 html.ns-active .eclick-ad,
 html.ns-active [class*="admzone"],
-html.ns-active .ads-wrapper,
-html.ns-active .ad-container,
-html.ns-active .banner-ads,
 html.ns-active #admicro_wrapper,
 html.ns-active ytd-ad-slot-renderer,
 html.ns-active ytd-promoted-sparkles-web-renderer,
@@ -33,6 +30,30 @@ html.ns-active .vip-banner-sidebar {
   min-height: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
+}
+
+/* Chống màn hình chặn Adblock (Google Funding Choices & Investing.com) */
+html.ns-active.ns-anti-adblock .fc-ab-root,
+html.ns-active.ns-anti-adblock .fc-dialog-overlay,
+html.ns-active.ns-investing [id^="adNotification"],
+html.ns-active.ns-investing [class^="ad-notification"],
+html.ns-active.ns-investing [class*="adBlock"],
+html.ns-active.ns-investing [class*="overlay_overlay"],
+html.ns-active.ns-investing .ad-blockers-section,
+html.ns-active.ns-investing [class^="outbrain_outbrain-wrapper"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Giữ cuộn trang bình thường & không ẩn phần tử mồi bait trên Investing.com */
+html.ns-active.ns-investing,
+html.ns-active.ns-investing body {
+  overflow: auto !important;
+}
+
+html.ns-active.ns-investing div[id^="bait-"] {
+  display: block !important;
 }
 
 .ns-hidden {

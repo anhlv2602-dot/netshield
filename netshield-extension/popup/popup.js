@@ -16,6 +16,7 @@ let state = {
   blockYoutube: true,
   blockMusic: true,
   blockVnNews: true,
+  defuseAntiAdblock: true,
   whitelist: [],
   totalBlocked: 0,
 };
@@ -40,7 +41,7 @@ async function init() {
   }
 
   const stored = await chrome.storage.local.get([
-    'enabled', 'blockFacebook', 'blockYoutube', 'blockMusic', 'blockVnNews', 'whitelist', 'totalBlocked',
+    'enabled', 'blockFacebook', 'blockYoutube', 'blockMusic', 'blockVnNews', 'defuseAntiAdblock', 'whitelist', 'totalBlocked',
   ]);
   state = {
     enabled: stored.enabled !== false,
@@ -48,6 +49,7 @@ async function init() {
     blockYoutube: stored.blockYoutube !== false,
     blockMusic: stored.blockMusic !== false,
     blockVnNews: stored.blockVnNews !== false,
+    defuseAntiAdblock: stored.defuseAntiAdblock !== false,
     whitelist: Array.isArray(stored.whitelist) ? stored.whitelist : [],
     totalBlocked: stored.totalBlocked || 0,
   };
@@ -91,6 +93,11 @@ async function init() {
     state.blockVnNews = e.target.checked;
     await chrome.storage.local.set({ blockVnNews: state.blockVnNews });
   });
+
+  document.getElementById('chkAntiAdblock').addEventListener('change', async (e) => {
+    state.defuseAntiAdblock = e.target.checked;
+    await chrome.storage.local.set({ defuseAntiAdblock: state.defuseAntiAdblock });
+  });
 }
 
 function render() {
@@ -99,6 +106,7 @@ function render() {
   document.getElementById('chkYoutube').checked = state.blockYoutube;
   document.getElementById('chkMusic').checked = state.blockMusic;
   document.getElementById('chkVnNews').checked = state.blockVnNews;
+  document.getElementById('chkAntiAdblock').checked = state.defuseAntiAdblock;
 
   const pill = document.getElementById('statusPill');
   const statusText = document.getElementById('statusText');
